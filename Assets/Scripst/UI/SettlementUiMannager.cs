@@ -56,6 +56,12 @@ public class SettlementUIManager : MonoBehaviour
         settlementNameText.text = GetSettlementName(settlement);
         uiPanel.SetActive(true);
 
+        // Play UI menu open sound
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayUIMenuOpen();
+        }
+
         // Show recruit button for all settlements
         recruitButton.gameObject.SetActive(true);
 
@@ -74,10 +80,22 @@ public class SettlementUIManager : MonoBehaviour
     {
         uiPanel.SetActive(false);
         currentSettlement = null;
+
+        // Play UI menu close sound
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayUIMenuClose();
+        }
     }
 
     public void OnRecruitButton()
     {
+        // Play UI click sound
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayUIClick();
+        }
+
         Debug.Log($"Opening recruitment at {GetSettlementName(currentSettlement)}");
 
         uiPanel.SetActive(false);                 // Hide the settlement UI
@@ -115,6 +133,12 @@ public class SettlementUIManager : MonoBehaviour
 
     public void OnTradeButton()
     {
+        // Play UI click sound
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayUIClick();
+        }
+
         Debug.Log($"Opening trade at {GetSettlementName(currentSettlement)}");
         // TODO: Open trade UI
     }
@@ -157,6 +181,11 @@ public class SettlementUIManager : MonoBehaviour
         {
             cardButton.onClick.AddListener(() =>
             {
+                // Play UI click sound
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayUIClick();
+                }
                 troopSelectionPanelScript.Open(troop);
             });
         }

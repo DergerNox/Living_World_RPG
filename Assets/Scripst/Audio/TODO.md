@@ -11,3 +11,4 @@
 - [x] Integrate sound effects into battle logic
 - [x] Integrate sound effects into action events
 - [x] Update main Sound and Audio System TODO to mark sound effects as implemented
+- [x] Integrate audio with UI interactions (button clicks, menu open/close)

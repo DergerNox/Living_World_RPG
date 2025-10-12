@@ -28,6 +28,11 @@ public class AudioManager : MonoBehaviour
     public AudioClip itemPickupSound;
     public AudioClip questCompleteSound;
 
+    [Header("UI Sound Effects")]
+    public AudioClip uiClickSound;
+    public AudioClip uiMenuOpenSound;
+    public AudioClip uiMenuCloseSound;
+
     private void Awake()
     {
         if (Instance == null)
@@ -168,5 +173,20 @@ public class AudioManager : MonoBehaviour
     public void PlayQuestCompleteSound()
     {
         PlaySoundEffect(questCompleteSound);
+    }
+
+    public void PlayUIClick()
+    {
+        PlaySoundEffect(uiClickSound);
+    }
+
+    public void PlayUIMenuOpen()
+    {
+        PlaySoundEffect(uiMenuOpenSound);
+    }
+
+    public void PlayUIMenuClose()
+    {
+        PlaySoundEffect(uiMenuCloseSound);
     }
 }
