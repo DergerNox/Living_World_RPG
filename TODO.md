@@ -1,0 +1,1 @@
+- [x] Add Unity-specific entries to .gitignore to ignore Library/, Temp/, build outputs, IDE caches, and other generated files.

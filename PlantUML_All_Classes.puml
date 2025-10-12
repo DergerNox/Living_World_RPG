@@ -1,0 +1,391 @@
+@startuml
+class Characters {
+  - name : string
+  - health : int
+  - maxHealth : int
+  - mana : int
+  - maxMana : int
+  - gold : int
+  - level : int
+  - experience : int
+  - skillBook : List<Skill>
+  - party : Party
+  + Name : string
+  + Health : int
+  + MaxHealth : int
+  + Mana : int
+  + MaxMana : int
+  + Gold : int
+  + Level : int
+  + Experience : int
+  + SkillBook : List<Skill>
+  + Party : Party
+  + Characters(name: string, maxHealth: int, maxMana: int, level: int)
+  + Characters()
+  + GainExperience(exp: int)
+  - LevelUp()
+  + AddGold(amount: int)
+  + SpendGold(amount: int)
+}
+
+class NPC {
+  - npcName : string
+  - factionId : int
+  - gridPosition : Vector3Int
+  + Initialize(name: string, factionId: int, position: Vector3Int)
+  + NPC()
+}
+NPC --|> Characters
+
+class Player {
+  + Player(name: string, maxHealth: int, maxMana: int, level: int)
+}
+Player --|> Characters
+
+class NPC2DController {
+  - currentState : State
+  - waypoints : Transform[]
+  - stoppingDistance : float
+  - moveSpeed : float
+  - waitMin : float
+  - waitMax : float
+  - talkRadius : float
+  - playerTag : string
+  - path : List<Vector3Int>
+  - pathIndex : int
+  - rb : Rigidbody2D
+  - currentWaypointIndex : int
+  - isWaiting : bool
+  - playerTransform : Transform
+  + Awake()
+  + Update()
+  + FixedUpdate()
+  + PatrolMove()
+  + DirectMoveTo(target: Vector3)
+  + WaitAtWaypoint(t: float)
+  + InteractWithPlayer()
+  + OnDrawGizmos()
+}
+
+class NPCSpawner {
+  - npcPrefab : GameObject
+  - numberOfNPCs : int
+  - npcParent : Transform
+  + Start()
+  + SpawnNPCs()
+}
+
+class PathfindingManager {
+  - nodeSize : float
+  - gridSize : Vector2Int
+  - grid : Node[,]
+  + Instance : PathfindingManager
+  + Awake()
+  + InitGrid()
+  + FindPath(startCell: Vector3Int, targetCell: Vector3Int) : List<Vector3Int>
+}
+
+class WorldHandler {
+  - player : Player
+  - castles : List<Castle>
+  - towns : List<Town>
+  - villages : List<Village>
+  - factions : List<Faction>
+  + Player : Player
+  + Castles : List<Castle>
+  + Towns : List<Town>
+  + Villages : List<Village>
+  + Factions : List<Faction>
+  + GetTownAtPosition(position: Vector3Int) : Town
+  + GetCastleAtPosition(position: Vector3Int) : Castle
+  + GetVillageAtPosition(position: Vector3Int) : Village
+}
+
+class WalkerGenerator {
+  - random : System.Random
+  - gridHandler : Grid[,]
+  - Walkers : List<WalkerObject>
+  - floorTilemap : Tilemap
+  - structureTilemap : Tilemap
+  - Floor : Tile
+  - Wall : Tile
+  - Castle : Tile
+  - Town : Tile
+  - Village : Tile
+  - MapWidth : int
+  - MapHeight : int
+  - maxNumOfWalkers : int
+  - tileCount : int
+  - CastleCount : int
+  - TownCount : int
+  - VillageCount : int
+  - waitTime : float
+  - fillPercentage : float
+  - NumberOfFactions : int
+  - GameLogic : GameObject
+  + Start()
+  + InitializeGrid()
+  + CreateFloors()
+  + CreateCastles()
+  + CreateTowns()
+  + CreateVillages()
+}
+
+interface ISettlement {
+  + PosX : int
+  + PosY : int
+  + FactionId : int
+}
+
+class FactionMaker {
+  + Instance : FactionMaker
+  - numberOfFactions : int
+  - Factions : List<Faction>
+  + Awake()
+  + AssignFactions(castles: Dictionary<Vector3Int, Castle>, towns: Dictionary<Vector3Int, Town>, villages: Dictionary<Vector3Int, Village>)
+  + CreateFactions()
+}
+
+class Faction {
+  - name : string
+  - id : int
+  - center : Vector2
+  - castles : List<Castle>
+  - towns : List<Town>
+  - villages : List<Village>
+  + Name : string
+  + Center : Vector2
+  + Castles : List<Castle>
+  + Towns : List<Town>
+  + Villages : List<Village>
+  + Id : int
+  + Faction(name: string, center: Vector2, id: int)
+}
+
+class WalkerObject {
+  + Posistion : Vector2
+  + Direction : Vector2
+  + ChanceToChange : float
+  + WalkerObject(pos: Vector2, dir: Vector2, chanceToChange: float)
+}
+
+class Battle {
+  - attackingParties : List<Party>
+  - defendingParties : List<Party>
+  + AttackingParties : List<Party>
+  + DefendingParties : List<Party>
+  + BattleIndividual(i_troopA: Troop, i_troopB: Troop) : bool
+  + BattleParties(i_attackingParties: List<Party>, i_defendingParties: List<Party>)
+}
+
+class Buildings {
+}
+
+class CameraFollow {
+  + target : Transform
+  + offset : Vector3
+  + smoothSpeed : float
+  + LateUpdate()
+}
+
+class NameGenerator {
+  - prefixes : List<string>
+  - suffixes : List<string>
+  + NameGenerator()
+  + GenerateName() : string
+}
+
+class Skill {
+  - skillType : SkillType
+  - skillLevel : int
+  - skillName : string
+  - skillDescription : string
+  - skillModifier : double
+  - skillCost : int
+  - isPassive : bool
+  + SkillType : SkillType
+  + SkillLevel : int
+  + SkillName : string
+  + SkillDescription : string
+  + SkillModifier : double
+  + SkillCost : int
+  + IsPassive : bool
+}
+
+class SkillBook {
+  - skills : List<Skill>
+  - activeSkills : List<Skill>
+  - passiveSkills : List<Skill>
+  - warriorSkills : List<Skill>
+  - mageSkills : List<Skill>
+  - rogueSkills : List<Skill>
+}
+
+enum SkillType {
+  Mage
+  Warrior
+  Rogue
+}
+
+class Troop {
+  - name : string
+  - troopType : TroopType
+  - rank : TroopRank
+  - damage : int
+  - health : int
+  - armor : int
+  - speed : int
+  - experience : int
+  - level : int
+  - isAlive : bool
+  - cost : int
+  - unitImage : Sprite
+  + Name : string
+  + Damage : int
+  + Health : int
+  + Armor : int
+  + Speed : int
+  + Experience : int
+  + Level : int
+  + IsAlive : bool
+  + TroopType : TroopType
+  + Rank : TroopRank
+  + Cost : int
+  + UnitImage : Sprite
+  + Troop(type: TroopType)
+  + GainExperience(amount: int)
+  + UpdateRank()
+  + GetTroopImage(type: TroopType, rank: TroopRank) : Sprite
+}
+
+class TroopCard {
+  + troopImage : Image
+  + troopName : TextMeshProUGUI
+  + SetUpTroopCard(troop: Troop)
+}
+
+enum TroopRank {
+  Recruit
+  Footman
+  Veteran
+  Sergeant
+  Champion
+  Rider
+  Horseman
+  Lancer
+  Knight
+  Cavalier
+  Bowman
+  Archer
+  Sharpshooter
+  Ranger
+  Marksman
+  Tinkerer
+  Mechanic
+  Engineer
+  SiegeMaster
+  GrandEngineer
+}
+
+class Heap<T> {
+  - items : T[]
+  - count : int
+  + Add(item: T)
+  + RemoveFirst() : T
+  + UpdateItem(item: T)
+  + Count : int
+  + Contains(item: T) : bool
+}
+
+abstract class HeapItem<T> {
+  + HeapIndex : int
+  + CompareTo(other: T) : int
+}
+
+interface IInteractable {
+  + Interact(interactor: GameObject)
+}
+
+class Node {
+  + Position : Vector3Int
+  + Walkable : bool
+  + GCost : int
+  + HCost : int
+  + Parent : Node
+  + FCost : int
+  + Node(walkable: bool, position: Vector3Int)
+  + CompareTo(other: Node) : int
+}
+
+class PlayerInteraction {
+  + interactKey : KeyCode
+  + interactRadius : float
+  + interactableLayer : LayerMask
+  + Update()
+  + OnDrawGizmosSelected()
+}
+
+class SettlementInteractable {
+  + Type : SettlementType
+  + SettlementName : string
+  + Interact(interactor: GameObject)
+}
+
+class SettlementUIManager {
+  + uiPanel : GameObject
+  + recruitmentPanel : GameObject
+  + TroopSelectionPanel : GameObject
+  + troopSelectionPanelScript : TroopSelectionPanel
+  + settlementNameText : TextMeshProUGUI
+  + recruitButton : Button
+  + tradeButton : Button
+  + troopContainer : Transform
+  + troopCardPrefab : GameObject
+  + currentSettlement : ISettlement
+  + Start()
+  + Update()
+  + OpenSettlementUI(settlement: ISettlement)
+  + CloseUI()
+  + OnRecruitButton()
+  + OnCloseRecruitment()
+  + OnTradeButton()
+  + LoadTroopCards(availableUnits: List<Troop>)
+  + RecruitTroop(selectedTroop: Troop)
+}
+
+class TroopSelectionPanel {
+  + troopNameText : TextMeshProUGUI
+  + troopImage : Image
+  + unitCostText : TextMeshProUGUI
+  + quantityInput : TMP_InputField
+  + quantitySlider : Slider
+  + totalCostText : TextMeshProUGUI
+  + confirmButton : Button
+  + cancelButton : Button
+  + settlementPanel : GameObject
+  + recruitmentPanel : GameObject
+  + Open(troop: Troop)
+  + OnSliderChanged(value: float)
+  + OnInputFieldChanged(value: string)
+  + UpdateTotalCost()
+  + OnConfirm()
+  + Close()
+}
+
+FactionMaker --> Faction
+Faction "1" *-- "*" Castle
+Faction "1" *-- "*" Town
+Faction "1" *-- "*" Village
+WalkerGenerator --> FactionMaker
+WorldHandler --> Player
+WorldHandler --> Castle
+WorldHandler --> Town
+WorldHandler --> Village
+WorldHandler --> Faction
+NPCSpawner --> NPC
+NPC --> Characters
+NPC2DController --> PathfindingManager
+PathfindingManager --> Node
+Heap <|-- HeapItem
+SettlementInteractable ..|> IInteractable
+@enduml

@@ -361,3 +361,42 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Unity specific ignores
+[Ll]ibrary/
+[Tt]emp/
+[Bb]uild/
+[Bb]uild~/
+ExportedObj/
+.consulo/
+*.unityproj
+*.booproj
+*.svd
+*.opendb
+*.VC.db
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+*.apk
+*.aab
+*.unitypackage
+*.app
+crashlytics-build.properties
+*.unity3d
+*.dll
+*.so
+*.dylib
+*.exe
+*.out
+*.appx
+*.appxbundle
+.vscode/
+.idea/
+.gradle/
+packages/
+yarn.lock
+TemplateData/
+.DS_Store
+Thumbs.db
+*~

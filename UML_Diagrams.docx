@@ -1,0 +1,13 @@
+I will create a Word document containing UML class diagrams for all classes and enums found in Assets/Scripst and its subfolders. The diagrams will be represented in PlantUML format for easy rendering.
+
+The document will include:
+- Battle
+- Buildings
+- CameraFollow
+- Characters and NPC
+- FactionMaker and Faction
+- Interactions (PathfindingManager, Node, Heap, etc. if needed)
+- Skill, SkillBook, SkillType enum
+- Other classes as found
+
+I will now generate the PlantUML diagrams and embed them in the Word document.
