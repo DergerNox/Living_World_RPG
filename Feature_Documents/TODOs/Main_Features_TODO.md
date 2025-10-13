@@ -9,11 +9,11 @@ This document summarizes the main features of the Living World RPG project and t
 - [x] Economy and Trade System (Implemented) [Feature_Economy_and_Trade_System_TODO.md]
 - [x] Quest and Story System (Implemented) [Feature_Quest_and_Story_System_TODO.md]
 - [x] Time and Weather System (Implemented) [Feature_Time_and_Weather_System_TODO.md]
-- [Sound and Audio System](Feature_Sound_and_Audio_System_TODO.md)
-- [Visual Effects and Graphics Enhancements](Feature_Visual_Effects_and_Graphics_Enhancements_TODO.md)
-- [AI and NPC Behavior](Feature_AI_and_NPC_Behavior_TODO.md)
-- [Skill System](Feature_Skill_System_TODO.md)
-- [Battle System](Feature_Battle_System_TODO.md)
+- [x] Sound and Audio System (Implemented) [Feature_Sound_and_Audio_System_TODO.md]
+- [x] Visual Effects and Graphics Enhancements (Implemented) [Feature_Visual_Effects_and_Graphics_Enhancements_TODO.md]
+- [x] AI and NPC Behavior (Implemented) [Feature_AI_and_NPC_Behavior_TODO.md]
+- [x] Skill System (Implemented) [Feature_Skill_System_TODO.md]
+- [x] Battle System (Implemented) [Feature_Battle_System_TODO.md]
 - [Party System](Feature_Party_System_TODO.md)
 - [Troop System](Feature_Troop_System_TODO.md)
 - [Settlement Management](Feature_Settlement_Management_TODO.md)

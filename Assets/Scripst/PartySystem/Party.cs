@@ -9,6 +9,7 @@ public class Party
     public Characters Leader { get => leader; set => leader = value; }
     public List<Characters> Members { get => members; set => members = value; }
     public List<Troop> Troops { get => troops; set => troops = value; }
+    public Formation CurrentFormation { get; set; } = new Formation(FormationType.Line);
     public List<Resources> Resources { get => resources; set => resources = value; }
     public List<AdvancedResources> AdvancedResources { get => advancedResources; set => advancedResources = value; }
     public PartyType PartyType { get => partyType; set => partyType = value; }
