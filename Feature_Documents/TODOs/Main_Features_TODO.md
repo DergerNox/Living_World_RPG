@@ -15,8 +15,8 @@ This document summarizes the main features of the Living World RPG project and t
 - [x] Skill System (Implemented) [Feature_Skill_System_TODO.md]
 - [x] Battle System (Implemented) [Feature_Battle_System_TODO.md]
 - [x] Party System (Implemented) [Feature_Party_System_TODO.md]
-- [Troop System](Feature_Troop_System_TODO.md)
-- [Settlement Management](Feature_Settlement_Management_TODO.md)
+- [x] Troop System (Implemented) [Feature_Troop_System_TODO.md]
+- [x] Settlement Management (Implemented) [Feature_Settlement_Management_TODO.md]
 - [World Management](Feature_World_Management_TODO.md)
 - [UI System](Feature_UI_System_TODO.md)
 - [Pathfinding](Feature_Pathfinding_TODO.md)

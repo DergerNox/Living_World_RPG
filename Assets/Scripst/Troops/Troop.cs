@@ -19,6 +19,9 @@ public class Troop
     public int Attack { get; set; } = 10;
     public int Defense { get; set; } = 5;
 
+    // Special abilities
+    public List<SpecialAbility> SpecialAbilities { get; set; } = new List<SpecialAbility>();
+
     // Private Fields
     private string name;
     private TroopType troopType;
@@ -47,6 +50,9 @@ public class Troop
 
         // Assign the correct image based on type and rank
         UnitImage = GetTroopImage(troopType, rank);
+
+        // Initialize special abilities based on type
+        InitializeSpecialAbilities();
     }
 
     // Methods
@@ -182,7 +188,7 @@ public class Troop
 {
     // Format the image name based on troop type and rank (both converted to strings)
     string imageName = $"{type.ToString()}_{rank.ToString()}";
-    
+
     // Debug log to check the image name
     Debug.Log($"Looking for image: {imageName}");
 
@@ -196,5 +202,47 @@ public class Troop
 
     return sprite;
 }
+
+    private void InitializeSpecialAbilities()
+    {
+        switch (troopType)
+        {
+            case TroopType.Infantry:
+                SpecialAbilities.Add(new SpecialAbility("Shield Wall", "Increases defense for all nearby infantry", AbilityType.Defensive, 3f, (user, target) =>
+                {
+                    // Implement shield wall logic - increase defense temporarily
+                    user.Defense += 5;
+                    Debug.Log($"{user.Name} uses Shield Wall!");
+                }));
+                break;
+            case TroopType.Archer:
+                SpecialAbilities.Add(new SpecialAbility("Volley Fire", "Fires multiple arrows at once", AbilityType.Offensive, 4f, (user, target) =>
+                {
+                    // Implement volley fire - increased damage
+                    int extraDamage = user.Damage;
+                    target.Health -= extraDamage;
+                    Debug.Log($"{user.Name} uses Volley Fire on {target.Name}!");
+                }));
+                break;
+            case TroopType.Cavalry:
+                SpecialAbilities.Add(new SpecialAbility("Charge", "Powerful charge attack with bonus damage", AbilityType.Offensive, 5f, (user, target) =>
+                {
+                    // Implement charge - bonus damage
+                    int chargeDamage = user.Damage * 2;
+                    target.Health -= chargeDamage;
+                    Debug.Log($"{user.Name} charges at {target.Name}!");
+                }));
+                break;
+            case TroopType.Engineer:
+                SpecialAbilities.Add(new SpecialAbility("Repair", "Repairs nearby structures or heals allies", AbilityType.Support, 6f, (user, target) =>
+                {
+                    // Implement repair - heal target
+                    target.Health += 20;
+                    if (target.Health > 100) target.Health = 100; // Assuming max health
+                    Debug.Log($"{user.Name} repairs {target.Name}!");
+                }));
+                break;
+        }
+    }
 
 }

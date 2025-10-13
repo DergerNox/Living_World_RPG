@@ -45,6 +45,9 @@ public class Village : ISettlement
 
         RecruitmentPool = new List<Troop>();
         AddRank1And2Troops();
+
+        // Initialize with basic buildings
+        InitializeBuildings();
     }
 
     // Method to add rank 1 and 2 troops to the village's recruitment pool
@@ -64,6 +67,53 @@ public class Village : ISettlement
             rank2Troop.Level = 2;
             rank2Troop.UpdateRank(); // Ensure the rank is updated based on level
             RecruitmentPool.Add(rank2Troop);
+        }
+    }
+
+    private void InitializeBuildings()
+    {
+        // Add basic buildings for village
+        Buildings.Add(new Buildings(BuildingType.Farm) { IsBuilt = true });
+    }
+
+    public void BuildBuilding(BuildingType type)
+    {
+        Buildings newBuilding = new Buildings(type);
+        // Villages have limited building capacity
+        if (Buildings.Count < 3)
+        {
+            Buildings.Add(newBuilding);
+            ApplyBuildingEffects(newBuilding);
+            Debug.Log($"Built {newBuilding.Name} in {Name}.");
+        }
+        else
+        {
+            Debug.Log("Village cannot support more buildings!");
+        }
+    }
+
+    private void ApplyBuildingEffects(Buildings building)
+    {
+        Population += building.PopulationBonus;
+        Resources += building.IncomeBonus;
+    }
+
+    public void ProcessGrowthEvent()
+    {
+        // Simulate population growth
+        Population += Random.Range(1, 5);
+        Resources += Population / 10; // Resources based on population
+        Debug.Log($"{Name} grew! Population: {Population}, Resources: {Resources}");
+    }
+
+    public void ProcessSiegeEvent()
+    {
+        // Villages are vulnerable during sieges
+        if (Random.value < 0.3f) // 30% chance of being attacked
+        {
+            Population -= Random.Range(10, 30);
+            if (Population < 0) Population = 0;
+            Debug.Log($"{Name} suffered during siege! Population now: {Population}");
         }
     }
 }

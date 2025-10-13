@@ -44,6 +44,9 @@ public class Castle : ISettlement
 
         AvailableUnits = new List<Troop>();
         AddRank4And5Troops();
+
+        // Initialize with basic buildings
+        InitializeBuildings();
     }
 
     // Method to add rank 4 and 5 troops to the castle's available units
@@ -62,6 +65,73 @@ public class Castle : ISettlement
             rank5Troop.Level = 5;
             rank5Troop.UpdateRank();
             AvailableUnits.Add(rank5Troop);
+        }
+    }
+
+    private void InitializeBuildings()
+    {
+        // Add basic buildings for castle
+        BuildingsInCastle.Add(new Buildings(BuildingType.Wall) { IsBuilt = true });
+        BuildingsInCastle.Add(new Buildings(BuildingType.Tower) { IsBuilt = true });
+        BuildingsInCastle.Add(new Buildings(BuildingType.Barracks) { IsBuilt = true });
+    }
+
+    public void BuildBuilding(BuildingType type)
+    {
+        Buildings newBuilding = new Buildings(type);
+        if (BuildingsQueue.Count < 5) // Castles can have more in queue
+        {
+            BuildingsQueue.Enqueue(newBuilding);
+            Debug.Log($"Started building {newBuilding.Name} in {Name}. Build time: {newBuilding.BuildTime} days.");
+        }
+        else
+        {
+            Debug.Log("Building queue is full!");
+        }
+    }
+
+    public void ProcessBuildingQueue()
+    {
+        if (BuildingsQueue.Count > 0)
+        {
+            Buildings building = BuildingsQueue.Peek();
+            building.BuildTime--;
+            if (building.BuildTime <= 0)
+            {
+                BuildingsQueue.Dequeue();
+                building.IsBuilt = true;
+                BuildingsInCastle.Add(building);
+                ApplyBuildingEffects(building);
+                Debug.Log($"{building.Name} completed in {Name}!");
+            }
+        }
+    }
+
+    private void ApplyBuildingEffects(Buildings building)
+    {
+        // Apply effects specific to castle
+        MaxGarrisonSize += building.DefenseBonus; // Example: walls increase garrison capacity
+    }
+
+    public int GetTotalDefenseBonus()
+    {
+        int totalBonus = 0;
+        foreach (var building in BuildingsInCastle)
+        {
+            if (building.IsBuilt)
+            {
+                totalBonus += building.DefenseBonus;
+            }
+        }
+        return totalBonus;
+    }
+
+    public void ProcessSiegeEvent()
+    {
+        if (IsCastleUnderSiege)
+        {
+            // Handle siege mechanics for castle
+            Debug.Log($"{Name} is under siege! Defense bonus: {GetTotalDefenseBonus()}");
         }
     }
 }

@@ -55,6 +55,9 @@ public class Town : ISettlement
         Income = 1000;
         Expenses = 500;
         Taxes = 200;
+
+        // Initialize with basic buildings
+        InitializeBuildings();
     }
 
     // Method to add rank 2 and 3 troops to the town's available units
@@ -76,4 +79,78 @@ public class Town : ISettlement
         AvailableUnits.Add(rank3Troop);
     }
 }
+
+    private void InitializeBuildings()
+    {
+        // Add basic buildings
+        BuildingsInTown.Add(new Buildings(BuildingType.Farm) { IsBuilt = true });
+        BuildingsInTown.Add(new Buildings(BuildingType.Market) { IsBuilt = true });
+    }
+
+    public void BuildBuilding(BuildingType type)
+    {
+        Buildings newBuilding = new Buildings(type);
+        if (BuildingsQueue.Count < 3) // Max 3 buildings in queue
+        {
+            BuildingsQueue.Enqueue(newBuilding);
+            Debug.Log($"Started building {newBuilding.Name} in {Name}. Build time: {newBuilding.BuildTime} days.");
+        }
+        else
+        {
+            Debug.Log("Building queue is full!");
+        }
+    }
+
+    public void ProcessBuildingQueue()
+    {
+        if (BuildingsQueue.Count > 0)
+        {
+            Buildings building = BuildingsQueue.Peek();
+            building.BuildTime--;
+            if (building.BuildTime <= 0)
+            {
+                BuildingsQueue.Dequeue();
+                building.IsBuilt = true;
+                BuildingsInTown.Add(building);
+                ApplyBuildingEffects(building);
+                Debug.Log($"{building.Name} completed in {Name}!");
+            }
+        }
+    }
+
+    private void ApplyBuildingEffects(Buildings building)
+    {
+        Income += building.IncomeBonus;
+        // Other effects can be applied here
+    }
+
+    public int GetTotalDefenseBonus()
+    {
+        int totalBonus = 0;
+        foreach (var building in BuildingsInTown)
+        {
+            if (building.IsBuilt)
+            {
+                totalBonus += building.DefenseBonus;
+            }
+        }
+        return totalBonus;
+    }
+
+    public void CollectTaxes()
+    {
+        int collectedTaxes = Taxes;
+        Income += collectedTaxes;
+        Debug.Log($"Collected {collectedTaxes} gold in taxes from {Name}.");
+    }
+
+    public void ProcessSiegeEvent()
+    {
+        if (IsTownUnderSiege)
+        {
+            // Reduce population or resources during siege
+            // This could trigger battles or other events
+            Debug.Log($"{Name} is under siege!");
+        }
+    }
 }
