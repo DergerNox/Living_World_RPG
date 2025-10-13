@@ -12,7 +12,7 @@ public class Characters
     public int Gold { get { return gold; } set { gold = value; } }
     public int Level { get { return level; } set { level = value; } }
     public int Experience { get { return experience; } set { experience = value; } }
-    public List<Skill> SkillBook { get { return skillBook; } set { skillBook = value; } }
+    public SkillBook SkillBook { get { return skillBook; } set { skillBook = value; } }
     public Party Party { get { return party; } set { party = value; } }
     public Inventory Inventory { get; set; } = new Inventory();
     public Equipment Equipment { get; set; } = new Equipment();
@@ -28,7 +28,7 @@ public class Characters
         this.level = level;
         this.experience = 0;
         this.gold = 0;
-        this.skillBook = new List<Skill>();
+        this.skillBook = new SkillBook();
         this.Inventory = new Inventory();
         this.Equipment = new Equipment();
         this.Attack = 10;
@@ -116,6 +116,6 @@ public class Characters
     private int gold;
     private int level;
     private int experience;
-    private List<Skill> skillBook;
+    private SkillBook skillBook;
     private Party party;
 }

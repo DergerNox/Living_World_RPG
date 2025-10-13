@@ -15,7 +15,7 @@ public class Player:Characters
         Level = level;
         Experience = 0;
         Gold = 1000; // Starting gold
-        SkillBook = new List<Skill>();
+        SkillBook = new SkillBook();
         Party = new Party(); // Initialize party
         Party.Leader = this; // Set the player as the party leader
         Inventory.AddItem(new Item { name = "Sword", type = ItemType.Weapon, attackBonus = 5 });

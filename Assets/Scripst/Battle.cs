@@ -17,7 +17,17 @@ public class Battle
                 AudioManager.Instance.PlayAttackSound();
             }
 
-            i_troopA.Health-=i_troopB.Damage;
+            // Check for skill usage (simplified: random chance to use a skill)
+            int damage = i_troopB.Damage;
+            if (Random.value < 0.3f && i_troopA.SkillBook.GetActiveSkills().Count > 0)
+            {
+                Skill randomSkill = i_troopA.SkillBook.GetActiveSkills()[Random.Range(0, i_troopA.SkillBook.GetActiveSkills().Count)];
+                randomSkill.UseSkill(i_troopA);
+                // Skills might modify attack, so recalculate damage
+                damage = Mathf.Max(1, i_troopA.Attack - i_troopB.Defense);
+            }
+
+            i_troopA.Health -= damage;
             if(i_troopA.Health<=0)
             {
                 i_troopA.IsAlive=false;
