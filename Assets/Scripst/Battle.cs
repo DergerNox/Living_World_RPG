@@ -35,6 +35,11 @@ public class Battle
                 {
                     AudioManager.Instance.PlayHitSound();
                 }
+                // Play hit visual effect
+                if (VisualEffectManager.Instance != null)
+                {
+                    VisualEffectManager.Instance.PlayHitEffect(i_troopA.transform.position);
+                }
             }
 
             // Play attack sound for troopB
@@ -60,6 +65,11 @@ public class Battle
                 if (AudioManager.Instance != null)
                 {
                     AudioManager.Instance.PlayHitSound();
+                }
+                // Play hit visual effect
+                if (VisualEffectManager.Instance != null)
+                {
+                    VisualEffectManager.Instance.PlayHitEffect(i_troopB.transform.position);
                 }
             }
         }

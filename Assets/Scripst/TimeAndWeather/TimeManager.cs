@@ -38,6 +38,12 @@ public class TimeManager : MonoBehaviour
                 minute = 0;
                 hour++;
                 OnHourChanged?.Invoke();
+                // Update lighting based on time
+                if (LightingManager.Instance != null)
+                {
+                    float timeOfDay = (hour * 60f + minute) / 1440f; // 1440 minutes in a day
+                    LightingManager.Instance.UpdateLightingBasedOnTime(timeOfDay);
+                }
                 if (hour >= 24)
                 {
                     hour = 0;
