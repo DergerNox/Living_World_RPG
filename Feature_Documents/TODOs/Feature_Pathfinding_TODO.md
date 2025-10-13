@@ -1,6 +1,6 @@
 # Pathfinding TODO
 
-- Optimize performance for large grids.
-- Implement multi-agent pathfinding to avoid collisions.
-- Add dynamic obstacle updates.
+- [x] Optimize performance for large grids.
+- [x] Implement multi-agent pathfinding to avoid collisions.
+- [x] Add dynamic obstacle updates.
 - Test pathfinding accuracy and efficiency.

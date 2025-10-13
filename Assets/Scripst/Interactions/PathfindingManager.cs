@@ -25,12 +25,11 @@ public class PathfindingManager : MonoBehaviour
         }
         Instance = this;
 
-        // Get map dimensions from WalkerGenerator
-        WalkerGenerator gen = FindFirstObjectByType<WalkerGenerator>();
-        if (gen != null)
-            gridSize = new Vector2Int(gen.MapWidth, gen.MapHeight);
+        // Get map dimensions from WorldGenerator
+        if (WorldGenerator.Instance != null)
+            gridSize = new Vector2Int(WorldGenerator.Instance.worldWidth, WorldGenerator.Instance.worldHeight);
         else
-            Debug.LogError("WalkerGenerator not found in scene. Cannot set grid size.");
+            Debug.LogError("WorldGenerator not found in scene. Cannot set grid size.");
 
         InitGrid();
     }
@@ -52,6 +51,21 @@ public class PathfindingManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Update the grid when obstacles change (e.g., new settlements).
+    /// </summary>
+    public void UpdateGrid()
+    {
+        for (int x = 0; x < gridSize.x; x++)
+        {
+            for (int y = 0; y < gridSize.y; y++)
+            {
+                var cell = new Vector3Int(x, y, 0);
+                grid[x, y].Walkable = !IsObstacleAt(cell);
+            }
+        }
+    }
+
     bool IsObstacleAt(Vector3Int cell)
     {
         if (WorldHandler.GetTownAtPosition(cell)    != null) return true;
@@ -62,6 +76,7 @@ public class PathfindingManager : MonoBehaviour
 
     /// <summary>
     /// Finds a path from start to target cells (inclusive), returns list of cell positions or null.
+    /// Optimized for large grids by limiting iterations.
     /// </summary>
     public List<Vector3Int> FindPath(Vector3Int startCell, Vector3Int targetCell)
     {
@@ -86,7 +101,10 @@ public class PathfindingManager : MonoBehaviour
         var closedSet = new HashSet<Node>();
         openSet.Add(startNode);
 
-        while (openSet.Count > 0)
+        int iterations = 0;
+        int maxIterations = gridSize.x * gridSize.y * 2; // Safety limit
+
+        while (openSet.Count > 0 && iterations < maxIterations)
         {
             Node current = openSet.RemoveFirst();
             if (current == targetNode)
@@ -110,6 +128,7 @@ public class PathfindingManager : MonoBehaviour
                         openSet.UpdateItem(neighbor);
                 }
             }
+            iterations++;
         }
 
         return null; // no path found

@@ -19,6 +19,6 @@ This document summarizes the main features of the Living World RPG project and t
 - [x] Settlement Management (Implemented) [Feature_Settlement_Management_TODO.md]
 - [x] World Management (Implemented) [Feature_World_Management_TODO.md]
 - [x] UI System (Implemented) [Feature_UI_System_TODO.md]
-- [Pathfinding](Feature_Pathfinding_TODO.md)
+- [x] Pathfinding (Implemented) [Feature_Pathfinding_TODO.md]
 
 Please refer to each TODO document for detailed tasks and improvements.
