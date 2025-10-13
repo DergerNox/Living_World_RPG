@@ -140,7 +140,52 @@ public class SettlementUIManager : MonoBehaviour
         }
 
         Debug.Log($"Opening trade at {GetSettlementName(currentSettlement)}");
-        // TODO: Open trade UI
+        // TODO: Implement trade UI
+    }
+
+    public void OnStatsButton()
+    {
+        // Play UI click sound
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayUIClick();
+        }
+
+        // Open character stats UI for player
+        if (CharacterStatsUI.Instance != null && WorldHandler.Player != null)
+        {
+            CharacterStatsUI.Instance.OpenStatsUI(WorldHandler.Player);
+        }
+    }
+
+    public void OnInventoryButton()
+    {
+        // Play UI click sound
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayUIClick();
+        }
+
+        // Open inventory UI for player
+        if (InventoryUI.Instance != null && WorldHandler.Player != null)
+        {
+            InventoryUI.Instance.OpenInventory(WorldHandler.Player);
+        }
+    }
+
+    public void OnWorldMapButton()
+    {
+        // Play UI click sound
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayUIClick();
+        }
+
+        // Open world map UI
+        if (WorldMapUI.Instance != null)
+        {
+            WorldMapUI.Instance.OpenWorldMap();
+        }
     }
 
     private string GetSettlementName(ISettlement settlement)

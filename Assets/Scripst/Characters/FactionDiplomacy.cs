@@ -26,8 +26,9 @@ public class FactionDiplomacy : MonoBehaviour
         InitializeDiplomacy();
     }
 
-    private void InitializeDiplomacy()
+    public void InitializeDiplomacy()
     {
+        diplomacyMatrix.Clear();
         // Get all factions from WorldHandler
         var factions = WorldHandler.Factions;
         foreach (var factionA in factions)
@@ -39,6 +40,23 @@ public class FactionDiplomacy : MonoBehaviour
                     // Default to Neutral
                     diplomacyMatrix[(factionA.Id, factionB.Id)] = DiplomacyStatus.Neutral;
                     diplomacyMatrix[(factionB.Id, factionA.Id)] = DiplomacyStatus.Neutral;
+                }
+            }
+        }
+
+        // Randomly set some alliances and hostilities
+        for (int i = 0; i < factions.Count; i++)
+        {
+            for (int j = i + 1; j < factions.Count; j++)
+            {
+                float rand = Random.value;
+                if (rand < 0.2f) // 20% chance for alliance
+                {
+                    FormAlliance(factions[i].Id, factions[j].Id);
+                }
+                else if (rand < 0.3f) // 10% chance for hostility
+                {
+                    SetDiplomacyStatus(factions[i].Id, factions[j].Id, DiplomacyStatus.Hostile);
                 }
             }
         }

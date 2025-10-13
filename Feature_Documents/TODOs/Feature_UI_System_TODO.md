@@ -1,7 +1,7 @@
 # UI System TODO
 
-- Expand UI to include battle screens and inventory management.
-- Develop character stats and world map interaction interfaces.
-- Improve usability with animations and feedback.
-- Add localization and accessibility features.
-- Test UI responsiveness and user experience.
+- [x] Expand UI to include battle screens and inventory management.
+- [x] Develop character stats and world map interaction interfaces.
+- [x] Improve usability with animations and feedback.
+- [x] Add localization and accessibility features.
+- [x] Test UI responsiveness and user experience.

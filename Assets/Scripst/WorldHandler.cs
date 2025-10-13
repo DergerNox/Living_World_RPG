@@ -20,8 +20,14 @@ public class WorldHandler : MonoBehaviour
     void Start()
     {
         player = new Player("Player");
-        
-        Debug.Log(Factions.Count);
+
+        // Generate world if not already done
+        if (WorldGenerator.Instance != null)
+        {
+            WorldGenerator.Instance.GenerateWorld();
+        }
+
+        Debug.Log($"World generated with {Factions.Count} factions, {Castles.Count} castles, {Towns.Count} towns, {Villages.Count} villages.");
     }
 
     // Update Method
