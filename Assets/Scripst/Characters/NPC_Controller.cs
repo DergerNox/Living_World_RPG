@@ -5,7 +5,7 @@ using System.Collections.Generic;
 [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
 public class NPC2DController : MonoBehaviour
 {
-    public enum State { Patrol, Waiting, Interacting }
+    public enum State { Patrol, Waiting, Interacting, Working, Sleeping, Eating, Wandering }
     private State currentState = State.Patrol;
 
     [Header("Patrol Settings")]
@@ -63,6 +63,18 @@ public class NPC2DController : MonoBehaviour
                 break;
             case State.Interacting:
                 InteractWithPlayer();
+                break;
+            case State.Working:
+                HandleWorking();
+                break;
+            case State.Sleeping:
+                HandleSleeping();
+                break;
+            case State.Eating:
+                HandleEating();
+                break;
+            case State.Wandering:
+                HandleWandering();
                 break;
         }
     }
@@ -130,6 +142,36 @@ public class NPC2DController : MonoBehaviour
         playerTransform = null;
         currentState = State.Patrol;
         path = null;
+    }
+
+    void HandleWorking()
+    {
+        // Simulate working: stay in place or move to work location
+        rb.linearVelocity = Vector2.zero;
+    }
+
+    void HandleSleeping()
+    {
+        // Simulate sleeping: stay in place
+        rb.linearVelocity = Vector2.zero;
+    }
+
+    void HandleEating()
+    {
+        // Simulate eating: stay in place or move to food location
+        rb.linearVelocity = Vector2.zero;
+    }
+
+    void HandleWandering()
+    {
+        // Random wandering: similar to patrolling but without fixed waypoints
+        if (!isWaiting)
+        {
+            // Move to a random nearby location
+            Vector3 randomTarget = transform.position + new Vector3(Random.Range(-5f, 5f), Random.Range(-5f, 5f), 0);
+            DirectMoveTo(randomTarget);
+            StartCoroutine(WaitAtWaypoint(Random.Range(waitMin, waitMax)));
+        }
     }
 
     void OnDrawGizmos()
