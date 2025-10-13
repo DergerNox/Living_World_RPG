@@ -27,6 +27,14 @@ public class WorldHandler : MonoBehaviour
     // Update Method
     void Update()
     {
+        // Update party positions periodically (e.g., every few seconds)
+        if (Time.frameCount % 300 == 0) // Every 5 seconds at 60fps
+        {
+            if (PartyManager.Instance != null)
+            {
+                PartyManager.Instance.UpdatePartyPositions();
+            }
+        }
     }
 
     // Get the Town at a specific position

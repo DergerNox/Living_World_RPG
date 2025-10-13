@@ -14,7 +14,7 @@ This document summarizes the main features of the Living World RPG project and t
 - [x] AI and NPC Behavior (Implemented) [Feature_AI_and_NPC_Behavior_TODO.md]
 - [x] Skill System (Implemented) [Feature_Skill_System_TODO.md]
 - [x] Battle System (Implemented) [Feature_Battle_System_TODO.md]
-- [Party System](Feature_Party_System_TODO.md)
+- [x] Party System (Implemented) [Feature_Party_System_TODO.md]
 - [Troop System](Feature_Troop_System_TODO.md)
 - [Settlement Management](Feature_Settlement_Management_TODO.md)
 - [World Management](Feature_World_Management_TODO.md)
