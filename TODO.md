@@ -1,1 +1,18 @@
-- [x] Add Unity-specific entries to .gitignore to ignore Library/, Temp/, build outputs, IDE caches, and other generated files.
+- [x] Expand Unity Editor Steps for Save/Load System with detailed explanations
+- [x] Expand Unity Editor Steps for Inventory and Equipment System with detailed explanations
+- [x] Expand Unity Editor Steps for Skill System with detailed explanations
+- [x] Expand Unity Editor Steps for Battle System with detailed explanations
+- [x] Expand Unity Editor Steps for Party System with detailed explanations
+- [x] Expand Unity Editor Steps for Troop System with detailed explanations
+- [x] Expand Unity Editor Steps for Settlement Management with detailed explanations
+- [x] Expand Unity Editor Steps for Economy and Trade System with detailed explanations
+- [x] Expand Unity Editor Steps for World Management with detailed explanations
+- [x] Expand Unity Editor Steps for Quest and Story System with detailed explanations
+- [x] Expand Unity Editor Steps for Time and Weather System with detailed explanations
+- [x] Expand Unity Editor Steps for AI and NPC Behavior with detailed explanations
+- [x] Expand Unity Editor Steps for UI System with detailed explanations
+- [x] Expand Unity Editor Steps for Pathfinding with detailed explanations
+- [x] Expand Unity Editor Steps for Resources and Buildings with detailed explanations
+- [x] Expand Unity Editor Steps for Visual Effects and Graphics Enhancements with detailed explanations
+- [x] Expand Unity Editor Steps for Sound and Audio System with detailed explanations
+- [x] Expand Unity Editor Steps for Character System with detailed explanations

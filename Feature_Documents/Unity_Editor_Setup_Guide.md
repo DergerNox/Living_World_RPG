@@ -5,14 +5,15 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 ---
 
 ## 1. Save/Load System
-**Classes Involved:** `SaveLoadManager`, `GameData`
+**Classes Involved:** `SaveLoadManager`, `GameManager`, `GameData`
 
 **Unity Editor Steps:**
-- Create a new GameObject in your main scene (e.g., "GameManager") and attach the `SaveLoadManager` script to it.
-- In the Inspector for `SaveLoadManager`, assign any required references (e.g., paths for save files if not hardcoded).
-- Set up UI for save/load menus: Create a Canvas, add Buttons for "Save" and "Load", and attach event handlers to call methods like `SaveGame()` and `LoadGame()` from `SaveLoadManager`.
-- Ensure the `GameData` class is serializable; no direct editor setup needed beyond script compilation.
-- Test by playing the scene and verifying saves/load via key bindings or UI.
+- **Create GameManager GameObject:** In the Unity Editor, open your main scene. In the Hierarchy window, right-click and select "Create Empty" to create a new GameObject. Rename it to "GameManager" for clarity. This GameObject will serve as the central manager for save/load operations and is implemented as a singleton.
+- **Attach Scripts:** With the "GameManager" GameObject selected, go to the Inspector window. Click the "Add Component" button, search for "GameManager" in the search bar, and select it to attach the script. Also attach "SaveLoadManager" to a separate GameObject (e.g., create another empty GameObject named "SaveLoadManager") to handle the core save/load logic.
+- **Configure Inspector Settings:** In the Inspector for the SaveLoadManager component, check for any public fields. Currently, the script uses a lazy-loaded property for the save file path (Application.persistentDataPath + "/savegame.json"), so no manual assignment is needed unless you customize it. If you add custom fields in the future, assign them here. The GameManager script has no public fields to configure.
+- **Set Up Save/Load UI:** Create a UI Canvas for menus. In the Hierarchy, right-click and select "UI > Canvas" to add a Canvas. Under the Canvas, add a Panel (UI > Panel) for the save/load menu. To prevent buttons from overlapping, select the Panel and add a Vertical Layout Group component (Component > Layout > Vertical Layout Group) in the Inspector; set Spacing to 10 for vertical separation. Inside the Panel, add two Buttons (UI > Button) labeled "Save Game" and "Load Game". Select each Button, go to the Inspector, and in the OnClick event section, drag the "GameManager" GameObject into the object field, then select "GameManager > SaveGame" or "LoadGame" from the dropdown. This uses the singleton instance to trigger save/load. To make the menu not always visible, uncheck the Panel's active checkbox in the Inspector (or set it inactive via script), and add a toggle button (e.g., "Menu" button) elsewhere in the UI to activate/deactivate the Panel.
+- **Ensure Serialization:** The `GameData` class is marked with [System.Serializable], allowing Unity to serialize it to JSON. No direct editor action is needed, but confirm the script compiles without errors in the Console window. If you add new fields to GameData, ensure they are serializable types (e.g., primitives, Unity objects, or other serializable classes).
+- **Test Functionality:** Enter Play Mode by clicking the Play button. Use the assigned UI buttons or key bindings (F5 for save, F9 for load) to save and load. Check the Console for debug logs confirming saves/loads. Verify that game state (e.g., player stats) persists across sessions by saving, stopping Play Mode, restarting, and loading.
 
 ---
 
@@ -20,12 +21,12 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `Item`, `Inventory`, `Equipment`
 
 **Unity Editor Steps:**
-- Create prefabs for items: For each item type (weapon, armor, consumable), create a GameObject, attach an `Item` script, and set properties in the Inspector (e.g., name, stats, icon sprite).
-- For the player character: Attach `Inventory` and `Equipment` scripts to the Player GameObject.
-- Set up UI: Create a Canvas with panels for inventory slots and equipment slots. Use Image components for slots and assign drag-and-drop scripts if implemented.
-- In the Inspector for `Inventory`, assign the UI slot references and item prefabs.
-- Configure equipment slots on character models: If using 3D models, add empty GameObjects as attachment points and reference them in `Equipment` for visual equipping.
-- Test by adding items to inventory and equipping them, checking stat bonuses.
+- **Create Item Prefabs:** In the Project window, right-click in the Assets folder and select "Create > Prefab" to create a new prefab for each item type (e.g., weapon, armor, consumable). Drag a GameObject (e.g., a Sprite or 3D model) into the Scene, attach the `Item` script via the Inspector's "Add Component" button, and set properties like name, stats (e.g., attack bonus), and icon sprite in the Inspector fields. Save the GameObject as a prefab by dragging it back to the Project window. Repeat for all item types to build a library of item prefabs.
+- **Attach Scripts to Player Character:** Locate the Player GameObject in the Hierarchy window of your main scene. Select it, then in the Inspector, click "Add Component" and attach the `Inventory` script. Repeat to attach the `Equipment` script. These scripts will manage the player's items and equipped gear.
+- **Set Up Inventory and Equipment UI:** In the Hierarchy, right-click and select "UI > Canvas" to create a new Canvas for the UI. Under the Canvas, add a Panel (UI > Panel) for the inventory and another for equipment. Inside each panel, add multiple Image components (UI > Image) as slots (e.g., 10-20 for inventory). If drag-and-drop is implemented, attach drag-and-drop scripts to these Images. For equipment, create specific slots (e.g., for weapon, armor) with labels or icons.
+- **Configure Inspector References:** Select the Player GameObject, and in the `Inventory` component's Inspector, assign the UI slot Images to the slot references array. Also, assign item prefabs to any initial inventory lists. In the `Equipment` component, assign the equipment slot Images and any attachment points (e.g., empty child GameObjects on the player model for visual equipping).
+- **Configure Equipment Attachment Points:** If using 3D models, select the Player GameObject, right-click in Hierarchy, and add empty GameObjects as children (e.g., "WeaponSlot", "ArmorSlot"). Position them appropriately on the model. In the `Equipment` script's Inspector, assign these GameObjects to the slot references for visual effects, such as instantiating equipped items at these positions.
+- **Test Functionality:** Enter Play Mode. Use script methods or UI interactions to add items to the inventory (e.g., via a debug button or event). Equip items and verify that stats update (e.g., check player attack/defense values in the Inspector or via debug logs). Ensure UI updates correctly and equipped items appear visually if implemented.
 
 ---
 
@@ -33,11 +34,11 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `Skill`
 
 **Unity Editor Steps:**
-- Create skill prefabs: For each skill, create a GameObject, attach `Skill` script, and set properties in the Inspector (e.g., type, level, description, effects).
-- Attach to characters: On Player or NPC GameObjects, add a component to hold skills (e.g., a list in `Characters` script).
-- Set up UI: Create a skill tree or list UI on a Canvas, with Buttons for each skill. Attach event handlers to activate skills.
-- Integrate with combat: Ensure battle scripts reference skill effects; no direct editor setup beyond script logic.
-- Test by assigning skills to characters and triggering them in play mode.
+- **Create Skill Prefabs:** In the Project window, right-click in the Assets folder and select "Create > Prefab" for each skill type (e.g., offensive, defensive). Drag a GameObject into the Scene, attach the `Skill` script via the Inspector's "Add Component" button, and configure properties like skill type (e.g., enum value), level, description, and effects (e.g., damage multipliers) in the Inspector fields. Save as a prefab by dragging back to the Project window. This allows skills to be instantiated or referenced easily.
+- **Attach Skills to Characters:** Select the Player or NPC GameObject in the Hierarchy. If the `Characters` script has a skill list, expand it in the Inspector and assign skill prefabs to the list. Alternatively, add a new component if needed to manage skills. This links skills to characters for activation during gameplay.
+- **Set Up Skill UI:** Create a new Canvas in the Hierarchy (UI > Canvas) for the skill interface. Add a Panel (UI > Panel) for the skill tree or list. Inside, add Buttons (UI > Button) for each skill, labeling them accordingly. Select each Button, go to the Inspector's OnClick section, drag the character GameObject, and select the method to activate the skill (e.g., from `Characters` script). If using a skill tree, arrange Buttons in a hierarchical layout with lines or images for connections.
+- **Integrate with Combat:** No direct editor setup is required here, as integration happens in scripts. Ensure the `Battle` script calls skill effects when skills are used; verify this by checking script references or using Find References in the Project window.
+- **Test Functionality:** Enter Play Mode. Assign skills to characters via the Inspector or UI. Trigger skills (e.g., via buttons or key inputs) and observe effects, such as stat changes or combat outcomes. Check the Console for logs confirming skill activation and ensure skills level up or unlock as intended.
 
 ---
 
@@ -45,12 +46,12 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `Battle`
 
 **Unity Editor Steps:**
-- Create a battle scene: Duplicate your main scene or create a new one for battles.
-- Attach `Battle` script to a GameObject in the battle scene (e.g., "BattleManager").
-- Set up troop representations: Create prefabs for troops (using `Troop` script), with Sprites or 3D models, and assign them in `Battle` Inspector for attackers/defenders.
-- Configure UI: Add a Canvas for battle UI (e.g., health bars, action buttons). Reference UI elements in `Battle` script for updates.
-- For terrain effects: If implemented, assign terrain types via Tilemaps or GameObjects and reference in battle logic.
-- Test by triggering a battle (e.g., via party collision) and verifying troop simulations.
+- **Create Battle Scene:** In the Unity Editor, go to File > New Scene to create a new scene for battles. Alternatively, duplicate your main scene by right-clicking it in the Project window and selecting "Duplicate," then rename it (e.g., "BattleScene"). This isolates battle logic from the main world scene. Set the scene as active and save it.
+- **Attach Battle Script:** In the Hierarchy window of the battle scene, right-click and select "Create Empty" to create a GameObject. Rename it to "BattleManager." Select it, go to the Inspector, click "Add Component," search for "Battle," and attach the script. This GameObject will manage battle simulations and troop interactions.
+- **Set Up Troop Representations:** Create troop prefabs by right-clicking in the Project window (Assets folder) and selecting "Create > Prefab." Drag a GameObject (e.g., with SpriteRenderer for 2D or MeshRenderer for 3D) into the Scene, attach the `Troop` script via Inspector's "Add Component," and set stats like health, attack, and visuals in the Inspector. Save as prefab. In the "BattleManager" Inspector, assign these prefabs to attacker/defender lists or arrays for spawning during battles.
+- **Configure Battle UI:** In the Hierarchy, right-click and select "UI > Canvas" to add a Canvas. Under it, add Panels (UI > Panel) for health bars (using Sliders or Images), action buttons (UI > Button for attack, defend), and troop lists. Select the "BattleManager" GameObject, and in the `Battle` component's Inspector, assign these UI elements (e.g., health bar Sliders) to public fields for dynamic updates during the battle.
+- **Assign Terrain Effects:** If terrain impacts battles, create a Tilemap by right-clicking in Hierarchy and selecting "2D Object > Tilemap." Paint walkable/obstacle tiles using the Tile Palette window. In the `Battle` script's Inspector, assign the Tilemap or terrain GameObjects to reference terrain types (e.g., via enums) for modifiers like defense bonuses on hills.
+- **Test Functionality:** Enter Play Mode in the battle scene. Trigger a battle via script (e.g., from a button or collision in the main scene that loads this scene). Observe troop simulations, UI updates (e.g., health bars decreasing), and terrain effects. Check the Console for logs on battle outcomes and ensure troops behave as expected (e.g., attacking in turns).
 
 ---
 
@@ -58,12 +59,12 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `Party`
 
 **Unity Editor Steps:**
-- Attach `Party` script to the Player GameObject or a dedicated PartyManager GameObject.
-- Set up party members: In the Inspector, assign references to Player and NPC GameObjects as members/troops.
-- Configure movement: If using pathfinding, ensure `Party` integrates with `PathfindingManager` (attach to the same GameObject or reference via Inspector).
-- Set up UI: Create a party panel on a Canvas to display members, resources, and quests. Update dynamically via `Party` script.
-- For exploration: Assign movement controls (e.g., via Input Manager) and ensure party follows player.
-- Test by adding members to the party and moving around the world map.
+- **Attach Party Script:** In the Hierarchy window of your main scene, select the Player GameObject. In the Inspector, click "Add Component," search for "Party," and attach the script. Alternatively, create a new GameObject (right-click in Hierarchy > Create Empty, name it "PartyManager"), and attach the `Party` script there. This script will manage party composition, resources, and movement.
+- **Set Up Party Members:** With the GameObject selected (Player or PartyManager), expand the `Party` component in the Inspector. Assign the Player GameObject to the "Leader" or "Members" list. For NPCs, drag NPC GameObjects from the Hierarchy into the members array. This links characters to the party for shared resources and quests.
+- **Configure Movement Integration:** If pathfinding is used, select the GameObject with `Party` and in the Inspector, assign the `PathfindingManager` GameObject to a reference field (if the script has one). Ensure the `Party` script calls pathfinding methods for group movement. For basic movement, set up Input axes in Edit > Project Settings > Input Manager for WASD or arrow keys, and reference them in the `Party` script.
+- **Set Up Party UI:** Create a new Canvas in the Hierarchy (UI > Canvas). Add a Panel (UI > Panel) for the party display. Inside, add TextMeshPro texts for member names, resources (e.g., gold), and quest progress. Add Images for portraits. Select the GameObject with `Party`, and in the Inspector, assign these UI elements to public fields for dynamic updates (e.g., updating resource amounts).
+- **Assign Exploration Controls:** In the `Party` script's Inspector, ensure movement is tied to player input. If the party follows the player, set offsets in the script for NPC positions. Test by moving the player and verifying NPCs follow.
+- **Test Functionality:** Enter Play Mode. Add NPCs to the party via Inspector or script methods. Move the party around the scene (e.g., world map). Check UI updates for resources and member stats. Ensure pathfinding works if integrated, and verify party cohesion during exploration.
 
 ---
 
@@ -71,11 +72,11 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `Troop`
 
 **Unity Editor Steps:**
-- Create troop prefabs: For each troop type/rank, create a GameObject with SpriteRenderer, attach `Troop` script, and set stats/images in the Inspector.
-- Integrate with settlements: In Town/Castle prefabs, add lists of available troops and reference prefabs.
-- Set up recruitment UI: On settlement UI Canvases, add buttons/cards for troops, linking to recruitment methods.
-- For leveling: Ensure battle scripts update troop levels; visual changes (e.g., sprites) can be handled via script.
-- Test by recruiting troops and viewing their stats in UI.
+- **Create Troop Prefabs:** In the Project window, right-click in the Assets folder and select "Create > Prefab" for each troop type (e.g., infantry, archer, cavalry). Drag a GameObject into the Scene, add a SpriteRenderer component (Component > Rendering > Sprite Renderer) for visuals, and attach the `Troop` script via Inspector's "Add Component." In the `Troop` Inspector, set properties like health, attack, defense, movement speed, and assign a sprite to the SpriteRenderer. Save as a prefab by dragging back to the Project window. This creates reusable troop templates.
+- **Integrate with Settlements:** Open a settlement prefab (e.g., Town) in the Project window. In the Hierarchy (with the prefab open), select the settlement GameObject, and in the Inspector, expand the script component (e.g., `Town`). If it has a troop list, assign the troop prefabs to the array. This allows settlements to spawn or offer troops for recruitment.
+- **Set Up Recruitment UI:** In the settlement scene or prefab, create a Canvas (UI > Canvas) if not present. Add a Panel (UI > Panel) for recruitment. Inside, add Buttons (UI > Button) for each troop type, labeling them (e.g., "Recruit Infantry"). Select each Button, go to the Inspector's OnClick section, drag the settlement GameObject, and select the recruitment method (e.g., from `Town` script). Add TextMeshPro texts next to buttons for costs or stats.
+- **Configure Leveling and Visuals:** No direct editor setup for leveling, as it's handled in scripts (e.g., `Battle` updating troop levels). For visuals, ensure the `Troop` script references different sprites for ranks; assign them in the prefab Inspector. If using animations, add an Animator component to the prefab and set up state machines for idle, attack, etc.
+- **Test Functionality:** Enter Play Mode in a scene with settlements. Navigate to a settlement, open the recruitment UI, and click buttons to recruit troops. Check that troops appear in the party or troop list, and verify stats in the Inspector or UI. Simulate battles to ensure leveling works and visuals update.
 
 ---
 
@@ -83,11 +84,11 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `Town`, `Castle`, `Village`
 
 **Unity Editor Steps:**
-- Create settlement prefabs: For each type, create a GameObject, attach the respective script (e.g., `Town`), and set properties in the Inspector (e.g., position, faction, buildings).
-- Place in world: In your main scene, instantiate settlement prefabs at grid positions, managed by `WorldHandler`.
-- Set up UI: Attach `SettlementUIManager` to a Canvas or GameObject, and configure panels for recruitment, building queues, etc.
-- Configure buildings: If buildings are implemented, add child GameObjects to settlements with production logic.
-- Test by visiting a settlement and interacting via UI.
+- **Create Settlement Prefabs:** In the Project window, right-click in the Assets folder and select "Create > Prefab" for each settlement type (e.g., Town, Castle, Village). Drag a GameObject into the Scene, add a SpriteRenderer or 3D model for visuals, and attach the corresponding script (e.g., `Town`) via Inspector's "Add Component." In the script's Inspector, set properties like position (Vector2), faction (enum or string), and buildings list. Save as a prefab by dragging back to the Project window. This creates reusable settlement templates.
+- **Place in World:** In your main scene's Hierarchy, right-click and select "Create Empty" to create a "WorldManager" GameObject. Attach `WorldHandler` script. In the `WorldHandler` Inspector, assign settlement prefabs to a list or array. Use the script to instantiate them at grid positions (e.g., via code that places them on a Tilemap). Alternatively, manually place prefabs in the Scene and assign positions.
+- **Set Up Settlement UI:** Create a Canvas (UI > Canvas) in the settlement scene or prefab. Add a Panel (UI > Panel) for settlement management. Attach `SettlementUIManager` to the Canvas or a child GameObject via Inspector's "Add Component." In the `SettlementUIManager` Inspector, configure panels for recruitment (buttons for troops), building queues (lists or grids), and other features. Assign UI elements like buttons and texts to public fields.
+- **Configure Buildings:** For each settlement prefab, add child GameObjects for buildings (e.g., right-click settlement GameObject > Create Empty, name "Barracks"). Attach `Buildings` script to each, setting production/effects in the Inspector (e.g., resource output per turn). In the settlement script's Inspector, assign these building GameObjects to a list for management.
+- **Test Functionality:** Enter Play Mode in the main scene. Navigate the party to a settlement position. Interact via UI (e.g., open settlement panel) to recruit troops or queue buildings. Check that buildings produce resources over time and that UI updates correctly. Verify settlement properties persist and integrate with world systems.
 
 ---
 
@@ -95,11 +96,11 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `Market`, `TradeManager`
 
 **Unity Editor Steps:**
-- Attach `Market` and `TradeManager` scripts to settlement GameObjects (e.g., Towns).
-- Set up trade UI: Create a Canvas with buy/sell interfaces, using Sliders or Inputs for quantities and prices.
-- Configure resources: Assign resource types and initial prices in `Market` Inspector.
-- Integrate with parties: Ensure `Party` scripts handle gold and tradeable items.
-- Test by trading at a settlement and checking market fluctuations.
+- **Attach Economy Scripts to Settlements:** In the Hierarchy of your main scene or settlement prefab, select a settlement GameObject (e.g., a Town). In the Inspector, click "Add Component," search for "Market," and attach the script. Repeat to attach "TradeManager." These scripts will handle resource pricing, trading logic, and market fluctuations for the settlement.
+- **Set Up Trade UI:** Create a new Canvas (UI > Canvas) in the settlement scene or prefab. Add a Panel (UI > Panel) for the trade interface. Inside, add Input Fields (UI > Input Field) for quantity, Sliders (UI > Slider) for price adjustment, and Buttons (UI > Button) for "Buy" and "Sell." Label them appropriately. Select the settlement GameObject, and in the `TradeManager` Inspector, assign these UI elements to public fields for dynamic updates (e.g., displaying current prices).
+- **Configure Resources and Prices:** Select the settlement GameObject, and in the `Market` component's Inspector, expand the resource list. Assign resource types (e.g., from `ResourceTypeEnum`) and set initial prices (floats). If the script has fluctuation settings, configure rates for supply/demand changes. This sets up the economic model for trading.
+- **Integrate with Parties:** Ensure the `Party` script has fields for gold and tradeable items. In the `TradeManager` Inspector, assign the Party GameObject to a reference field. This allows the trade system to deduct/add gold and items from the party's inventory during transactions.
+- **Test Functionality:** Enter Play Mode. Navigate to a settlement, open the trade UI, and attempt buys/sells. Verify that prices fluctuate based on transactions (e.g., buying increases price, selling decreases). Check that party's gold and inventory update correctly. Observe market logs in the Console for economic events.
 
 ---
 
@@ -107,11 +108,12 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `WorldHandler`
 
 **Unity Editor Steps:**
-- Create a WorldManager GameObject in the main scene and attach `WorldHandler` script.
-- In the Inspector, assign references to Player, factions, and settlement lists.
-- Set up grid/world: If using Tilemaps, configure the world grid and assign to `WorldHandler` for retrieval methods.
-- For procedural generation: If implemented, trigger via script on scene load.
-- Test by querying settlements at positions and verifying world state.
+- **Create WorldManager GameObject:** In the Hierarchy window of your main scene, right-click and select "Create Empty" to create a new GameObject. Rename it to "WorldManager." This GameObject will centralize world-related logic and data.
+- **Attach WorldHandler Script:** Select the "WorldManager" GameObject, go to the Inspector, click "Add Component," search for "WorldHandler," and attach the script. This script will manage world grid, settlements, factions, and procedural generation if applicable.
+- **Configure Inspector References:** In the `WorldHandler` component's Inspector, assign the Player GameObject to the player reference field. If the script has lists for factions and settlements, expand them and assign faction enums or GameObjects, and settlement prefabs or instances. This links the world manager to key entities.
+- **Set Up World Grid:** If using Tilemaps for the world, in the Hierarchy, right-click and select "2D Object > Tilemap" to create a Tilemap GameObject. Paint the grid with tiles representing terrain (e.g., grass, water) using the Tile Palette window. Select the "WorldManager" GameObject, and in the `WorldHandler` Inspector, assign the Tilemap to the grid reference. This allows the script to query positions and retrieve terrain data.
+- **Configure Procedural Generation:** If `WorldHandler` includes procedural generation (e.g., via `WorldGenerator`), ensure it's triggered on scene load by calling it in the script's Start() method. In the Inspector, set parameters like world size, seed, or generation rules. For manual placement, instantiate settlement prefabs at specific positions in the Scene and assign them to the `WorldHandler` lists.
+- **Test Functionality:** Enter Play Mode. Use script methods (e.g., via debug buttons) to query settlements at positions (e.g., check what settlement is at a grid coordinate). Verify that the world state updates correctly, such as faction ownership or terrain effects. If procedural, regenerate the world and ensure consistency with seeds.
 
 ---
 
@@ -119,11 +121,12 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `Quest`, `QuestGenerator`, `QuestManager`, `Dialogue`
 
 **Unity Editor Steps:**
-- Attach `QuestManager` to a GameObject (e.g., GameManager).
-- Create quest prefabs: For each quest, create a GameObject with `Quest` script, setting objectives, rewards, etc., in the Inspector.
-- Set up dialogue UI: Create a Canvas with TextMeshPro for dialogue, buttons for choices, and attach `Dialogue` script.
-- Integrate with NPCs: On NPC GameObjects, assign quests and dialogue trees.
-- Test by starting a quest and progressing through objectives.
+- **Attach QuestManager Script:** In the Hierarchy window of your main scene, select the GameManager GameObject (or create one if it doesn't exist). In the Inspector, click "Add Component," search for "QuestManager," and attach the script. This script will track active quests, progress, and rewards for the player and party.
+- **Create Quest Prefabs:** In the Project window, right-click in the Assets folder and select "Create > Prefab" for each quest type (e.g., fetch, kill, explore). Drag a GameObject into the Scene, attach the `Quest` script via Inspector's "Add Component," and configure properties like title, description, objectives (e.g., list of tasks), rewards (e.g., gold, items), and status in the Inspector fields. Save as a prefab by dragging back to the Project window. This allows quests to be instantiated dynamically.
+- **Set Up Dialogue UI:** Create a new Canvas (UI > Canvas) in the scene or prefab for dialogue interactions. Add a Panel (UI > Panel) for the dialogue box. Inside, add TextMeshPro Text components for NPC dialogue and player responses, and Buttons (UI > Button) for choice options. Attach the `Dialogue` script to the Canvas or a child GameObject via Inspector's "Add Component." In the `Dialogue` Inspector, assign the Text and Button elements to public fields for dynamic text updates and choice handling.
+- **Integrate with NPCs:** Select an NPC GameObject in the Hierarchy. In the Inspector, expand the NPC script (e.g., `NPC`) and assign quest prefabs to a quests list if available. Also, assign dialogue trees (e.g., via a DialogueTree asset or script) to the NPC. This enables NPCs to offer quests and engage in conversations that advance story elements.
+- **Configure Quest Generation:** If using `QuestGenerator`, attach it to the GameManager or a separate GameObject. In the Inspector, set parameters like quest types, difficulty levels, and generation triggers (e.g., on settlement visit). Ensure it integrates with `QuestManager` to add generated quests to the active list.
+- **Test Functionality:** Enter Play Mode. Interact with NPCs to start quests (e.g., via dialogue UI). Progress through objectives (e.g., complete tasks) and verify quest updates in the Inspector or UI. Check that rewards are granted upon completion and that story branches correctly based on choices.
 
 ---
 
@@ -131,23 +134,25 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `TimeManager`, `WeatherManager`, `WeatherEffectManager`, `NPCManager`, `TimeWeatherUI`
 
 **Unity Editor Steps:**
-- Attach `TimeManager` and `WeatherManager` to a GameObject (e.g., EnvironmentManager).
-- Set up UI: Create a Canvas for time/weather display (e.g., clock, weather icons) and attach `TimeWeatherUI`.
-- Configure effects: For weather visuals, add ParticleSystems or lighting changes, referenced in `WeatherEffectManager`.
-- Integrate with NPCs: Ensure `NPCManager` uses time for schedules.
-- Test by advancing time and observing weather changes.
+- **Create EnvironmentManager GameObject:** In the Hierarchy window of your main scene, right-click and select "Create Empty" to create a new GameObject. Rename it to "EnvironmentManager." This GameObject will centralize time and weather logic, ensuring it persists across scenes if needed (e.g., via DontDestroyOnLoad in scripts).
+- **Attach Time and Weather Scripts:** Select the "EnvironmentManager" GameObject, go to the Inspector, click "Add Component," search for "TimeManager," and attach the script. Repeat to attach "WeatherManager." These scripts will handle time progression, weather cycles, and effects like day/night transitions or storms.
+- **Set Up Time and Weather UI:** Create a new Canvas (UI > Canvas) in the scene for environmental displays. Add a Panel (UI > Panel) for the time/weather interface. Inside, add TextMeshPro Text components for displaying current time (e.g., "Day 1, 12:00 PM") and weather status (e.g., "Sunny"). Add Image components (UI > Image) for weather icons (e.g., sun, rain). Attach the `TimeWeatherUI` script to the Canvas or a child GameObject via Inspector's "Add Component." In the `TimeWeatherUI` Inspector, assign the Text and Image elements to public fields for dynamic updates from `TimeManager` and `WeatherManager`.
+- **Configure Weather Effects:** For visual weather effects, select the "EnvironmentManager" GameObject, and in the `WeatherEffectManager` component's Inspector (attach if not already), assign ParticleSystem GameObjects (e.g., for rain or snow) created in the Hierarchy (right-click > Effects > Particle System). Adjust lighting by adding a Directional Light GameObject and referencing it in the script for day/night cycles. Set parameters like effect durations and intensities in the Inspector to match weather types.
+- **Integrate with NPCs:** Select NPC GameObjects in the Hierarchy. In the `NPCManager` script's Inspector (attach if needed), assign the "EnvironmentManager" GameObject to a reference field. Ensure the script uses time data (e.g., from `TimeManager`) to schedule NPC behaviors, such as sleeping at night or working during the day. This allows NPCs to react to time and weather changes dynamically.
+- **Test Functionality:** Enter Play Mode. Use script methods (e.g., via debug buttons on the EnvironmentManager) to advance time or change weather. Observe UI updates for time and weather displays. Check that weather effects (e.g., particles, lighting) activate correctly. Verify NPC behaviors adjust based on time (e.g., NPCs become inactive at night). Monitor the Console for logs on time progression and weather events.
 
 ---
 
 ## 12. AI and NPC Behavior
-**Classes Involved:** (Proposed; assume AI scripts like state machines)
+**Classes Involved:** (Proposed; assume AI scripts like `AIStateMachine`, `NPCBehavior`, `FactionManager`)
 
 **Unity Editor Steps:**
-- Attach AI scripts to NPC GameObjects (e.g., state machine components).
-- Set up behaviors: In Inspector, configure states (e.g., patrol, converse) and transitions.
-- Configure dialogue: Link to dialogue systems for interactions.
-- For factions: Assign faction data to NPCs and settlements.
-- Test by interacting with NPCs and observing behaviors.
+- **Attach AI Scripts to NPC GameObjects:** In the Hierarchy window of your main scene, select an NPC GameObject (e.g., one with the `NPC` script). In the Inspector, click "Add Component," search for the AI script (e.g., `AIStateMachine`), and attach it. This script will manage the NPC's behavior states, such as idle, patrol, or interact, allowing dynamic responses to game events.
+- **Set Up Behavior States and Transitions:** With the NPC GameObject selected, expand the AI script component in the Inspector. Configure initial states (e.g., set "Idle" as the default state) and define transitions based on conditions (e.g., if player is nearby, transition to "Alert"). Assign waypoints for patrol behaviors by creating empty GameObjects in the Hierarchy (right-click > Create Empty, name "Waypoint1"), positioning them in the Scene, and assigning them to the AI script's waypoint list in the Inspector. This enables NPCs to move autonomously or react to stimuli.
+- **Configure Dialogue and Interactions:** Select the NPC GameObject, and in the `NPC` script's Inspector, assign dialogue assets (e.g., a DialogueTree ScriptableObject) to the dialogue reference field. If the AI script has interaction triggers, link them to the dialogue system (e.g., via OnTriggerEnter events). This allows NPCs to engage in conversations that can branch based on player choices or quest progress.
+- **Assign Faction Data:** In the `NPC` script's Inspector, assign a faction enum or reference (e.g., from `FactionManager`) to the faction field. For settlements, select settlement GameObjects and assign faction data similarly. This enables faction-based behaviors, such as NPCs reacting differently to players from allied or enemy factions (e.g., hostile NPCs attacking).
+- **Integrate with Other Systems:** Ensure the AI script references other managers (e.g., assign the `TimeManager` GameObject to the AI script's Inspector for time-based behaviors like sleeping at night). If pathfinding is used, assign the `PathfindingManager` GameObject to enable NPCs to navigate obstacles.
+- **Test Functionality:** Enter Play Mode. Approach NPCs to trigger behaviors (e.g., patrol or dialogue). Observe state changes in the Inspector (e.g., via debug fields). Interact with NPCs from different factions to verify reactions. Check the Console for logs on AI decisions and ensure behaviors align with game logic, such as NPCs avoiding obstacles or responding to time/weather.
 
 ---
 
@@ -155,12 +160,13 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `SettlementUIManager` (and others like `InventoryUI`, `CharacterStatsUI`)
 
 **Unity Editor Steps:**
-- Create a main Canvas for UI elements.
-- Attach UI managers (e.g., `SettlementUIManager`) to the Canvas or child panels.
-- Set up panels: For settlements, inventory, etc., add child GameObjects with layouts (e.g., GridLayoutGroup for slots).
-- Assign references: In Inspectors, link buttons, texts, and images to script variables.
-- Configure animations: Use Animator components for transitions.
-- Test by opening UI panels and verifying interactions.
+- **Create Main UI Canvas:** In the Hierarchy window of your main scene, right-click and select "UI > Canvas" to create a new Canvas GameObject. Rename it to "MainUI" for clarity. This Canvas will serve as the root for all UI elements, allowing centralized management of UI rendering, scaling, and event handling. In the Canvas Inspector, ensure the Render Mode is set to "Screen Space - Overlay" for standard UI, and add a Canvas Scaler component (Component > UI > Canvas Scaler) to handle different screen resolutions by setting UI Scale Mode to "Scale With Screen Size."
+- **Attach UI Manager Scripts:** Select the "MainUI" Canvas GameObject, go to the Inspector, click "Add Component," and search for UI manager scripts such as `SettlementUIManager`, `InventoryUI`, or `CharacterStatsUI`. Attach them as needed based on the features you're implementing. These scripts will handle UI logic, such as updating displays dynamically (e.g., populating inventory slots) or responding to user inputs (e.g., button clicks triggering actions). If a script requires references to other managers (e.g., `Party` for character stats), assign them in the Inspector.
+- **Set Up UI Panels and Layouts:** Under the Canvas, right-click and select "UI > Panel" to create panels for different UI sections, such as "SettlementPanel" for settlement management, "InventoryPanel" for item displays, or "CharacterStatsPanel" for player/NPC info. For each panel, add layout components like GridLayoutGroup (Component > Layout > Grid Layout Group) to arrange child elements automatically in a grid. In the GridLayoutGroup Inspector, configure settings like Cell Size (e.g., 50x50 for slots), Spacing (e.g., 5 units between cells), and Constraint (e.g., Fixed Column Count) to fit your UI design and ensure responsive layouts.
+- **Add and Configure UI Elements:** Inside each panel, add specific UI elements based on functionality. For example, in the InventoryPanel, add multiple Image components (UI > Image) as item slots by right-clicking the panel and selecting "UI > Image." For buttons, add Button components (UI > Button) and label them (e.g., "Equip Item"). For text, add TextMeshPro - Text components (UI > TextMeshPro - Text) for displaying stats or descriptions. Select each element in the Inspector to customize properties like text content, font size, colors, and sizes. For interactive elements like buttons, set OnClick events by dragging GameObjects and selecting methods from scripts.
+- **Assign Script References:** Select the UI manager GameObject (e.g., the Canvas or a specific panel), and in the script's Inspector, assign the UI elements to public fields. For instance, in `InventoryUI`, expand the slot array and assign the Image components for item slots. In `SettlementUIManager`, assign Button and Text elements for recruitment or building queues. This links the UI to script logic, enabling dynamic updates like refreshing inventory when items are added or removed.
+- **Configure Animations and Transitions:** Select UI panels or elements that need animations, such as panels that slide in/out. Add an Animator component (Component > Animation > Animator) to the panel. In the Animator window (Window > Animation > Animator), create animation clips for states like "Open" (e.g., moving the panel into view) and "Closed" (e.g., moving it off-screen). Set up a state machine with transitions triggered by parameters (e.g., a bool "IsOpen"). In the UI manager script, set these parameters to control animations programmatically, such as opening the inventory panel on key press.
+- **Test UI Functionality:** Enter Play Mode by clicking the Play button. Interact with UI elements, such as clicking buttons to open panels or equip items. Verify that UI updates correctly (e.g., inventory slots populate with item icons and stats display accurately). Check for proper scaling and positioning on different screen sizes by resizing the Game view window. Monitor the Console for errors related to missing references or layout issues, and ensure interactions trigger the expected script methods (e.g., via debug logs).
 
 ---
 
@@ -168,11 +174,11 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `PathfindingManager`, `Node`
 
 **Unity Editor Steps:**
-- Attach `PathfindingManager` to a GameObject in the scene.
-- Set up grid: Create a Tilemap for the world, marking walkable/obstacle tiles.
-- Configure nodes: If using `Node` prefabs, place them on the grid and assign to `PathfindingManager`.
-- Integrate with movement: Reference `PathfindingManager` in party/troop scripts for path requests.
-- Test by requesting paths between points and visualizing them.
+- **Attach PathfindingManager to a GameObject:** In the Hierarchy window of your main scene, right-click and select "Create Empty" to create a new GameObject. Rename it to "PathfindingManager" for clarity. Select it, go to the Inspector, click "Add Component," search for "PathfindingManager," and attach the script. This singleton script will manage the A* pathfinding grid and handle path requests from other systems like party or troop movement.
+- **Set Up the Grid:** The `PathfindingManager` automatically initializes a grid based on the `WorldGenerator`'s worldWidth and worldHeight. Ensure the `WorldGenerator` GameObject is in the scene and configured. In the `PathfindingManager` Inspector, set the "Node Size" to match your tilemap cell size (e.g., 1 unit if tiles are 1x1). The grid marks cells as walkable or obstacles based on settlement positions (towns, castles, villages) queried from `WorldHandler`. No manual tilemap creation is needed, but if you have a Tilemap for visualization, create one by right-clicking in Hierarchy and selecting "2D Object > Tilemap," then paint tiles to represent terrain, though the script uses procedural checks for obstacles.
+- **Configure Nodes:** The `Node` class is used internally by `PathfindingManager` and doesn't require manual placement. The grid is built at runtime with `Node` objects for each cell. If you need to visualize the grid for debugging, you can add a debug script to draw gizmos (e.g., cubes for walkable cells). In the `PathfindingManager` Inspector, no direct node assignments are needed, as nodes are created programmatically.
+- **Integrate with Movement Systems:** Select the GameObject with movement scripts (e.g., the Player or PartyManager). In the script's Inspector (e.g., `Party`), assign the "PathfindingManager" GameObject to a reference field if available. The script should call `PathfindingManager.Instance.FindPath(startCell, targetCell)` to request paths, converting world positions to grid cells using the nodeSize. For example, to move a party, convert the party's position to a Vector3Int cell, request a path to the target cell, and follow the returned list of cells by converting back to world positions.
+- **Test Functionality:** Enter Play Mode. Use script methods or debug buttons to request paths between points (e.g., from the player's current cell to a clicked cell on the world map). Visualize paths by logging the cell list or drawing lines in the Scene view using Gizmos. Check that paths avoid obstacles like settlements. If paths fail, verify grid size matches the world dimensions and that obstacles are correctly detected. Monitor the Console for iteration limits or errors in pathfinding logic.
 
 ---
 
@@ -180,35 +186,38 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `Buildings`, `Resources`, `AdvancedResources`
 
 **Unity Editor Steps:**
-- Attach `Resources` and `AdvancedResources` to settlement or party GameObjects.
-- Create building prefabs: For each building, create a GameObject with `Buildings` script, setting production/effects in Inspector.
-- Set up UI: Add resource panels to settlement UI, displaying amounts and crafting options.
-- Integrate with economy: Link to `Market` for trading.
-- Test by constructing buildings and checking resource production.
+- **Attach Resources Scripts to Settlements and Parties:** In the Hierarchy window of your main scene, select a settlement GameObject (e.g., a Town or Village). In the Inspector, click "Add Component," search for "Resources," and attach the script. Repeat to attach "AdvancedResources." This allows settlements to manage basic resources (e.g., Wood, Stone) and advanced resources (e.g., Steel, ReinforcedWood) for crafting and production. For parties, select the Party GameObject and attach the scripts similarly, enabling resource carrying and trading during exploration. In the Inspector, initialize resource amounts (e.g., set initial Wood to 100) and assign input resources for advanced crafting (e.g., link Iron and Coal for Steel production).
+- **Create Building Prefabs:** In the Project window, right-click in the Assets folder and select "Create > Prefab" for each building type (e.g., Barracks, Market, Farm). Drag a GameObject into the Scene, add a SpriteRenderer or 3D model for visuals, and attach the `Buildings` script via Inspector's "Add Component." In the `Buildings` Inspector, set the BuildingType enum (e.g., BuildingType.Farm), level (start at 1), cost, build time, and bonuses (e.g., IncomeBonus for Farm). Save as a prefab by dragging back to the Project window. This creates reusable building templates with predefined stats like defense or income boosts.
+- **Set Up Resource and Building UI:** Create a new Canvas (UI > Canvas) in the settlement scene or prefab. Add a Panel (UI > Panel) for resource display. Inside, add TextMeshPro Text components for each resource type (e.g., "Wood: 50"), and Buttons (UI > Button) for crafting advanced resources (e.g., "Craft Steel"). For buildings, add another Panel with Buttons for each building type, labeled with costs and effects. Attach a UI manager script (e.g., create a new script like `ResourceUIManager`) to the Canvas via Inspector's "Add Component." In the script's Inspector, assign the Text elements to display resource amounts and Button OnClick events to trigger crafting or building construction methods from the settlement scripts.
+- **Integrate with Economy and Production:** Select the settlement GameObject, and in the `Market` component's Inspector (attach if not already), assign resource types and prices for trading. Link buildings to production by ensuring the settlement script (e.g., `Town`) has a list of `Buildings` instances; in the Inspector, expand the list and assign building prefabs or instances. For advanced resources, in the `AdvancedResources` Inspector, set input resources (e.g., Iron and Wood for ReinforcedWood) and workshop level to determine crafting capacity. This integrates resource production (e.g., Farms generate Grain over time) with the economy for trading and building upgrades.
+- **Test Functionality:** Enter Play Mode. Navigate to a settlement, open the resource UI, and verify amounts update (e.g., add resources via debug methods). Craft advanced resources by clicking buttons and check that inputs are consumed and outputs increase. Construct buildings via UI buttons, confirm costs are deducted, and observe production bonuses (e.g., income increases from Markets). Monitor the Console for production logs and ensure resources persist across sessions if integrated with save/load.
 
 ---
 
 ## 16. Visual Effects and Graphics Enhancements
-**Classes Involved:** (Proposed; use Unity built-ins)
+**Classes Involved:** `VisualEffectManager`, `LightingManager`, `GraphicsOptimizer`
 
 **Unity Editor Steps:**
-- Add ParticleSystems to GameObjects for effects (e.g., battle impacts).
-- Set up animations: Use Animator on character models for actions.
-- Configure camera: Attach Cinemachine or custom scripts for controls/cinematics.
-- Enhance graphics: Adjust materials, lighting, and post-processing in Scene view.
-- Test by triggering effects during gameplay.
+- **Attach VisualEffectManager to a GameObject:** In the Hierarchy window of your main scene, right-click and select "Create Empty" to create a new GameObject. Rename it to "VisualEffectManager" for clarity. Select it, go to the Inspector, click "Add Component," search for "VisualEffectManager," and attach the script. This singleton script will manage particle effects for spells, combat, and other visual events. In the Inspector, assign ParticleSystem prefabs to the public fields (e.g., drag a fire particle prefab into the "Fire Spell Effect" slot). This allows centralized control of visual effects across the game.
+- **Set Up Particle Effects for Spells and Combat:** Create or import ParticleSystem prefabs by right-clicking in the Project window (Assets folder) and selecting "Create > Prefab." Drag a GameObject into the Scene, add a ParticleSystem component (Component > Effects > Particle System), and configure properties like emission rate, lifetime, and color in the Inspector. For example, set a fire effect with red/orange particles and a short lifetime. Save as a prefab and assign to the VisualEffectManager's fields. This enables effects like fire spells or hit impacts to be instantiated and played at specific positions via script calls (e.g., VisualEffectManager.Instance.PlayFireSpellEffect(position)).
+- **Configure Lighting and Day/Night Cycles:** Select the "VisualEffectManager" GameObject, and in the Inspector, attach the `LightingManager` script via "Add Component." In the `LightingManager` Inspector, assign a Directional Light GameObject (create one by right-clicking in Hierarchy > Light > Directional Light) to the light reference field. Set parameters like day/night transition times and light intensities. This integrates with the time system to adjust lighting dynamically, such as dimming lights at night or brightening during day.
+- **Set Up Character Animations:** Select a character GameObject (e.g., Player or NPC). Add an Animator component (Component > Animation > Animator) to the GameObject. In the Animator window (Window > Animation > Animator), create animation clips for actions like idle, walk, attack, and cast spells by right-clicking in the Animator and selecting "Create State > Empty," then assigning imported or created animation clips. Set up transitions between states with conditions (e.g., a bool "IsAttacking" triggers attack animation). In the character's script (e.g., `Characters`), reference the Animator and set parameters to control animations programmatically, such as triggering attack animations during battles.
+- **Enhance Graphics with Post-Processing:** In the Hierarchy, right-click and select "Create Empty" to create a "PostProcessingManager" GameObject. Attach a Volume component (Component > Rendering > Volume) to it. In the Volume Inspector, add overrides like Bloom, Color Grading, and Vignette to enhance visuals (e.g., add bloom for magical effects or color grading for mood). Set the Volume to "Global" in the Profile dropdown. This applies post-processing effects across the scene, improving graphics quality without per-object setup.
+- **Optimize Graphics Performance:** Select the "VisualEffectManager" GameObject, and attach the `GraphicsOptimizer` script via "Add Component." In the Inspector, configure settings like LOD distances and culling options. For example, set lower quality textures or disable effects at a distance. This ensures smooth performance by reducing render load on distant objects or during complex scenes.
+- **Test Functionality:** Enter Play Mode. Trigger visual effects via script calls (e.g., from battle scripts, call PlayHitEffect at impact positions). Observe particle effects playing correctly and lighting adjusting with time. Test animations by simulating character actions (e.g., move the player to trigger walk animations). Check post-processing by verifying enhanced visuals like bloom on bright objects. Monitor the Console for performance logs and ensure effects don't cause frame drops.
 
 ---
 
 ## 17. Sound and Audio System
-**Classes Involved:** (Proposed; use Unity Audio)
+**Classes Involved:** `AudioManager`
 
 **Unity Editor Steps:**
-- Create AudioSources on GameObjects (e.g., for ambient sounds).
-- Set up AudioClips: Import sounds and assign to sources or scripts.
-- Configure dynamic audio: Use scripts to change clips based on events.
-- Add music: Attach AudioSource to a persistent GameObject for BGM.
-- Test by playing sounds on events (e.g., battles).
+- **Attach AudioManager to a GameObject:** In the Hierarchy window of your main scene, right-click and select "Create Empty" to create a new GameObject. Rename it to "AudioManager" for clarity. Select it, go to the Inspector, click "Add Component," search for "AudioManager," and attach the script. This singleton script will manage all audio sources, volumes, and sound effects. In the Inspector, assign AudioClip assets to the public fields (e.g., drag a sound file into the "Attack Sound" slot). This centralizes audio control, allowing easy volume adjustments and sound triggering across the game.
+- **Set Up Audio Sources:** The `AudioManager` script automatically adds AudioSource components to the GameObject if they are not present. In the Inspector, ensure the backgroundMusicSource, ambientSoundSource, and soundEffectsSource are assigned (they will be created if null). Configure their properties, such as setting backgroundMusicSource to loop for continuous music. This setup handles background music, ambient sounds, and one-shot effects separately for better performance and control.
+- **Configure Volume Settings:** In the `AudioManager` Inspector, adjust the volume sliders (masterVolume, musicVolume, ambientVolume, effectsVolume) to balance audio levels. These are clamped between 0 and 1, and the script applies them multiplicatively (e.g., effective music volume = masterVolume * musicVolume). This allows players to customize audio without affecting game logic.
+- **Assign Sound Effects and Music:** Import audio files (e.g., WAV or MP3) into the Project window (Assets folder). Drag them into the corresponding AudioClip fields in the `AudioManager` Inspector, such as attackSound for combat, victorySound for wins, or uiClickSound for interface interactions. For background music, assign a looping clip to the backgroundMusicSource via script or Inspector. This enables the script to play specific sounds on demand, like calling AudioManager.Instance.PlayAttackSound() during battles.
+- **Integrate with Game Events:** In other scripts (e.g., `Battle` or `Characters`), call AudioManager methods to trigger sounds. For example, in a battle script, add AudioManager.Instance.PlayHitSound() when damage is dealt. For UI, attach to Button OnClick events by selecting a Button in the Hierarchy, going to the Inspector's OnClick section, dragging the "AudioManager" GameObject, and selecting "AudioManager > PlayUIClick." This ensures audio feedback for user interactions and game events.
+- **Test Functionality:** Enter Play Mode. Use script calls or UI interactions to trigger sounds (e.g., click a button to play UI sound). Adjust volumes in the Inspector during runtime and verify changes apply immediately. Play background music and ambient sounds, checking for looping and volume control. Monitor the Console for any audio-related errors, and ensure sounds play correctly without overlapping issues (e.g., multiple effects using the same source).
 
 ---
 
@@ -216,11 +225,14 @@ This document provides a detailed guide on what to do in the Unity Editor for ea
 **Classes Involved:** `Characters`, `Player`, `NPC`
 
 **Unity Editor Steps:**
-- Create character prefabs: For Player and NPCs, attach respective scripts and set base stats in Inspector.
-- Set up visuals: Add SpriteRenderer or 3D models, and reference in scripts.
-- Integrate systems: Attach inventory, skills, etc., as child components.
-- Configure AI: For NPCs, add behavior scripts.
-- Test by leveling characters and checking stats.
+- **Create Character Prefabs:** In the Project window, right-click in the Assets folder and select "Create > Prefab" for each character type (e.g., Player, WarriorNPC, MerchantNPC). Drag a GameObject into the Scene, add a SpriteRenderer component (Component > Rendering > Sprite Renderer) for 2D visuals or a MeshRenderer for 3D models, and attach the corresponding script (e.g., `Player` for the player character, `NPC` for non-player characters) via Inspector's "Add Component." In the script's Inspector, set base stats like health, attack, defense, level, and experience points. For NPCs, assign faction data (e.g., from an enum) and dialogue references if applicable. Save as a prefab by dragging back to the Project window. This creates reusable character templates with predefined attributes.
+- **Attach Characters Script for Shared Logic:** Select the character GameObject (Player or NPC), and in the Inspector, click "Add Component," search for "Characters," and attach the script. This base script handles common character logic like leveling, stat calculations, and health management. In the `Characters` Inspector, configure shared properties such as maxHealth, currentHealth, level, and stat modifiers (e.g., strength, agility). Ensure the script integrates with other systems by assigning references to inventory or skills if the script has fields for them.
+- **Set Up Visuals and Animations:** With the character GameObject selected, ensure a SpriteRenderer or MeshRenderer is attached for visuals. Assign sprites or models in the Inspector (e.g., drag a character sprite into the Sprite field). For animations, add an Animator component (Component > Animation > Animator) to the GameObject. In the Animator window (Window > Animation > Animator), create animation clips for states like idle, walk, attack, and death by right-clicking and selecting "Create State > Empty," then assigning imported animation assets. Set up transitions with parameters (e.g., a float "Speed" for walk animations). In the `Characters` script's Inspector, assign the Animator component to a reference field for programmatic control, such as triggering attack animations during combat.
+- **Integrate with Inventory and Equipment:** Select the character GameObject, and in the Inspector, attach the `Inventory` and `Equipment` scripts via "Add Component." In the `Inventory` Inspector, set initial capacity and assign item prefabs to the items list. In the `Equipment` Inspector, assign attachment points (e.g., empty child GameObjects named "WeaponSlot" or "ArmorSlot") for visual equipping. This allows characters to carry and equip items, updating stats dynamically (e.g., equipping a sword increases attack).
+- **Configure Skills and Abilities:** Attach the `Skill` script or a skills manager to the character GameObject. In the Inspector, expand the skills list and assign skill prefabs created earlier. For each skill, set cooldowns, effects, and activation conditions. This enables characters to use skills in battles or interactions, with the `Characters` script handling skill leveling and unlocking.
+- **Set Up AI for NPCs:** For NPC GameObjects, attach an AI script (e.g., `AIStateMachine` or `NPCBehavior`) via Inspector's "Add Component." In the AI script's Inspector, configure behavior states (e.g., set "Patrol" as default), waypoints (assign empty GameObjects positioned in the Scene), and triggers (e.g., distance to player for alerts). Assign faction data to enable faction-based reactions. Ensure the AI script references the `Characters` script for stat checks and integrates with pathfinding by assigning the `PathfindingManager` GameObject.
+- **Configure Player Controls:** For the Player GameObject, ensure input handling is set up. In the `Player` script's Inspector (attach if separate from `Characters`), configure movement keys (e.g., WASD) and action buttons (e.g., space for interact). If using Unity's Input System, set up Input Actions in Edit > Project Settings > Input Manager. Assign camera follow scripts if needed for third-person views.
+- **Test Functionality:** Enter Play Mode. For the Player, test movement and interactions (e.g., move around, equip items, and check stat updates in the Inspector). For NPCs, observe AI behaviors (e.g., patrol waypoints, react to player proximity). Simulate leveling by dealing/taking damage or completing quests, verifying stat increases and animation triggers. Check the Console for logs on character actions and ensure integrations (e.g., inventory affecting stats) work correctly.
 
 ---
 

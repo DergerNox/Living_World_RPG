@@ -77,6 +77,7 @@ public class GameData
     public Equipment equipment;
     public int playerAttack;
     public int playerDefense;
+    public Vector3 playerPosition; // Added for saving/loading player position
     // Add more fields as needed for full game state
 
     public GameData()
