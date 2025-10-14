@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// Singleton A* Pathfinding manager using a tile-based grid from WorldHandler.
-/// Grid dimensions are derived from the WalkerGenerator's MapWidth and MapHeight.
+/// Grid dimensions are derived from the WalkerGenerator's MapWidth and MapHeight, with fallback to WorldGenerator.
 /// </summary>
 public class PathfindingManager : MonoBehaviour
 {

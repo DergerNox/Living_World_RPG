@@ -6,7 +6,7 @@ using UnityEngine;
 public class Node : HeapItem<Node>
 {
     public Vector3Int Position { get; private set; }
-    public bool Walkable { get; private set; }
+    public bool Walkable { get; set; }
     public int GCost { get; set; }
     public int HCost { get; set; }
     public Node Parent { get; set; }
