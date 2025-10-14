@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 [System.Serializable]
-public class Equipment
+public class Equipment : MonoBehaviour
 {
     public List<EquippedItem> equippedItems = new List<EquippedItem>();
 

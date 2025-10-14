@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [System.Serializable]
-public class Item
+public class Item : MonoBehaviour
 {
     public string name;
     public ItemType type;
