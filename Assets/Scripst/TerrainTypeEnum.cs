@@ -7,5 +7,9 @@ public enum TerrainType
     Swamp,
     River,
     City,
-    Castle
+    Castle,
+    Water,
+    Grass,
+    Hills,
+    Mountains
 }

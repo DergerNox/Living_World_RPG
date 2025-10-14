@@ -93,7 +93,7 @@ public class WorldGenerator : MonoBehaviour
         for (int i = 0; i < numberOfCastles; i++)
         {
             Vector3Int position = new Vector3Int(Random.Range(0, worldWidth), Random.Range(0, worldHeight), 0);
-            Characters lord = new NPC($"Lord {i + 1}", 5); // Assuming NPC constructor
+            Characters lord = new NPC($"Lord {i + 1}", 100, 50, 5); // Assuming NPC constructor
             Castle castle = new Castle(position.x, position.y, lord);
             WorldHandler.Castles.Add(castle);
         }

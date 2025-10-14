@@ -16,6 +16,9 @@ public class Characters
     public Party Party { get { return party; } set { party = value; } }
     public Inventory Inventory { get; set; } = new Inventory();
     public Equipment Equipment { get; set; } = new Equipment();
+    public int Strength { get; set; } = 10;
+    public int Agility { get; set; } = 10;
+    public int Intelligence { get; set; } = 10;
     public int Attack { get; set; } = 10;
     public int Defense { get; set; } = 5;
     public Characters(string name, int maxHealth, int maxMana, int level = 1)

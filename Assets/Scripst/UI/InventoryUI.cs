@@ -158,7 +158,8 @@ public class InventoryUI : MonoBehaviour
     {
         if (selectedItem != null && (selectedItem.type == ItemType.Weapon || selectedItem.type == ItemType.Armor))
         {
-            currentCharacter.EquipItem(selectedItem);
+            EquipmentSlot slot = selectedItem.type == ItemType.Weapon ? EquipmentSlot.Weapon : EquipmentSlot.Body;
+            currentCharacter.EquipItem(slot, selectedItem);
             UpdateInventoryUI();
             itemDetailsPanel.SetActive(false);
         }

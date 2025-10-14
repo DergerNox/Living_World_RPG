@@ -135,7 +135,7 @@ public class WorldMapUI : MonoBehaviour
         }
     }
 
-    private void CreateSettlementMarker(Vector2Int position, string type, Color color)
+    private void CreateSettlementMarker(Vector3Int position, string type, Color color)
     {
         GameObject marker = Instantiate(settlementMarkerPrefab, markerContainer);
         RectTransform markerRect = marker.GetComponent<RectTransform>();
@@ -159,7 +159,7 @@ public class WorldMapUI : MonoBehaviour
         Button markerButton = marker.GetComponent<Button>();
         if (markerButton != null)
         {
-            markerButton.onClick.AddListener(() => ShowSettlementInfo(position, type));
+            markerButton.onClick.AddListener(() => ShowSettlementInfo((Vector2Int)position, type));
         }
 
         settlementMarkers.Add(marker);

@@ -5,7 +5,7 @@ public enum Activity { Sleeping, Working, Wandering, Eating }
 
 public class NPC : Characters
 {
-    public NPC() : base()
+    public NPC(string name, int maxHealth, int maxMana, int level = 1) : base(name, maxHealth, maxMana, level)
     {
         NameGenerator nameGen = new NameGenerator();
         System.Random random = new System.Random();
