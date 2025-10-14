@@ -81,13 +81,12 @@ public class Party
     private void ConsumeResourcesOnMove()
     {
         // Simple resource consumption: reduce food/water if available
-        // Assuming Resources enum has Food and Water
-        int foodIndex = resources.IndexOf(Resources.Food);
+        int foodIndex = resources.FindIndex(r => r.ResourceType == ResourceType.Food);
         if (foodIndex >= 0 && resourcesAmountInInventory[foodIndex] > 0)
         {
             resourcesAmountInInventory[foodIndex] -= Mathf.Min(1, resourcesAmountInInventory[foodIndex]);
         }
-        int waterIndex = resources.IndexOf(Resources.Water);
+        int waterIndex = resources.FindIndex(r => r.ResourceType == ResourceType.Water);
         if (waterIndex >= 0 && resourcesAmountInInventory[waterIndex] > 0)
         {
             resourcesAmountInInventory[waterIndex] -= Mathf.Min(1, resourcesAmountInInventory[waterIndex]);
@@ -139,6 +138,23 @@ public class Party
         mergedParty.Gold = this.Gold + otherParty.Gold;
         mergedParty.Position = this.Position; // Keep position of merging party
         mergedParty.size = mergedParty.Members.Count + mergedParty.Troops.Count;
+
+        // Merge resources
+        mergedParty.Resources.AddRange(this.Resources);
+        mergedParty.Resources.AddRange(otherParty.Resources);
+        mergedParty.ResourcesAmountInInventory.AddRange(this.ResourcesAmountInInventory);
+        mergedParty.ResourcesAmountInInventory.AddRange(otherParty.ResourcesAmountInInventory);
+
+        // Merge advanced resources
+        mergedParty.AdvancedResources.AddRange(this.AdvancedResources);
+        mergedParty.AdvancedResources.AddRange(otherParty.AdvancedResources);
+
+        // Merge other properties
+        mergedParty.TradeableItems.AddRange(this.TradeableItems);
+        mergedParty.TradeableItems.AddRange(otherParty.TradeableItems);
+        mergedParty.ActiveQuests.AddRange(this.ActiveQuests);
+        mergedParty.ActiveQuests.AddRange(otherParty.ActiveQuests);
+
         return mergedParty;
     }
 
@@ -174,6 +190,47 @@ public class Party
         party1.Position = this.Position;
         party2.Position = this.Position;
 
+        // Split resources
+        for (int i = 0; i < resources.Count; i++)
+        {
+            if (i < splitSize)
+            {
+                party1.Resources.Add(resources[i]);
+                party1.ResourcesAmountInInventory.Add(resourcesAmountInInventory[i]);
+            }
+            else
+            {
+                party2.Resources.Add(resources[i]);
+                party2.ResourcesAmountInInventory.Add(resourcesAmountInInventory[i]);
+            }
+        }
+
+        // Split advanced resources
+        for (int i = 0; i < advancedResources.Count; i++)
+        {
+            if (i < splitSize)
+                party1.AdvancedResources.Add(advancedResources[i]);
+            else
+                party2.AdvancedResources.Add(advancedResources[i]);
+        }
+
+        // Split other properties
+        for (int i = 0; i < TradeableItems.Count; i++)
+        {
+            if (i < splitSize)
+                party1.TradeableItems.Add(TradeableItems[i]);
+            else
+                party2.TradeableItems.Add(TradeableItems[i]);
+        }
+
+        for (int i = 0; i < ActiveQuests.Count; i++)
+        {
+            if (i < splitSize)
+                party1.ActiveQuests.Add(ActiveQuests[i]);
+            else
+                party2.ActiveQuests.Add(ActiveQuests[i]);
+        }
+
         splitParties.Add(party1);
         splitParties.Add(party2);
         return splitParties;
@@ -186,7 +243,7 @@ public class Party
     private List<Characters> members;
     private List<Troop> troops;
     private List<Resources> resources;
-    private List<int>resourcesAmountInInventory;
+    private List<int> resourcesAmountInInventory;
     private List<AdvancedResources> advancedResources;
     private PartyType partyType;
     private int carryWeight;

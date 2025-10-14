@@ -11,4 +11,6 @@ public enum ResourceType
     Fish,
     Fruit,
     Vegetable,
+    Food,
+    Water,
 }
