@@ -4,7 +4,19 @@ using UnityEngine;
 public class SaveLoadManager : MonoBehaviour
 {
     private static SaveLoadManager instance;
-    private static string saveFilePath = Application.persistentDataPath + "/savegame.json";
+    private static string _saveFilePath;
+
+    public static string SaveFilePath
+    {
+        get
+        {
+            if (_saveFilePath == null)
+            {
+                _saveFilePath = Application.persistentDataPath + "/savegame.json";
+            }
+            return _saveFilePath;
+        }
+    }
 
     void Awake()
     {
@@ -26,8 +38,8 @@ public class SaveLoadManager : MonoBehaviour
     private void SaveGameImpl(GameData data)
     {
         string json = JsonUtility.ToJson(data, true);
-        File.WriteAllText(saveFilePath, json);
-        Debug.Log("Game saved to " + saveFilePath);
+        File.WriteAllText(SaveFilePath, json);
+        Debug.Log("Game saved to " + SaveFilePath);
     }
 
     public static GameData LoadGame()
@@ -37,15 +49,15 @@ public class SaveLoadManager : MonoBehaviour
 
     private GameData LoadGameImpl()
     {
-        if (!File.Exists(saveFilePath))
+        if (!File.Exists(SaveFilePath))
         {
-            Debug.LogWarning("Save file not found at " + saveFilePath);
+            Debug.LogWarning("Save file not found at " + SaveFilePath);
             return null;
         }
 
-        string json = File.ReadAllText(saveFilePath);
+        string json = File.ReadAllText(SaveFilePath);
         GameData data = JsonUtility.FromJson<GameData>(json);
-        Debug.Log("Game loaded from " + saveFilePath);
+        Debug.Log("Game loaded from " + SaveFilePath);
         return data;
     }
 }
