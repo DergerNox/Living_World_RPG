@@ -1,11 +1,29 @@
 using System.IO;
 using UnityEngine;
 
-public static class SaveLoadManager
+public class SaveLoadManager : MonoBehaviour
 {
+    private static SaveLoadManager instance;
     private static string saveFilePath = Application.persistentDataPath + "/savegame.json";
 
+    void Awake()
+    {
+        if (instance == null)
+        {
+            instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
     public static void SaveGame(GameData data)
+    {
+        instance.SaveGameImpl(data);
+    }
+
+    private void SaveGameImpl(GameData data)
     {
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(saveFilePath, json);
@@ -13,6 +31,11 @@ public static class SaveLoadManager
     }
 
     public static GameData LoadGame()
+    {
+        return instance.LoadGameImpl();
+    }
+
+    private GameData LoadGameImpl()
     {
         if (!File.Exists(saveFilePath))
         {
