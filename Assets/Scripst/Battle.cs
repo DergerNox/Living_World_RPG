@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class Battle
@@ -8,66 +10,26 @@ public class Battle
     public List<Party> DefendingParties { get => defendingParties; set => defendingParties = value; }
     public TerrainType Terrain { get; set; } = TerrainType.Plain;
     //public methods
-    public bool BattleIndividual(Troop i_troopA,Troop i_troopB)
+    public bool BattleIndividual(Troop i_troopA, Troop i_troopB)
     {
-        while(i_troopA.IsAlive && i_troopB.IsAlive)
+        while (i_troopA.IsAlive && i_troopB.IsAlive)
         {
+            // TroopA attacks TroopB
             // Play attack sound for troopA
             if (AudioManager.Instance != null)
             {
                 AudioManager.Instance.PlayAttackSound();
             }
 
-            // Apply terrain and formation modifiers
-            float terrainModifier = GetTerrainModifier(i_troopA, Terrain);
-            float formationModifier = GetFormationModifier(i_troopA, i_troopB);
-            int damage = Mathf.RoundToInt(i_troopB.Damage * terrainModifier * formationModifier);
+            // Apply terrain modifier
+            float terrainModifierA = GetTerrainModifier(i_troopA, Terrain);
+            int damageA = Mathf.RoundToInt(i_troopA.Damage * terrainModifierA);
 
-            // Check for skill usage (simplified: random chance to use a skill)
-            if (Random.value < 0.3f && i_troopA.SkillBook.GetActiveSkills().Count > 0)
+            i_troopB.Health -= damageA;
+            if (i_troopB.Health <= 0)
             {
-                Skill randomSkill = i_troopA.SkillBook.GetActiveSkills()[Random.Range(0, i_troopA.SkillBook.GetActiveSkills().Count)];
-                randomSkill.UseSkill(i_troopA);
-                // Skills might modify attack, so recalculate damage
-                damage = Mathf.Max(1, Mathf.RoundToInt((i_troopA.Attack - i_troopB.Defense) * terrainModifier));
-            }
-
-            i_troopA.Health -= damage;
-            if(i_troopA.Health<=0)
-            {
-                i_troopA.IsAlive=false;
-                i_troopA.Health=0;
-                // Play death sound for troopA
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlayDeathSound();
-                }
-            }
-            else
-            {
-                // Play hit sound for troopA
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlayHitSound();
-                }
-                // Play hit visual effect
-                if (VisualEffectManager.Instance != null)
-                {
-                    VisualEffectManager.Instance.PlayHitEffect(i_troopA.transform.position);
-                }
-            }
-
-            // Play attack sound for troopB
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayAttackSound();
-            }
-
-            i_troopB.Health-=i_troopA.Damage;
-            if(i_troopB.Health<=0)
-            {
-                i_troopB.IsAlive=false;
-                i_troopB.Health=0;
+                i_troopB.IsAlive = false;
+                i_troopB.Health = 0;
                 // Play death sound for troopB
                 if (AudioManager.Instance != null)
                 {
@@ -81,46 +43,109 @@ public class Battle
                 {
                     AudioManager.Instance.PlayHitSound();
                 }
-                // Play hit visual effect
-                if (VisualEffectManager.Instance != null)
+            }
+
+            if (!i_troopB.IsAlive) break;
+
+            // TroopB attacks TroopA
+            // Play attack sound for troopB
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayAttackSound();
+            }
+
+            // Apply terrain modifier
+            float terrainModifierB = GetTerrainModifier(i_troopB, Terrain);
+            int damageB = Mathf.RoundToInt(i_troopB.Damage * terrainModifierB);
+
+            i_troopA.Health -= damageB;
+            if (i_troopA.Health <= 0)
+            {
+                i_troopA.IsAlive = false;
+                i_troopA.Health = 0;
+                // Play death sound for troopA
+                if (AudioManager.Instance != null)
                 {
-                    VisualEffectManager.Instance.PlayHitEffect(i_troopB.transform.position);
+                    AudioManager.Instance.PlayDeathSound();
+                }
+            }
+            else
+            {
+                // Play hit sound for troopA
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayHitSound();
                 }
             }
         }
-        if(i_troopA.IsAlive)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-
+        return i_troopA.IsAlive;
     }
 
-    public void BattleParties(List<Party> i_attackingParties,List<Party> i_defendingParties)
+    public void BattleParties(List<Party> i_attackingParties, List<Party> i_defendingParties)
     {
-       foreach(var x in i_attackingParties)
-       {
-           foreach(var y in i_defendingParties)
-           {
-               foreach(var troopA in x.Troops)
-               {
-                   foreach(var troopB in y.Troops)
-                   {
-                       if(BattleIndividual(troopA,troopB))
-                       {
-                        y.Troops.Remove(troopB);
-                       }
-                       else
-                       {
-                        x.Troops.Remove(troopA);
-                       }
-                   }
-               }
-           }
-       }
+        ConcurrentBag<(Troop attacker, bool survived)> battleResults = new ConcurrentBag<(Troop, bool)>();
+        ConcurrentBag<(Troop defender, bool survived)> defenderResults = new ConcurrentBag<(Troop, bool)>();
+
+        List<Troop> allAttackers = new List<Troop>();
+        List<Troop> allDefenders = new List<Troop>();
+        foreach (var party in i_attackingParties)
+        {
+            allAttackers.AddRange(party.Troops);
+        }
+        foreach (var party in i_defendingParties)
+        {
+            allDefenders.AddRange(party.Troops);
+        }
+
+        // Parallel processing of battles
+        Parallel.For(0, Mathf.Min(allAttackers.Count, allDefenders.Count), i =>
+        {
+            Troop troopA = allAttackers[i];
+            Troop troopB = allDefenders[i];
+            bool attackerSurvived = BattleIndividual(troopA, troopB);
+            battleResults.Add((troopA, attackerSurvived));
+            defenderResults.Add((troopB, !attackerSurvived));
+        });
+
+        // Aggregate results
+        List<Troop> survivingAttackers = new List<Troop>();
+        List<Troop> survivingDefenders = new List<Troop>();
+        foreach (var result in battleResults)
+        {
+            if (result.survived)
+            {
+                survivingAttackers.Add(result.attacker);
+            }
+        }
+        foreach (var result in defenderResults)
+        {
+            if (result.survived)
+            {
+                survivingDefenders.Add(result.defender);
+            }
+        }
+
+        // Update parties
+        int attackerIndex = 0;
+        foreach (var party in i_attackingParties)
+        {
+            party.Troops.Clear();
+            int troopLimit = party.Size - party.Members.Count;
+            while (attackerIndex < survivingAttackers.Count && party.Troops.Count < troopLimit)
+            {
+                party.Troops.Add(survivingAttackers[attackerIndex++]);
+            }
+        }
+        int defenderIndex = 0;
+        foreach (var party in i_defendingParties)
+        {
+            party.Troops.Clear();
+            int troopLimit = party.Size - party.Members.Count;
+            while (defenderIndex < survivingDefenders.Count && party.Troops.Count < troopLimit)
+            {
+                party.Troops.Add(survivingDefenders[defenderIndex++]);
+            }
+        }
     }
     
     private float GetTerrainModifier(Troop troop, TerrainType terrain)
