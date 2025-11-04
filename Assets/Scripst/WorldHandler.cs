@@ -27,6 +27,8 @@ public class WorldHandler : MonoBehaviour
             WorldGenerator.Instance.GenerateWorld();
         }
 
+        BuildSpatialCaches();
+
         // Assign player to a faction or make neutral
         if (Factions.Count > 0)
         {
@@ -37,99 +39,29 @@ public class WorldHandler : MonoBehaviour
     }
 
     // Update Method
-    void Update()
-    {
-        // Update party positions periodically (e.g., every few seconds)
-        if (Time.frameCount % 300 == 0) // Every 5 seconds at 60fps
-        {
-            if (PartyManager.Instance != null)
-            {
-                PartyManager.Instance.UpdatePartyPositions();
-            }
-        }
-    }
+    void Update() { }
 
     // Get the Town at a specific position
     public static Town GetTownAtPosition(Vector3Int position)
     {
-        foreach (var town in towns)
-        {
-            if (town == null)
-            {
-                Debug.LogWarning("Null town found in towns list.");
-                continue;
-            }
-            Vector3Int townPos;
-            try
-            {
-                townPos = (Vector3Int)town.Position;
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"Error accessing Town.Position: {e.Message}");
-                continue;
-            }
-            if (townPos == position)
-            {
-                return town;
-            }
-        }
+        Town t;
+        if (_townByPos.TryGetValue(position, out t)) return t;
         return null;
     }
 
     // Get the Castle at a specific position
     public static Castle GetCastleAtPosition(Vector3Int position)
     {
-        foreach (var castle in castles)
-        {
-            if (castle == null)
-            {
-                Debug.LogWarning("Null castle found in castles list.");
-                continue;
-            }
-            Vector3Int castlePos;
-            try
-            {
-                castlePos = (Vector3Int)castle.Position;
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"Error accessing Castle.Position: {e.Message}");
-                continue;
-            }
-            if (castlePos == position)
-            {
-                return castle;
-            }
-        }
+        Castle c;
+        if (_castleByPos.TryGetValue(position, out c)) return c;
         return null;
     }
 
     // Get the Village at a specific position
     public static Village GetVillageAtPosition(Vector3Int position)
     {
-        foreach (var village in villages)
-        {
-            if (village == null)
-            {
-                Debug.LogWarning("Null village found in villages list.");
-                continue;
-            }
-            Vector3Int villagePos;
-            try
-            {
-                villagePos = (Vector3Int)village.Position;
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"Error accessing Village.Position: {e.Message}");
-                continue;
-            }
-            if (villagePos == position)
-            {
-                return village;
-            }
-        }
+        Village v;
+        if (_villageByPos.TryGetValue(position, out v)) return v;
         return null;
     }
 
@@ -139,4 +71,31 @@ public class WorldHandler : MonoBehaviour
     private static List<Town> towns = new List<Town>();
     private static List<Village> villages = new List<Village>();
     private static List<Faction> factions = new List<Faction>();
+
+	private static readonly Dictionary<Vector3Int, Town> _townByPos = new Dictionary<Vector3Int, Town>();
+	private static readonly Dictionary<Vector3Int, Castle> _castleByPos = new Dictionary<Vector3Int, Castle>();
+	private static readonly Dictionary<Vector3Int, Village> _villageByPos = new Dictionary<Vector3Int, Village>();
+
+	private static void BuildSpatialCaches()
+	{
+		_townByPos.Clear();
+		_castleByPos.Clear();
+		_villageByPos.Clear();
+
+		foreach (var town in towns)
+		{
+			if (town == null) continue;
+			try { _townByPos[(Vector3Int)town.Position] = town; } catch (Exception) { }
+		}
+		foreach (var castle in castles)
+		{
+			if (castle == null) continue;
+			try { _castleByPos[(Vector3Int)castle.Position] = castle; } catch (Exception) { }
+		}
+		foreach (var village in villages)
+		{
+			if (village == null) continue;
+			try { _villageByPos[(Vector3Int)village.Position] = village; } catch (Exception) { }
+		}
+	}
 }

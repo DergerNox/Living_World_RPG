@@ -187,20 +187,26 @@ public class Troop
     // Method to get the image based on type and rank
     public Sprite GetTroopImage(TroopType type, TroopRank rank)
 {
-    // Format the image name based on troop type and rank (both converted to strings)
     string imageName = $"{type.ToString()}_{rank.ToString()}";
-
-    // Debug log to check the image name
     Debug.Log($"Looking for image: {imageName}");
 
-    // Load the sprite (assuming the images are stored in a Resources folder)
-    Sprite sprite = UnityEngine.Resources.Load<Sprite>($"Sprites/TroopSprites/{imageName}");
+    IAssetProvider provider;
+    if (!ServiceLocator.TryResolve<IAssetProvider>(out provider))
+    {
+        // Fallback to Resources if provider not yet registered
+        var fallback = UnityEngine.Resources.Load<Sprite>($"Sprites/TroopSprites/{imageName}");
+        if (fallback == null)
+        {
+            Debug.LogError($"Image not found for {imageName}");
+        }
+        return fallback;
+    }
 
+    var sprite = provider.LoadSprite($"Sprites/TroopSprites/{imageName}");
     if (sprite == null)
     {
         Debug.LogError($"Image not found for {imageName}");
     }
-
     return sprite;
 }
 

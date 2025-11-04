@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Singleton A* Pathfinding manager using a tile-based grid from WorldHandler.
@@ -80,6 +81,7 @@ public class PathfindingManager : MonoBehaviour
     /// </summary>
     public List<Vector3Int> FindPath(Vector3Int startCell, Vector3Int targetCell)
     {
+        Profiler.BeginSample("Pathfinding.FindPath");
         if (!InBounds(startCell) || !InBounds(targetCell)) return null;
 
         // Reset node data
@@ -108,7 +110,11 @@ public class PathfindingManager : MonoBehaviour
         {
             Node current = openSet.RemoveFirst();
             if (current == targetNode)
-                return RetracePath(startNode, targetNode);
+            {
+                var p = RetracePath(startNode, targetNode);
+                Profiler.EndSample();
+                return p;
+            }
 
             closedSet.Add(current);
             foreach (Node neighbor in GetNeighbors(current))
@@ -131,21 +137,24 @@ public class PathfindingManager : MonoBehaviour
             iterations++;
         }
 
+        Profiler.EndSample();
         return null; // no path found
     }
 
     bool InBounds(Vector3Int c) =>
         c.x >= 0 && c.x < gridSize.x && c.y >= 0 && c.y < gridSize.y;
 
+    private static readonly Vector2Int[] _neighborDirs = new Vector2Int[] {
+        new Vector2Int(1,0), new Vector2Int(-1,0), new Vector2Int(0,1), new Vector2Int(0,-1)
+    };
+    private readonly List<Node> _neighborBuffer = new List<Node>(4);
+
     List<Node> GetNeighbors(Node node)
     {
-        var neighbors = new List<Node>(4);
+        var neighbors = _neighborBuffer;
+        neighbors.Clear();
         int x = node.Position.x, y = node.Position.y;
-        var dirs = new Vector2Int[] {
-            new Vector2Int(1,0), new Vector2Int(-1,0),
-            new Vector2Int(0,1), new Vector2Int(0,-1)
-        };
-        foreach (var d in dirs)
+        foreach (var d in _neighborDirs)
         {
             int nx = x + d.x, ny = y + d.y;
             if (nx >= 0 && nx < gridSize.x && ny >= 0 && ny < gridSize.y)

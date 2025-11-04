@@ -1,0 +1,20 @@
+<linker>
+  <assembly fullname="Assembly-CSharp">
+    <type fullname="SkillData" preserve="all" />
+    <type fullname="SkillEffectData" preserve="all" />
+    <type fullname="BaseSkill" preserve="all" />
+    <type fullname="GenericSkill" preserve="all" />
+    <type fullname="MageSkill" preserve="all" />
+    <type fullname="WarriorSkill" preserve="all" />
+    <type fullname="RogueSkill" preserve="all" />
+    <type fullname="ISkill" preserve="all" />
+    <type fullname="ISkillEffect" preserve="all" />
+    <type fullname="ISkillTarget" preserve="all" />
+    <type fullname="IStatusEffect" preserve="all" />
+    <type fullname="BuffEffect" preserve="all" />
+    <type fullname="DamageEffect" preserve="all" />
+    <type fullname="HealEffect" preserve="all" />
+    <type fullname="BuffStatusEffect" preserve="all" />
+  </assembly>
+</linker>
+

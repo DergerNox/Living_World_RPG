@@ -27,6 +27,8 @@ public class NPC2DController : MonoBehaviour
     private bool isWaiting = false;
     private Transform playerTransform;
 
+	private static System.Collections.Generic.Dictionary<float, WaitForSeconds> _waitCache = new System.Collections.Generic.Dictionary<float, WaitForSeconds>();
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -129,7 +131,13 @@ public class NPC2DController : MonoBehaviour
     {
         isWaiting = true;
         currentState = State.Waiting;
-        yield return new WaitForSeconds(t);
+        float key = Mathf.Round(t * 10f) / 10f; // 0.1s buckets to reuse
+        if (!_waitCache.TryGetValue(key, out var wait))
+        {
+            wait = new WaitForSeconds(key);
+            _waitCache[key] = wait;
+        }
+        yield return wait;
         isWaiting = false;
         currentState = State.Patrol;
     }

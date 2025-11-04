@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Factory for creating skills from SkillData ScriptableObjects
@@ -20,28 +22,57 @@ public class SkillFactory
     private void LoadSkillDatabase()
     {
         skillDatabase = new Dictionary<string, SkillData>();
-        
-        // Load all SkillData ScriptableObjects from Resources/Skills
-        SkillData[] allSkills = Resources.LoadAll<SkillData>("Skills");
-        
-        foreach (var skillData in allSkills)
+        IAssetProvider provider;
+        if (!ServiceLocator.TryResolve<IAssetProvider>(out provider))
         {
+            Object[] fallbackObjects = Resources.LoadAll("Skills");
+            SkillData[] fallback = fallbackObjects.OfType<SkillData>().ToArray();
+            IndexSkills(fallback);
+            Debug.Log($"[SkillFactory] Loaded {skillDatabase.Count} skills from Resources (fallback)");
+            return;
+        }
+
+        SkillData[] allSkills = provider.LoadAll<SkillData>("Skills");
+        
+        IndexSkills(allSkills);
+        Debug.Log($"[SkillFactory] Loaded {skillDatabase.Count} skills via AssetProvider");
+    }
+
+    private void IndexSkills(IEnumerable<SkillData> skills)
+    {
+        foreach (var skillData in skills)
+        {
+            if (skillData == null) continue;
             if (string.IsNullOrEmpty(skillData.skillId))
             {
                 Debug.LogWarning($"SkillData {skillData.name} has no skillId set!");
                 continue;
             }
-            
             if (skillDatabase.ContainsKey(skillData.skillId))
             {
                 Debug.LogWarning($"Duplicate skill ID found: {skillData.skillId}");
                 continue;
             }
-            
             skillDatabase[skillData.skillId] = skillData;
         }
-        
-        Debug.Log($"[SkillFactory] Loaded {skillDatabase.Count} skills from Resources");
+    }
+
+    public async Task<int> LoadSkillDatabaseAsync()
+    {
+        skillDatabase = new Dictionary<string, SkillData>();
+        IAssetProvider provider;
+        if (!ServiceLocator.TryResolve<IAssetProvider>(out provider))
+        {
+            Object[] fallbackObjects = Resources.LoadAll("Skills");
+            SkillData[] fallback = fallbackObjects.OfType<SkillData>().ToArray();
+            IndexSkills(fallback);
+            return skillDatabase.Count;
+        }
+        // Resources.LoadAll has no async bulk counterpart; for Addressables, this would change
+        SkillData[] allSkills = provider.LoadAll<SkillData>("Skills");
+        IndexSkills(allSkills);
+        await Task.Yield();
+        return skillDatabase.Count;
     }
     
     /// <summary>
@@ -60,15 +91,15 @@ public class SkillFactory
         // Create appropriate skill type based on data
         switch (data.skillType)
         {
-            case SkillType.Warrior:
-                return new WarriorSkill(data);
-                
             case SkillType.Mage:
                 return new MageSkill(data);
-                
+
+            case SkillType.Warrior:
+                return new WarriorSkill(data);
+
             case SkillType.Rogue:
                 return new RogueSkill(data);
-                
+
             default:
                 return new GenericSkill(data);
         }

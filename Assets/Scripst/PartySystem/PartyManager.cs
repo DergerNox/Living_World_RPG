@@ -28,6 +28,16 @@ public class PartyManager : MonoBehaviour
         GenerateAIParties();
     }
 
+	void OnEnable()
+	{
+		TickSystem.OnSecond += OnSecondTick;
+	}
+
+	void OnDisable()
+	{
+		TickSystem.OnSecond -= OnSecondTick;
+	}
+
     private void GenerateAIParties()
     {
         // Generate some AI parties for the world
@@ -74,4 +84,9 @@ public class PartyManager : MonoBehaviour
             }
         }
     }
+
+	private void OnSecondTick()
+	{
+		UpdatePartyPositions();
+	}
 }

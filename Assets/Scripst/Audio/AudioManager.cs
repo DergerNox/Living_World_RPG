@@ -33,6 +33,12 @@ public class AudioManager : MonoBehaviour
     public AudioClip uiMenuOpenSound;
     public AudioClip uiMenuCloseSound;
 
+    [Header("Pooling")]
+    [Range(1, 32)]
+    public int sfxPoolSize = 8;
+    private AudioSource[] _sfxPool;
+    private int _sfxPoolIndex;
+
     private void Awake()
     {
         if (Instance == null)
@@ -63,6 +69,15 @@ public class AudioManager : MonoBehaviour
             soundEffectsSource = gameObject.AddComponent<AudioSource>();
         }
 
+        // Create SFX pool for overlapping one-shots
+        _sfxPool = new AudioSource[sfxPoolSize];
+        for (int i = 0; i < sfxPoolSize; i++)
+        {
+            var src = gameObject.AddComponent<AudioSource>();
+            src.playOnAwake = false;
+            _sfxPool[i] = src;
+        }
+
         UpdateVolumes();
     }
 
@@ -86,6 +101,13 @@ public class AudioManager : MonoBehaviour
         if (soundEffectsSource != null)
         {
             soundEffectsSource.volume = masterVolume * effectsVolume;
+        }
+        if (_sfxPool != null)
+        {
+            for (int i = 0; i < _sfxPool.Length; i++)
+            {
+                if (_sfxPool[i] != null) _sfxPool[i].volume = masterVolume * effectsVolume;
+            }
         }
     }
 
@@ -134,10 +156,9 @@ public class AudioManager : MonoBehaviour
 
     public void PlaySoundEffect(AudioClip clip)
     {
-        if (soundEffectsSource != null && clip != null)
-        {
-            soundEffectsSource.PlayOneShot(clip, effectsVolume * masterVolume);
-        }
+        if (clip == null) return;
+        var src = NextSfxSource();
+        if (src != null) src.PlayOneShot(clip, effectsVolume * masterVolume);
     }
 
     public void PlayAttackSound()
@@ -188,5 +209,13 @@ public class AudioManager : MonoBehaviour
     public void PlayUIMenuClose()
     {
         PlaySoundEffect(uiMenuCloseSound);
+    }
+
+    private AudioSource NextSfxSource()
+    {
+        if (_sfxPool == null || _sfxPool.Length == 0) return soundEffectsSource;
+        _sfxPoolIndex++;
+        if (_sfxPoolIndex >= _sfxPool.Length) _sfxPoolIndex = 0;
+        return _sfxPool[_sfxPoolIndex];
     }
 }

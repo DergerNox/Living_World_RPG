@@ -35,11 +35,18 @@ public class SkillManager : MonoBehaviour
         Debug.Log("[SkillManager] Initialized");
     }
     
-    private void Update()
+    void OnEnable()
     {
-        float deltaTime = Time.deltaTime;
-        
-        // Update all character skill cooldowns and status effects
+        TickSystem.OnTick += OnTick;
+    }
+
+    void OnDisable()
+    {
+        TickSystem.OnTick -= OnTick;
+    }
+
+    private void OnTick(float deltaTime)
+    {
         foreach (var character in registeredCharacters)
         {
             if (character != null)

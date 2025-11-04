@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 public class Battle
 {
@@ -83,6 +84,7 @@ public class Battle
 
     public void BattleParties(List<Party> i_attackingParties, List<Party> i_defendingParties)
     {
+        Profiler.BeginSample("BattleParties");
         ConcurrentBag<(Troop attacker, bool survived)> battleResults = new ConcurrentBag<(Troop, bool)>();
         ConcurrentBag<(Troop defender, bool survived)> defenderResults = new ConcurrentBag<(Troop, bool)>();
 
@@ -100,11 +102,13 @@ public class Battle
         // Parallel processing of battles
         Parallel.For(0, Mathf.Min(allAttackers.Count, allDefenders.Count), i =>
         {
+            Profiler.BeginThreadProfiling("Battle", "Individual");
             Troop troopA = allAttackers[i];
             Troop troopB = allDefenders[i];
             bool attackerSurvived = BattleIndividual(troopA, troopB);
             battleResults.Add((troopA, attackerSurvived));
             defenderResults.Add((troopB, !attackerSurvived));
+            Profiler.EndThreadProfiling();
         });
 
         // Aggregate results
@@ -146,6 +150,7 @@ public class Battle
                 party.Troops.Add(survivingDefenders[defenderIndex++]);
             }
         }
+        Profiler.EndSample();
     }
     
     private float GetTerrainModifier(Troop troop, TerrainType terrain)
