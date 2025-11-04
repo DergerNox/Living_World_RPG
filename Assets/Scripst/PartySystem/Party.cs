@@ -21,6 +21,7 @@ public class Party
     public Vector3Int Position { get; set; } = Vector3Int.zero;
     public int Morale { get; set; } = 100; // 0-100 scale
     public int Fatigue { get; set; } = 0; // 0-100 scale
+    public int FactionId { get; set; } = -1; // -1 means no faction assigned initially
 
     //Constructor
     public Party()
@@ -138,6 +139,7 @@ public class Party
         mergedParty.Gold = this.Gold + otherParty.Gold;
         mergedParty.Position = this.Position; // Keep position of merging party
         mergedParty.size = mergedParty.Members.Count + mergedParty.Troops.Count;
+        mergedParty.FactionId = this.FactionId; // Inherit faction from this party
 
         // Merge resources
         mergedParty.Resources.AddRange(this.Resources);
@@ -166,6 +168,8 @@ public class Party
 
         party1.Name = this.Name + " Part 1";
         party2.Name = this.Name + " Part 2";
+        party1.FactionId = this.FactionId;
+        party2.FactionId = this.FactionId;
 
         // Split members
         for (int i = 0; i < members.Count; i++)

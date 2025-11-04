@@ -27,6 +27,12 @@ public class WorldHandler : MonoBehaviour
             WorldGenerator.Instance.GenerateWorld();
         }
 
+        // Assign player to a faction or make neutral
+        if (Factions.Count > 0)
+        {
+            player.Party.FactionId = 0; // Assign to first faction or handle appropriately
+        }
+
         Debug.Log($"World generated with {Factions.Count} factions, {Castles.Count} castles, {Towns.Count} towns, {Villages.Count} villages.");
     }
 

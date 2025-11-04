@@ -16,7 +16,7 @@ public class Troop
     public TroopRank Rank { get => rank; set => rank = value; }
     public int Cost { get => cost; set => cost = value; }
     public Sprite UnitImage { get => unitImage; private set => unitImage = value; }
-    public SkillBook SkillBook { get; set; } = new SkillBook();
+    //public SkillBook SkillBook { get; set; } = new SkillBook();
     public int Attack { get; set; } = 10;
     public int Defense { get; set; } = 5;
 

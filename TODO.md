@@ -1,18 +1,10 @@
-- [x] Expand Unity Editor Steps for Save/Load System with detailed explanations
-- [x] Expand Unity Editor Steps for Inventory and Equipment System with detailed explanations
-- [x] Expand Unity Editor Steps for Skill System with detailed explanations
-- [x] Expand Unity Editor Steps for Battle System with detailed explanations
-- [x] Expand Unity Editor Steps for Party System with detailed explanations
-- [x] Expand Unity Editor Steps for Troop System with detailed explanations
-- [x] Expand Unity Editor Steps for Settlement Management with detailed explanations
-- [x] Expand Unity Editor Steps for Economy and Trade System with detailed explanations
-- [x] Expand Unity Editor Steps for World Management with detailed explanations
-- [x] Expand Unity Editor Steps for Quest and Story System with detailed explanations
-- [x] Expand Unity Editor Steps for Time and Weather System with detailed explanations
-- [x] Expand Unity Editor Steps for AI and NPC Behavior with detailed explanations
-- [x] Expand Unity Editor Steps for UI System with detailed explanations
-- [x] Expand Unity Editor Steps for Pathfinding with detailed explanations
-- [x] Expand Unity Editor Steps for Resources and Buildings with detailed explanations
-- [x] Expand Unity Editor Steps for Visual Effects and Graphics Enhancements with detailed explanations
-- [x] Expand Unity Editor Steps for Sound and Audio System with detailed explanations
-- [x] Expand Unity Editor Steps for Character System with detailed explanations
+# TODO: Expand Living_World_RPG_Documentation.md Sections
+
+## Pending Tasks
+- [x] Expand GameManager section with detailed purpose, implementation, Unity Editor Modifications, and Effects of Changes.
+- [x] Expand WorldEventManager section with detailed purpose, implementation, Unity Editor Modifications, and Effects of Changes.
+- [x] Expand NPC and AI System section (NPC.cs and NPCManager.cs) with detailed purpose, implementation, Unity Editor Modifications, and Effects of Changes.
+- [x] Expand Graphics and Optimization section (GraphicsOptimizer.cs and VisualEffectManager.cs) with detailed purpose, implementation, Unity Editor Modifications, and Effects of Changes.
+- [x] Expand Pathfinding and Interactions section (PathfindingManager.cs and PlayerInteraction.cs) with detailed purpose, implementation, Unity Editor Modifications, and Effects of Changes.
+- [ ] Expand Data Structures and Enums section if needed, ensuring all enums and structs have detailed purposes and effects.
+- [ ] Verify formatting and depth consistency across all expanded sections.

@@ -81,6 +81,14 @@ public class WorldGenerator : MonoBehaviour
             Faction faction = new Faction($"Faction {i + 1}", center, i);
             WorldHandler.Factions.Add(faction);
         }
+
+        // Ensure factions have lists initialized
+        foreach (var faction in WorldHandler.Factions)
+        {
+            if (faction.Castles == null) faction.Castles = new List<Castle>();
+            if (faction.Towns == null) faction.Towns = new List<Town>();
+            if (faction.Villages == null) faction.Villages = new List<Village>();
+        }
     }
 
     private void GenerateSettlements()

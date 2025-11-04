@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
-public class Characters
+public class Characters : ISkillTarget
 {
     //public variables
     public string Name { get { return name; } set { name = value; } }
@@ -12,7 +13,7 @@ public class Characters
     public int Gold { get { return gold; } set { gold = value; } }
     public int Level { get { return level; } set { level = value; } }
     public int Experience { get { return experience; } set { experience = value; } }
-    public SkillBook SkillBook { get { return skillBook; } set { skillBook = value; } }
+    // REMOVED: public SkillBook SkillBook { get; set; } - replaced with direct skill management
     public Party Party { get { return party; } set { party = value; } }
     public Inventory Inventory { get; set; } = new Inventory();
     public Equipment Equipment { get; set; } = new Equipment();
@@ -21,6 +22,10 @@ public class Characters
     public int Intelligence { get; set; } = 10;
     public int Attack { get; set; } = 10;
     public int Defense { get; set; } = 5;
+
+    // REPLACES SkillBook - Direct skill management
+    private Dictionary<string, BaseSkill> learnedSkills = new Dictionary<string, BaseSkill>();
+    private List<IStatusEffect> activeStatusEffects = new List<IStatusEffect>();
     public Characters(string name, int maxHealth, int maxMana, int level = 1)
     {
         this.name = name;
@@ -31,7 +36,7 @@ public class Characters
         this.level = level;
         this.experience = 0;
         this.gold = 0;
-        this.skillBook = new SkillBook();
+        // REMOVED: this.skillBook = new SkillBook();
         this.Inventory = new Inventory();
         this.Equipment = new Equipment();
         this.Attack = 10;
@@ -110,6 +115,93 @@ public class Characters
         }
     }
 
+    // ISkillTarget implementation
+    public void TakeDamage(int damage)
+    {
+        int actualDamage = Mathf.Max(0, damage - Defense);
+        Health -= actualDamage;
+        if (Health < 0) Health = 0;
+    }
+
+    public void Heal(int amount)
+    {
+        Health += amount;
+        if (Health > MaxHealth) Health = MaxHealth;
+    }
+
+    public void ApplyStatusEffect(IStatusEffect effect)
+    {
+        activeStatusEffects.Add(effect);
+        effect.Apply(this);
+    }
+
+    // Skill Management Methods (replaces SkillBook functionality)
+    public void LearnSkill(BaseSkill skill)
+    {
+        if (!learnedSkills.ContainsKey(skill.SkillId))
+        {
+            learnedSkills.Add(skill.SkillId, skill);
+            SkillEvents.SkillLearned(this, skill);
+            Debug.Log($"{Name} learned {skill.SkillName}");
+        }
+    }
+
+    public void ForgetSkill(string skillId)
+    {
+        learnedSkills.Remove(skillId);
+    }
+
+    public bool HasSkill(string skillId)
+    {
+        return learnedSkills.ContainsKey(skillId);
+    }
+
+    public BaseSkill GetSkill(string skillId)
+    {
+        return learnedSkills.ContainsKey(skillId) ? learnedSkills[skillId] : null;
+    }
+
+    public List<BaseSkill> GetAllSkills()
+    {
+        return new List<BaseSkill>(learnedSkills.Values);
+    }
+
+    public List<BaseSkill> GetSkillsByType(SkillType type)
+    {
+        return learnedSkills.Values.Where(s => s.SkillType == type).ToList();
+    }
+
+    public List<BaseSkill> GetActiveSkills()
+    {
+        return learnedSkills.Values.Where(s => !s.IsPassive).ToList();
+    }
+
+    public List<BaseSkill> GetPassiveSkills()
+    {
+        return learnedSkills.Values.Where(s => s.IsPassive).ToList();
+    }
+
+    public void UpdateSkillCooldowns(float deltaTime)
+    {
+        foreach (var skill in learnedSkills.Values)
+        {
+            skill.UpdateCooldown(deltaTime);
+        }
+    }
+
+    public void UpdateStatusEffects(float deltaTime)
+    {
+        for (int i = activeStatusEffects.Count - 1; i >= 0; i--)
+        {
+            activeStatusEffects[i].Update(deltaTime);
+            if (activeStatusEffects[i].IsExpired)
+            {
+                activeStatusEffects[i].Remove(this);
+                activeStatusEffects.RemoveAt(i);
+            }
+        }
+    }
+
     //private variables
     private string name;
     private int health;
@@ -119,6 +211,5 @@ public class Characters
     private int gold;
     private int level;
     private int experience;
-    private SkillBook skillBook;
     private Party party;
 }
