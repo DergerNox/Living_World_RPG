@@ -23,6 +23,7 @@ public class TimeManager : MonoBehaviour, ITimeService
     public int Day => day;
     public int Month => month;
     public int Year => year;
+    public float TimeScale => timeScale;
 
     private void Awake()
     {

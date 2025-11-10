@@ -19,6 +19,7 @@ public class WeatherManager : MonoBehaviour
     private float weatherTimer = 0f;
 
     public event Action<WeatherType> OnWeatherChanged;
+    private ITimeService timeService;
 
     private void Awake()
     {
@@ -35,7 +36,8 @@ public class WeatherManager : MonoBehaviour
 
     private void Update()
     {
-        weatherTimer += Time.deltaTime * TimeManager.Instance.timeScale;
+        float scale = GetTimeService()?.TimeScale ?? 60f;
+        weatherTimer += Time.deltaTime * scale;
         if (weatherTimer >= weatherDuration)
         {
             SetRandomWeather();
@@ -48,5 +50,17 @@ public class WeatherManager : MonoBehaviour
         Array values = Enum.GetValues(typeof(WeatherType));
         currentWeather = (WeatherType)values.GetValue(UnityEngine.Random.Range(0, values.Length));
         OnWeatherChanged?.Invoke(currentWeather);
+    }
+
+    private ITimeService GetTimeService()
+    {
+        if (timeService == null)
+        {
+            if (!ServiceLocator.TryResolve(out timeService))
+            {
+                timeService = TimeManager.Instance;
+            }
+        }
+        return timeService;
     }
 }

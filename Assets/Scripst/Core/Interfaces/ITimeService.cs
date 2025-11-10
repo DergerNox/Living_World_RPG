@@ -13,6 +13,7 @@ public interface ITimeService
     int Day { get; }
     int Month { get; }
     int Year { get; }
+    float TimeScale { get; }
 
     /// <summary>
     /// Advance time using a delta (typically Time.deltaTime).

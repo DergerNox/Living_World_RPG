@@ -4,11 +4,13 @@ public class NPCDecisionMaker : MonoBehaviour
 {
     private NPC npc;
     private AIStateMachine stateMachine;
+    private ITimeService timeService;
 
     void Start()
     {
         npc = GetComponent<NPC>();
         stateMachine = GetComponent<AIStateMachine>();
+        ResolveTimeService();
     }
 
     void Update()
@@ -20,8 +22,8 @@ public class NPCDecisionMaker : MonoBehaviour
     {
         if (npc == null || stateMachine == null) return;
 
-        // Simple decision making based on activity and time
-        int hour = TimeManager.Instance.hour;
+        var service = ResolveTimeService();
+        int hour = service?.Hour ?? 0;
 
         if (hour >= 22 || hour < 6)
         {
@@ -57,5 +59,17 @@ public class NPCDecisionMaker : MonoBehaviour
         }
 
         // Add more complex decisions here, like reacting to player proximity, faction relations, etc.
+    }
+
+    private ITimeService ResolveTimeService()
+    {
+        if (timeService == null)
+        {
+            if (!ServiceLocator.TryResolve(out timeService))
+            {
+                timeService = TimeManager.Instance;
+            }
+        }
+        return timeService;
     }
 }

@@ -27,6 +27,7 @@ public class WorldEventManager : MonoBehaviour
 
     private List<WorldEvent> activeEvents = new List<WorldEvent>();
     private IQuestService questService;
+    private ITimeService timeService;
 
     private void Awake()
     {
@@ -45,9 +46,18 @@ public class WorldEventManager : MonoBehaviour
 
     private void Start()
     {
-        if (TimeManager.Instance != null)
+        var time = ResolveTimeService();
+        if (time != null)
         {
-            TimeManager.Instance.OnDayChanged += ProcessDailyEvents;
+            time.OnDayChanged += ProcessDailyEvents;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (timeService != null)
+        {
+            timeService.OnDayChanged -= ProcessDailyEvents;
         }
     }
 
@@ -200,5 +210,17 @@ public class WorldEventManager : MonoBehaviour
         }
 
         return questService;
+    }
+
+    private ITimeService ResolveTimeService()
+    {
+        if (timeService == null)
+        {
+            if (!ServiceLocator.TryResolve(out timeService))
+            {
+                timeService = TimeManager.Instance;
+            }
+        }
+        return timeService;
     }
 }

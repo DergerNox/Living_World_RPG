@@ -6,6 +6,7 @@ public class NPCManager : MonoBehaviour
     public static NPCManager Instance;
 
     public List<NPC> npcs = new List<NPC>();
+    private ITimeService timeService;
 
     private void Awake()
     {
@@ -17,12 +18,26 @@ public class NPCManager : MonoBehaviour
 
     private void Start()
     {
-        TimeManager.Instance.OnHourChanged += UpdateNPCActivities;
+        var service = ResolveTimeService();
+        if (service != null)
+        {
+            service.OnHourChanged += UpdateNPCActivities;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        var service = timeService;
+        if (service != null)
+        {
+            service.OnHourChanged -= UpdateNPCActivities;
+        }
     }
 
     private void UpdateNPCActivities()
     {
-        int hour = TimeManager.Instance.hour;
+        var service = ResolveTimeService();
+        int hour = service?.Hour ?? 0;
         foreach (NPC npc in npcs)
         {
             if (hour >= 22 || hour < 6)
@@ -42,5 +57,17 @@ public class NPCManager : MonoBehaviour
                 npc.CurrentActivity = Activity.Wandering;
             }
         }
+    }
+
+    private ITimeService ResolveTimeService()
+    {
+        if (timeService == null)
+        {
+            if (!ServiceLocator.TryResolve(out timeService))
+            {
+                timeService = TimeManager.Instance;
+            }
+        }
+        return timeService;
     }
 }

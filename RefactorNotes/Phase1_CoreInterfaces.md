@@ -37,5 +37,6 @@ Created the initial set of service contracts under `Assets/Scripst/Core/Interfac
 - Gameplay systems such as `QuestManager` and `Inventory` now retrieve `IAudioService` on demand (via locator fallback), so quest completion/item pickup effects no longer reach into `AudioManager.Instance`.
 - `PartyUI` resolves `IPartyService`, enabling merges/splits without touching `PartyManager.Instance`, and `WorldEventManager` now pulls quests through `IQuestService` rather than the static `QuestManager`.
 - Economy/trade logic now flows through `ITradeService`, allowing future pricing strategies or persistence hooks without touching statics.
+- Time-dependent systems (`NPCManager`, `NPCDecisionMaker`, `WorldEventManager`, `TimeWeatherUI`, and `WeatherManager`) now resolve `ITimeService` instead of referencing `TimeManager.Instance`, and the interface exposes `TimeScale` so consumers avoid poking public fields.
 
 Next steps: migrate remaining systems (UI panels, quests, inventory) away from `AudioManager.Instance`/other singletons and lean on the registered interfaces.
