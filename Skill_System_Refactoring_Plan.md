@@ -56,7 +56,6 @@ public List<BaseSkill> GetActiveSkills() =>
 - Skill prerequisites
 - Progression paths
 - NOT skill creation or data storage
-=======
 
 ### Identified Issues
 
@@ -79,7 +78,6 @@ public List<BaseSkill> GetActiveSkills() =>
 - **SkillBook.cs** and **SkillTree.cs**: Both initialize the same skills with identical parameters
 - **Problem**: Maintenance nightmare - changes must be made in multiple places
 - **Solution**: Remove SkillBook entirely, use ScriptableObjects for skill data
-=======
 
 #### 5. **Lack of Abstraction**
 - No interfaces for skills, effects, or skill targets
@@ -607,7 +605,6 @@ public class Characters : ISkillTarget
     }
 }
 ```
-=======
 
 #### 3.2 Create Skill Factory
 
@@ -682,7 +679,6 @@ public class SkillFactory
 3. ✅ Move cooldown updates to SkillManager
 4. ✅ Remove SkillBook property from Characters
 5. ✅ Delete SkillBook.cs file
-=======
 
 #### 3.4 Refactor SkillTree
 
@@ -865,7 +861,6 @@ public class SkillManager : MonoBehaviour
     }
 }
 ```
-=======
 
 ---
 
@@ -934,7 +929,6 @@ public class SkillManager : MonoBehaviour
 **Files DELETED:**
 - ❌ `Assets/Scripst/SkillBook.cs` - Completely redundant ✅ **REMOVED**
 - ❌ `Assets/Scripst/SkillBook.cs.meta` - Meta file ✅ **REMOVED**
-=======
 
 ### Step 7: Testing and Polish
 **Estimated Time: 2-3 days**
@@ -1119,4 +1113,3 @@ Characters → Dictionary<string, BaseSkill>
 ## Conclusion
 
 This refactoring plan addresses all major architectural issues in the current skill system while providing a clear path forward. **Most importantly, it eliminates the redundant SkillBook class**, reducing code duplication and simplifying the architecture significantly.
-=======

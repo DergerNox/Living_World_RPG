@@ -52,6 +52,7 @@
     <Compile Include="Assets\Scripst\Characters\NPC_Controller.cs" />
     <Compile Include="Assets\Scripst\Skills\Core\SkillTreeNew.cs" />
     <Compile Include="Assets\Scripst\Buildings.cs" />
+    <Compile Include="Assets\Scripst\Core\Bootstrapper.cs" />
     <Compile Include="Assets\Scripst\Skills\Interfaces\ISkillEffect.cs" />
     <Compile Include="Assets\Scripst\Inventory\Equipment.cs" />
     <Compile Include="Assets\Scripst\Troops\SpecialAbility.cs" />
@@ -60,8 +61,10 @@
     <Compile Include="Assets\Scripst\PartySystem\Party.cs" />
     <Compile Include="Assets\Scripst\Skills\Core\BaseSkill.cs" />
     <Compile Include="Assets\Scripst\Troops\Troop.cs" />
+    <Compile Include="Assets\Scripst\Core\AssetLoading\IAssetProvider.cs" />
     <Compile Include="Assets\Scripst\Interactions\PlayerInteraction.cs" />
     <Compile Include="Assets\Scripst\NPCSpawner.cs" />
+    <Compile Include="Assets\Scripst\Core\AssetLoading\ResourcesAssetProvider.cs" />
     <Compile Include="Assets\Scripst\Skills\StatusEffects\BuffStatusEffect.cs" />
     <Compile Include="Assets\Scripst\Characters\NPCManager.cs" />
     <Compile Include="Assets\Scripst\Interactions\Heap.cs" />
@@ -99,9 +102,11 @@
     <Compile Include="Assets\Scripst\UI\AudioSettingsUI.cs" />
     <Compile Include="Assets\Scripst\Troops\EnumTroopRanks.cs" />
     <Compile Include="Assets\Scripst\Skills\Core\MageSkill.cs" />
+    <Compile Include="Assets\Scripst\Core\ServiceLocator.cs" />
     <Compile Include="Assets\Scripst\UI\PartyUI.cs" />
     <Compile Include="Assets\Scripst\PartySystem\PartyTypeEnum.cs" />
     <Compile Include="Assets\Scripst\Audio\AudioManager.cs" />
+    <Compile Include="Assets\Scripst\Core\TickSystem.cs" />
     <Compile Include="Assets\Scripst\Characters\Player.cs" />
     <Compile Include="Assets\Scripst\Materials\Weapons.cs" />
     <Compile Include="Assets\Scripst\Economy\Market.cs" />
@@ -110,6 +115,7 @@
     <Compile Include="Assets\Scripst\CameraFollow.cs" />
     <Compile Include="Assets\Scripst\Interactions\PathfindingManager.cs" />
     <Compile Include="Assets\Scripst\Characters\FactionDiplomacy.cs" />
+    <Compile Include="Assets\Scripst\Core\DebugHUD.cs" />
     <Compile Include="Assets\Scripst\Materials\ResourceTypeEnum.cs" />
     <Compile Include="Assets\Scripst\Skills\Effects\BuffEffect.cs" />
     <Compile Include="Assets\Scripst\VisualEffectManager.cs" />
@@ -134,6 +140,7 @@
     <Compile Include="Assets\Scripst\Inventory\Inventory.cs" />
     <Compile Include="Assets\Scripst\NameGenerator.cs" />
     <Compile Include="Assets\Scripst\WorldMapBattleIntegration.cs" />
+    <Compile Include="Assets\Scripst\Core\AssetLoading\AddressablesAssetProvider.cs" />
     <Compile Include="Assets\Scripst\Materials\Resources.cs" />
     <Compile Include="Assets\Scripst\Characters\NPCDecisionMaker.cs" />
     <Compile Include="Assets\Scripst\Troops\TroopTypeEnum.cs" />
@@ -174,6 +181,7 @@
     <None Include="Assets\TextMesh Pro\Fonts\LiberationSans - OFL.txt" />
     <None Include="Assets\kenney_tiny-town\Tilesheet.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile.shader" />
+    <None Include="Assets\link.xml" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Sprite.shader" />
   </ItemGroup>
   <ItemGroup>

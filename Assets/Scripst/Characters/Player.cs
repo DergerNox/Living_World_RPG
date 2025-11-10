@@ -15,7 +15,7 @@ public class Player:Characters
         Level = level;
         Experience = 0;
         Gold = 1000; // Starting gold
-        SkillBook = new SkillBook();
+        //SkillBook = new SkillBook();
         Party = new Party(); // Initialize party
         Party.Leader = this; // Set the player as the party leader
         Party.FactionId = 0; // Player starts in faction 0 or neutral
