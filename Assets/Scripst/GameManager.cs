@@ -6,6 +6,8 @@ public class GameManager : MonoBehaviour
     public GameObject saveLoadPanel;
     public Transform playerTransform;
 
+    private IWorldStateRepository worldStateRepository;
+
     void Awake()
     {
         if (Instance == null)
@@ -15,7 +17,10 @@ public class GameManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
+
+        ResolveWorldStateRepository();
     }
     void Update()
     {
@@ -42,25 +47,28 @@ public class GameManager : MonoBehaviour
 
     public void SaveGame()
     {
-        if (WorldHandler.Player == null)
+        var player = GetPlayer();
+        if (player == null)
         {
-            Debug.LogError("Player is not set in WorldHandler. Cannot save game.");
+            Debug.LogError("Player is not available. Cannot save game.");
             return;
         }
 
-        GameData data = new GameData();
-        data.playerName = WorldHandler.Player.Name;
-        data.playerHealth = WorldHandler.Player.Health;
-        data.playerMaxHealth = WorldHandler.Player.MaxHealth;
-        data.playerMana = WorldHandler.Player.Mana;
-        data.playerMaxMana = WorldHandler.Player.MaxMana;
-        data.playerGold = WorldHandler.Player.Gold;
-        data.playerLevel = WorldHandler.Player.Level;
-        data.playerExperience = WorldHandler.Player.Experience;
-        data.inventory = WorldHandler.Player.Inventory;
-        data.equipment = WorldHandler.Player.Equipment;
-        data.playerAttack = WorldHandler.Player.Attack;
-        data.playerDefense = WorldHandler.Player.Defense;
+        GameData data = new GameData
+        {
+            playerName = player.Name,
+            playerHealth = player.Health,
+            playerMaxHealth = player.MaxHealth,
+            playerMana = player.Mana,
+            playerMaxMana = player.MaxMana,
+            playerGold = player.Gold,
+            playerLevel = player.Level,
+            playerExperience = player.Experience,
+            inventory = player.Inventory,
+            equipment = player.Equipment,
+            playerAttack = player.Attack,
+            playerDefense = player.Defense
+        };
         // Save player position using assigned Transform or find by tag
         if (playerTransform != null)
         {
@@ -87,24 +95,25 @@ public class GameManager : MonoBehaviour
         GameData data = SaveLoadManager.LoadGame();
         if (data != null)
         {
-            if (WorldHandler.Player == null)
+            var player = GetPlayer();
+            if (player == null)
             {
-                Debug.LogError("Player is not set in WorldHandler. Cannot load game.");
+                Debug.LogError("Player is not available. Cannot load game.");
                 return;
             }
 
-            WorldHandler.Player.Name = data.playerName;
-            WorldHandler.Player.Health = data.playerHealth;
-            WorldHandler.Player.MaxHealth = data.playerMaxHealth;
-            WorldHandler.Player.Mana = data.playerMana;
-            WorldHandler.Player.MaxMana = data.playerMaxMana;
-            WorldHandler.Player.Gold = data.playerGold;
-            WorldHandler.Player.Level = data.playerLevel;
-            WorldHandler.Player.Experience = data.playerExperience;
-            WorldHandler.Player.Inventory = data.inventory;
-            WorldHandler.Player.Equipment = data.equipment;
-            WorldHandler.Player.Attack = data.playerAttack;
-            WorldHandler.Player.Defense = data.playerDefense;
+            player.Name = data.playerName;
+            player.Health = data.playerHealth;
+            player.MaxHealth = data.playerMaxHealth;
+            player.Mana = data.playerMana;
+            player.MaxMana = data.playerMaxMana;
+            player.Gold = data.playerGold;
+            player.Level = data.playerLevel;
+            player.Experience = data.playerExperience;
+            player.Inventory = data.inventory;
+            player.Equipment = data.equipment;
+            player.Attack = data.playerAttack;
+            player.Defense = data.playerDefense;
 
             // Restore player position using assigned Transform or find by tag
             if (playerTransform != null)
@@ -138,21 +147,39 @@ public class GameManager : MonoBehaviour
 
     void LogInventory()
     {
-        if (WorldHandler.Player == null)
+        var player = GetPlayer();
+        if (player == null)
         {
-            Debug.LogError("Player is not set in WorldHandler. Cannot log inventory.");
+            Debug.LogError("Player is not available. Cannot log inventory.");
             return;
         }
 
         Debug.Log("Inventory:");
-        foreach (var item in WorldHandler.Player.Inventory.items)
+        foreach (var item in player.Inventory.items)
         {
             Debug.Log(item.name);
         }
         Debug.Log("Equipment:");
-        foreach (var eq in WorldHandler.Player.Equipment.equippedItems)
+        foreach (var eq in player.Equipment.equippedItems)
         {
             Debug.Log(eq.slot + ": " + eq.item.name);
         }
+    }
+
+    private void ResolveWorldStateRepository()
+    {
+        if (worldStateRepository == null)
+        {
+            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            {
+                worldStateRepository = WorldHandler.Instance;
+            }
+        }
+    }
+
+    private Player GetPlayer()
+    {
+        ResolveWorldStateRepository();
+        return worldStateRepository?.Player ?? WorldHandler.Player;
     }
 }
