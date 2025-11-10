@@ -6,6 +6,8 @@ Created the initial set of service contracts under `Assets/Scripst/Core/Interfac
 | --- | --- |
 | `IWorldGenerator` + `WorldGenerationSettings` | Wraps procedural generation so we can pipeline/override implementations. |
 | `IWorldStateRepository` | Encapsulates access to player/faction/settlement data and spatial lookups. |
+| `IPartyService` | Abstracts party creation/query/movement routines from `PartyManager`. |
+| `IQuestService` | Encapsulates quest lifecycle operations (start/complete/update) for DI. |
 | `IBattleResolver` | Abstracts combat resolution, paving the way for pluggable battle systems. |
 | `IAudioService` | Unhooks gameplay from the `AudioManager` singleton. |
 | `ITimeService` | Encapsulates `TimeManager` functionality for event broadcasting/testing. |
@@ -13,6 +15,8 @@ Created the initial set of service contracts under `Assets/Scripst/Core/Interfac
 ## Adapter Implementations (Initial Pass)
 - `WorldGenerator`, `WorldHandler`, `AudioManager`, `TimeManager`, and `Battle` now implement their respective interfaces.
 - `Bootstrapper` ensures those components exist at runtime and registers them with `ServiceLocator` (`IAudioService`, `ITimeService`, `IWorldGenerator`, `IWorldStateRepository`, `IBattleResolver`).
+- `PartyManager` implements `IPartyService` and is registered for DI; consumers can now resolve party data without hitting `PartyManager.Instance`.
+- Added `QuestService` (MonoBehaviour) implementing `IQuestService`; `Bootstrapper` ensures it exists and registers it, while legacy `QuestManager` became a thin facade calling the service.
 - `WorldGenerator` accepts optional `WorldGenerationSettings` overrides, enabling data-driven pipelines later.
 - `WorldHandler` exposes `RebuildSpatialCaches()` through the repository contract to keep spatial queries valid after state changes.
 - `AudioManager` adds `PlayAmbientTrack(string trackId)` to satisfy the audio interface; clips are pulled from `Resources`.

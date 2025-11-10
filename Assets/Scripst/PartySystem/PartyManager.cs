@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PartyManager : MonoBehaviour
+public class PartyManager : MonoBehaviour, IPartyService
 {
     public static PartyManager Instance;
 
     public Party PlayerParty { get; private set; }
     public List<Party> AllParties { get; private set; } = new List<Party>();
+    IReadOnlyList<Party> IPartyService.AllParties => AllParties;
 
     private void Awake()
     {

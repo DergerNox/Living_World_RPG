@@ -20,6 +20,7 @@ public class Bootstrapper : MonoBehaviour
 		EnsureManager<WorldHandler>();
 		EnsureManager<WorldGenerator>();
 		EnsureManager<PartyManager>();
+		EnsureManager<QuestService>();
 		EnsureManager<SkillManager>();
 
 		RegisterServices();
@@ -71,11 +72,22 @@ public class Bootstrapper : MonoBehaviour
 		}
 
 		var party = FindFirstObjectByType<PartyManager>();
-		if (party != null) ServiceLocator.Register<PartyManager>(party);
+		if (party != null)
+		{
+			ServiceLocator.Register<PartyManager>(party);
+			ServiceLocator.Register<IPartyService>(party);
+		}
 
 
 		var skills = FindFirstObjectByType<SkillManager>();
 		if (skills != null) ServiceLocator.Register<SkillManager>(skills);
+
+		var questService = FindFirstObjectByType<QuestService>();
+		if (questService != null)
+		{
+			ServiceLocator.Register<QuestService>(questService);
+			ServiceLocator.Register<IQuestService>(questService);
+		}
 
 		ServiceLocator.Register<IBattleResolver>(new Battle());
 
