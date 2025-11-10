@@ -17,7 +17,6 @@ public class NPC : Characters
         Level = random.Next(1, 10); // Random level between 1 and 10
         Experience = 0;
         Gold = random.Next(1000, 2000); // Random gold between 1000 and 2000
-        SkillBook = new SkillBook();
         CurrentActivity = Activity.Wandering;
 
     }
