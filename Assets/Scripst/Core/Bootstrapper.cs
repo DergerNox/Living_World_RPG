@@ -21,6 +21,7 @@ public class Bootstrapper : MonoBehaviour
 		EnsureManager<WorldGenerator>();
 		EnsureManager<PartyManager>();
 		EnsureManager<QuestService>();
+		EnsureManager<TradeService>();
 		EnsureManager<SkillManager>();
 
 		RegisterServices();
@@ -87,6 +88,13 @@ public class Bootstrapper : MonoBehaviour
 		{
 			ServiceLocator.Register<QuestService>(questService);
 			ServiceLocator.Register<IQuestService>(questService);
+		}
+
+		var tradeService = FindFirstObjectByType<TradeService>();
+		if (tradeService != null)
+		{
+			ServiceLocator.Register<TradeService>(tradeService);
+			ServiceLocator.Register<ITradeService>(tradeService);
 		}
 
 		ServiceLocator.Register<IBattleResolver>(new Battle());
