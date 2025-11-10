@@ -8,6 +8,8 @@ public class NPCSpawner : MonoBehaviour
     public Transform npcParent;  // Optional: parent transform to keep hierarchy clean
     public
 
+    private IWorldStateRepository worldStateRepository;
+
     void Start()
     {
         SpawnNPCs();
@@ -23,10 +25,17 @@ public class NPCSpawner : MonoBehaviour
         }
 
         // Access your settlements and factions from WorldHandler
-        var factions = WorldHandler.Factions;
-        var towns = WorldHandler.Towns;
-        var castles = WorldHandler.Castles;
-        var villages = WorldHandler.Villages;
+        var repo = GetWorldStateRepository();
+        if (repo == null)
+        {
+            Debug.LogError("World state repository unavailable. Cannot spawn NPCs.");
+            return;
+        }
+
+        var factions = repo.Factions;
+        var towns = repo.Towns;
+        var castles = repo.Castles;
+        var villages = repo.Villages;
 
         // For demo: spawn NPCs mostly in towns or castles
         List<ISettlement> possibleLocations = new List<ISettlement>();
@@ -64,6 +73,15 @@ public class NPCSpawner : MonoBehaviour
         Debug.Log($"Spawned {spawnedCount} NPCs.");
     }
 
-    
-
+    private IWorldStateRepository GetWorldStateRepository()
+    {
+        if (worldStateRepository == null)
+        {
+            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            {
+                worldStateRepository = WorldHandler.Instance;
+            }
+        }
+        return worldStateRepository;
+    }
 }

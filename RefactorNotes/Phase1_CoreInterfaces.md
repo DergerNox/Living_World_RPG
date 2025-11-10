@@ -39,5 +39,6 @@ Created the initial set of service contracts under `Assets/Scripst/Core/Interfac
 - Economy/trade logic now flows through `ITradeService`, allowing future pricing strategies or persistence hooks without touching statics.
 - Time-dependent systems (`NPCManager`, `NPCDecisionMaker`, `WorldEventManager`, `TimeWeatherUI`, `WeatherManager`, and `WeatherEffectManager`) now resolve shared services instead of referencing singletons directly, and `ITimeService` exposes `TimeScale` so consumers avoid poking public fields.
 - The save/load `GameManager` now queries `IWorldStateRepository` for player data, eliminating its hard dependency on `WorldHandler.Player`.
+- Settlement/NPC/world systems (SettlementUI, NPCSpawner, FactionDiplomacy, PathfindingManager, WorldEventManager, QuestService) now obtain world data through `IWorldStateRepository` rather than using `WorldHandler` statics, paving the way to swap repositories (e.g., for tests or alternate worlds).
 
 Next steps: migrate remaining systems (UI panels, quests, inventory) away from `AudioManager.Instance`/other singletons and lean on the registered interfaces.

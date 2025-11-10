@@ -16,6 +16,8 @@ public class PathfindingManager : MonoBehaviour
 
     private Vector2Int gridSize;      // dimensions in cells, set at runtime
     private Node[,] grid;
+    private IWorldGenerator worldGenerator;
+    private IWorldStateRepository worldStateRepository;
 
     void Awake()
     {
@@ -26,11 +28,16 @@ public class PathfindingManager : MonoBehaviour
         }
         Instance = this;
 
-        // Get map dimensions from WorldGenerator
-        if (WorldGenerator.Instance != null)
-            gridSize = new Vector2Int(WorldGenerator.Instance.worldWidth, WorldGenerator.Instance.worldHeight);
+        var generator = ResolveWorldGenerator();
+        if (generator != null)
+        {
+            gridSize = new Vector2Int(generator.WorldWidth, generator.WorldHeight);
+        }
         else
+        {
             Debug.LogError("WorldGenerator not found in scene. Cannot set grid size.");
+            gridSize = new Vector2Int(100, 100);
+        }
 
         InitGrid();
     }
@@ -69,9 +76,19 @@ public class PathfindingManager : MonoBehaviour
 
     bool IsObstacleAt(Vector3Int cell)
     {
-        if (WorldHandler.GetTownAtPosition(cell)    != null) return true;
-        if (WorldHandler.GetCastleAtPosition(cell)  != null) return true;
-        if (WorldHandler.GetVillageAtPosition(cell) != null) return true;
+        var repo = ResolveWorldStateRepository();
+        if (repo != null)
+        {
+            if (repo.GetTownAtPosition(cell) != null) return true;
+            if (repo.GetCastleAtPosition(cell) != null) return true;
+            if (repo.GetVillageAtPosition(cell) != null) return true;
+        }
+        else
+        {
+            if (WorldHandler.GetTownAtPosition(cell) != null) return true;
+            if (WorldHandler.GetCastleAtPosition(cell) != null) return true;
+            if (WorldHandler.GetVillageAtPosition(cell) != null) return true;
+        }
         return false;
     }
 
@@ -180,5 +197,30 @@ public class PathfindingManager : MonoBehaviour
         }
         path.Reverse();
         return path;
+    }
+}
+
+    private IWorldGenerator ResolveWorldGenerator()
+    {
+        if (worldGenerator == null)
+        {
+            if (!ServiceLocator.TryResolve(out worldGenerator))
+            {
+                worldGenerator = WorldGenerator.Instance;
+            }
+        }
+        return worldGenerator;
+    }
+
+    private IWorldStateRepository ResolveWorldStateRepository()
+    {
+        if (worldStateRepository == null)
+        {
+            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            {
+                worldStateRepository = WorldHandler.Instance;
+            }
+        }
+        return worldStateRepository;
     }
 }

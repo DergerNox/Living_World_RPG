@@ -11,6 +11,7 @@ public class QuestService : MonoBehaviour, IQuestService
 
     private readonly List<Quest> _activeQuests = new List<Quest>();
     private IAudioService audioService;
+    private IWorldStateRepository worldStateRepository;
 
     public static QuestService Instance { get; private set; }
 
@@ -71,7 +72,11 @@ public class QuestService : MonoBehaviour, IQuestService
             {
                 if (int.TryParse(reward.Substring(6), out int gold))
                 {
-                    WorldHandler.Player.Party.Gold += gold;
+                    var player = GetPlayer();
+                    if (player != null)
+                    {
+                        player.Party.Gold += gold;
+                    }
                 }
             }
         }
@@ -88,5 +93,17 @@ public class QuestService : MonoBehaviour, IQuestService
         }
 
         return audioService;
+    }
+
+    private Player GetPlayer()
+    {
+        if (worldStateRepository == null)
+        {
+            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            {
+                worldStateRepository = WorldHandler.Instance;
+            }
+        }
+        return worldStateRepository?.Player ?? WorldHandler.Player;
     }
 }

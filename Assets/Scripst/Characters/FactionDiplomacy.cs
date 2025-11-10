@@ -8,6 +8,7 @@ public class FactionDiplomacy : MonoBehaviour
     public static FactionDiplomacy Instance;
 
     private Dictionary<(int, int), DiplomacyStatus> diplomacyMatrix = new Dictionary<(int, int), DiplomacyStatus>();
+    private IWorldStateRepository worldStateRepository;
 
     void Awake()
     {
@@ -30,7 +31,8 @@ public class FactionDiplomacy : MonoBehaviour
     {
         diplomacyMatrix.Clear();
         // Get all factions from WorldHandler
-        var factions = WorldHandler.Factions;
+        var factions = GetFactions();
+        if (factions == null) return;
         foreach (var factionA in factions)
         {
             foreach (var factionB in factions)
@@ -97,5 +99,17 @@ public class FactionDiplomacy : MonoBehaviour
     public bool AreAtWar(int factionAId, int factionBId)
     {
         return GetDiplomacyStatus(factionAId, factionBId) == DiplomacyStatus.AtWar;
+    }
+
+    private IReadOnlyList<Faction> GetFactions()
+    {
+        if (worldStateRepository == null)
+        {
+            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            {
+                worldStateRepository = WorldHandler.Instance;
+            }
+        }
+        return worldStateRepository?.Factions ?? WorldHandler.Factions;
     }
 }

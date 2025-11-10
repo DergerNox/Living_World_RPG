@@ -23,6 +23,7 @@ public class SettlementUIManager : MonoBehaviour
 
     private ISettlement currentSettlement;
     private IAudioService audioService;
+    private IWorldStateRepository worldStateRepository;
 
     private IAudioService AudioService
     {
@@ -39,6 +40,7 @@ public class SettlementUIManager : MonoBehaviour
             return audioService;
         }
     }
+    private Player CurrentPlayer => GetPlayer();
 
     void Start()
     {
@@ -154,9 +156,10 @@ public class SettlementUIManager : MonoBehaviour
         AudioService?.PlayUIClick();
 
         // Open character stats UI for player
-        if (CharacterStatsUI.Instance != null && WorldHandler.Player != null)
+        var player = CurrentPlayer;
+        if (CharacterStatsUI.Instance != null && player != null)
         {
-            CharacterStatsUI.Instance.OpenStatsUI(WorldHandler.Player);
+            CharacterStatsUI.Instance.OpenStatsUI(player);
         }
     }
 
@@ -166,9 +169,10 @@ public class SettlementUIManager : MonoBehaviour
         AudioService?.PlayUIClick();
 
         // Open inventory UI for player
-        if (InventoryUI.Instance != null && WorldHandler.Player != null)
+        var player = CurrentPlayer;
+        if (InventoryUI.Instance != null && player != null)
         {
-            InventoryUI.Instance.OpenInventory(WorldHandler.Player);
+            InventoryUI.Instance.OpenInventory(player);
         }
     }
 
@@ -231,6 +235,17 @@ public class SettlementUIManager : MonoBehaviour
         {
             Debug.LogWarning("Missing Button or TroopSelectionPanel reference!");
         }
+    }
+    private Player GetPlayer()
+    {
+        if (worldStateRepository == null)
+        {
+            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            {
+                worldStateRepository = WorldHandler.Instance;
+            }
+        }
+        return worldStateRepository?.Player ?? WorldHandler.Player;
     }
 }
 
