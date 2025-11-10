@@ -1,105 +1,115 @@
 using UnityEngine;
+using LivingWorldRPG.World;
 
-public class Bootstrapper : MonoBehaviour
+namespace LivingWorldRPG.Core
 {
-	private static bool _initialized;
-
-	void Awake()
+	public class Bootstrapper : MonoBehaviour
 	{
-		if (_initialized)
+		private static bool _initialized;
+
+		private void Awake()
 		{
-			Destroy(gameObject);
-			return;
-		}
-		_initialized = true;
-		DontDestroyOnLoad(gameObject);
+			if (_initialized)
+			{
+				Destroy(gameObject);
+				return;
+			}
 
-		EnsureManager<AudioManager>();
-		EnsureManager<TimeManager>();
-		EnsureManager<WeatherManager>();
-		EnsureManager<WorldHandler>();
-		EnsureManager<WorldGenerator>();
-		EnsureManager<PartyManager>();
-		EnsureManager<QuestService>();
-		EnsureManager<TradeService>();
-		EnsureManager<SkillManager>();
+			_initialized = true;
+			DontDestroyOnLoad(gameObject);
 
-		RegisterServices();
-	}
+			EnsureManager<AudioManager>();
+			EnsureManager<TimeManager>();
+			EnsureManager<WeatherManager>();
+			EnsureManager<WorldHandler>();
+			EnsureManager<WorldGenerator>();
+			EnsureManager<PartyManager>();
+			EnsureManager<QuestService>();
+			EnsureManager<TradeService>();
+			EnsureManager<SkillManager>();
 
-	private void EnsureManager<T>() where T : Component
-	{
-		var existing = FindFirstObjectByType<T>();
-		if (existing == null)
-		{
-			var go = new GameObject(typeof(T).Name);
-			DontDestroyOnLoad(go);
-			existing = go.AddComponent<T>();
-		}
-	}
-
-	private void RegisterServices()
-	{
-		// Register known singletons where appropriate; if not present, TryResolve pattern is used elsewhere
-		var audio = FindFirstObjectByType<AudioManager>();
-		if (audio != null)
-		{
-			ServiceLocator.Register<AudioManager>(audio);
-			ServiceLocator.Register<IAudioService>(audio);
+			RegisterServices();
 		}
 
-		var time = FindFirstObjectByType<TimeManager>();
-		if (time != null)
+		private static void EnsureManager<T>() where T : Component
 		{
-			ServiceLocator.Register<TimeManager>(time);
-			ServiceLocator.Register<ITimeService>(time);
+			var existing = FindFirstObjectByType<T>();
+			if (existing == null)
+			{
+				var go = new GameObject(typeof(T).Name);
+				DontDestroyOnLoad(go);
+				go.AddComponent<T>();
+			}
 		}
 
-		var weather = FindFirstObjectByType<WeatherManager>();
-		if (weather != null) ServiceLocator.Register<WeatherManager>(weather);
-
-		var worldGen = FindFirstObjectByType<WorldGenerator>();
-		if (worldGen != null)
+		private void RegisterServices()
 		{
-			ServiceLocator.Register<WorldGenerator>(worldGen);
-			ServiceLocator.Register<IWorldGenerator>(worldGen);
+			// Register known singletons where appropriate; if not present, TryResolve pattern is used elsewhere
+			var audio = FindFirstObjectByType<AudioManager>();
+			if (audio != null)
+			{
+				ServiceLocator.Register<AudioManager>(audio);
+				ServiceLocator.Register<IAudioService>(audio);
+			}
+
+			var time = FindFirstObjectByType<TimeManager>();
+			if (time != null)
+			{
+				ServiceLocator.Register<TimeManager>(time);
+				ServiceLocator.Register<ITimeService>(time);
+			}
+
+			var weather = FindFirstObjectByType<WeatherManager>();
+			if (weather != null)
+			{
+				ServiceLocator.Register<WeatherManager>(weather);
+			}
+
+			var worldGen = FindFirstObjectByType<WorldGenerator>();
+			if (worldGen != null)
+			{
+				ServiceLocator.Register<WorldGenerator>(worldGen);
+				ServiceLocator.Register<IWorldGenerator>(worldGen);
+			}
+
+			var worldHandler = FindFirstObjectByType<WorldHandler>();
+			if (worldHandler != null)
+			{
+				ServiceLocator.Register<WorldHandler>(worldHandler);
+				ServiceLocator.Register<IWorldStateRepository>(worldHandler);
+			}
+
+			var party = FindFirstObjectByType<PartyManager>();
+			if (party != null)
+			{
+				ServiceLocator.Register<PartyManager>(party);
+				ServiceLocator.Register<IPartyService>(party);
+			}
+
+			var skills = FindFirstObjectByType<SkillManager>();
+			if (skills != null)
+			{
+				ServiceLocator.Register<SkillManager>(skills);
+			}
+
+			var questService = FindFirstObjectByType<QuestService>();
+			if (questService != null)
+			{
+				ServiceLocator.Register<QuestService>(questService);
+				ServiceLocator.Register<IQuestService>(questService);
+			}
+
+			var tradeService = FindFirstObjectByType<TradeService>();
+			if (tradeService != null)
+			{
+				ServiceLocator.Register<TradeService>(tradeService);
+				ServiceLocator.Register<ITradeService>(tradeService);
+			}
+
+			ServiceLocator.Register<IBattleResolver>(new Battle());
+
+			// Asset provider (Resources fallback by default)
+			ServiceLocator.Register<IAssetProvider>(new ResourcesAssetProvider());
 		}
-
-		var worldHandler = FindFirstObjectByType<WorldHandler>();
-		if (worldHandler != null)
-		{
-			ServiceLocator.Register<WorldHandler>(worldHandler);
-			ServiceLocator.Register<IWorldStateRepository>(worldHandler);
-		}
-
-		var party = FindFirstObjectByType<PartyManager>();
-		if (party != null)
-		{
-			ServiceLocator.Register<PartyManager>(party);
-			ServiceLocator.Register<IPartyService>(party);
-		}
-
-
-		var skills = FindFirstObjectByType<SkillManager>();
-		if (skills != null) ServiceLocator.Register<SkillManager>(skills);
-
-		var questService = FindFirstObjectByType<QuestService>();
-		if (questService != null)
-		{
-			ServiceLocator.Register<QuestService>(questService);
-			ServiceLocator.Register<IQuestService>(questService);
-		}
-
-		var tradeService = FindFirstObjectByType<TradeService>();
-		if (tradeService != null)
-		{
-			ServiceLocator.Register<TradeService>(tradeService);
-			ServiceLocator.Register<ITradeService>(tradeService);
-		}
-
-		ServiceLocator.Register<IBattleResolver>(new Battle());
-
-		// Asset provider (Resources fallback by default)
-		ServiceLocator.Register<IAssetProvider>(new ResourcesAssetProvider());
 	}
 }

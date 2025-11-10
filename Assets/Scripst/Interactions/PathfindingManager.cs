@@ -1,46 +1,52 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
+using LivingWorldRPG.World;
 
-/// <summary>
-/// Singleton A* Pathfinding manager that queries the shared world generator/repository services.
-/// Grid dimensions come from the registered `IWorldGenerator` implementation.
-/// </summary>
-public class PathfindingManager : MonoBehaviour
+namespace LivingWorldRPG.Interactions
 {
-    public static PathfindingManager Instance { get; private set; }
-
-    [Header("Node Settings")]
-    [Tooltip("World units per grid cell (should match your tilemap cell size)")]
-    public float nodeSize = 1f;      // world units per cell
-
-    private Vector2Int gridSize;      // dimensions in cells, set at runtime
-    private Node[,] grid;
-    private IWorldGenerator worldGenerator;
-    private IWorldStateRepository worldStateRepository;
-
-    void Awake()
+    /// <summary>
+    /// Singleton A* Pathfinding manager that queries the shared world generator/repository services.
+    /// Grid dimensions come from the registered `IWorldGenerator` implementation.
+    /// </summary>
+    public class PathfindingManager : MonoBehaviour
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
+        public static PathfindingManager Instance { get; private set; }
 
-        var generator = ResolveWorldGenerator();
-        if (generator != null)
-        {
-            gridSize = new Vector2Int(generator.WorldWidth, generator.WorldHeight);
-        }
-        else
-        {
-            Debug.LogError("WorldGenerator not found in scene. Cannot set grid size.");
-            gridSize = new Vector2Int(100, 100);
-        }
+        [Header("Node Settings")]
+        [Tooltip("World units per grid cell (should match your tilemap cell size)")]
+        [SerializeField, Min(0.1f)] private float nodeSize = 1f;
 
-        InitGrid();
-    }
+        private Vector2Int gridSize;      // dimensions in cells, set at runtime
+        private Node[,] grid;
+        private IWorldGenerator worldGenerator;
+        private IWorldStateRepository worldStateRepository;
+
+        public float NodeSize => nodeSize;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+
+            var generator = ResolveWorldGenerator();
+            if (generator != null)
+            {
+                gridSize = new Vector2Int(generator.WorldWidth, generator.WorldHeight);
+            }
+            else
+            {
+                Debug.LogError("PathfindingManager: IWorldGenerator not available; defaulting grid to 100x100.");
+                gridSize = new Vector2Int(100, 100);
+            }
+
+            InitGrid();
+        }
 
     /// <summary>
     /// Build the node grid and mark walkable vs obstacle.
@@ -74,7 +80,7 @@ public class PathfindingManager : MonoBehaviour
         }
     }
 
-    bool IsObstacleAt(Vector3Int cell)
+    private bool IsObstacleAt(Vector3Int cell)
     {
         var repo = ResolveWorldStateRepository();
         if (repo == null) return true; // block movement until data exists
@@ -151,7 +157,7 @@ public class PathfindingManager : MonoBehaviour
         return null; // no path found
     }
 
-    bool InBounds(Vector3Int c) =>
+    private bool InBounds(Vector3Int c) =>
         c.x >= 0 && c.x < gridSize.x && c.y >= 0 && c.y < gridSize.y;
 
     private static readonly Vector2Int[] _neighborDirs = new Vector2Int[] {
@@ -159,7 +165,7 @@ public class PathfindingManager : MonoBehaviour
     };
     private readonly List<Node> _neighborBuffer = new List<Node>(4);
 
-    List<Node> GetNeighbors(Node node)
+    private List<Node> GetNeighbors(Node node)
     {
         var neighbors = _neighborBuffer;
         neighbors.Clear();
@@ -173,13 +179,13 @@ public class PathfindingManager : MonoBehaviour
         return neighbors;
     }
 
-    int GetDistance(Node a, Node b)
+    private static int GetDistance(Node a, Node b)
     {
         return Mathf.Abs(a.Position.x - b.Position.x)
              + Mathf.Abs(a.Position.y - b.Position.y);
     }
 
-    List<Vector3Int> RetracePath(Node start, Node end)
+    private static List<Vector3Int> RetracePath(Node start, Node end)
     {
         var path = new List<Vector3Int>();
         Node curr = end;
@@ -192,28 +198,34 @@ public class PathfindingManager : MonoBehaviour
         return path;
     }
 
-    private IWorldGenerator ResolveWorldGenerator()
-    {
-        if (worldGenerator == null)
+        private IWorldGenerator ResolveWorldGenerator()
         {
+            if (worldGenerator != null)
+            {
+                return worldGenerator;
+            }
+
             if (!ServiceLocator.TryResolve(out worldGenerator))
             {
-                worldGenerator = WorldGenerator.Instance;
+                Debug.LogError("PathfindingManager requires an IWorldGenerator registered in the ServiceLocator.");
             }
-        }
-        return worldGenerator;
-    }
 
-    private IWorldStateRepository ResolveWorldStateRepository()
-    {
-        if (worldStateRepository == null)
+            return worldGenerator;
+        }
+
+        private IWorldStateRepository ResolveWorldStateRepository()
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
+            if (worldStateRepository != null)
+            {
+                return worldStateRepository;
+            }
+
+            if (!ServiceLocator.TryResolve(out worldStateRepository))
             {
                 Debug.LogError("PathfindingManager requires an IWorldStateRepository.");
-                return null;
             }
+
+            return worldStateRepository;
         }
-        return worldStateRepository;
     }
 }

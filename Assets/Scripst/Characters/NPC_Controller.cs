@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using LivingWorldRPG.Interactions;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
 public class NPC2DController : MonoBehaviour
@@ -83,8 +84,8 @@ public class NPC2DController : MonoBehaviour
 
     void PatrolMove()
     {
-        // Compute grid positions using PathfindingManager.nodeSize
-        float nodeSize = PathfindingManager.Instance.nodeSize;
+        // Compute grid positions using PathfindingManager node size
+        float nodeSize = PathfindingManager.Instance.NodeSize;
         Vector3Int startCell = Vector3Int.FloorToInt(transform.position / nodeSize);
         Vector3Int targetCell = Vector3Int.FloorToInt(waypoints[currentWaypointIndex].position / nodeSize);
 
@@ -201,7 +202,7 @@ public class NPC2DController : MonoBehaviour
         if (path != null)
         {
             Gizmos.color = Color.magenta;
-            float nodeSize = PathfindingManager.Instance ? PathfindingManager.Instance.nodeSize : 1f;
+            float nodeSize = PathfindingManager.Instance ? PathfindingManager.Instance.NodeSize : 1f;
             for (int i = pathIndex; i < path.Count; i++)
             {
                 Vector3 p = (Vector3)path[i] * nodeSize + new Vector3(nodeSize/2f, nodeSize/2f, 0);

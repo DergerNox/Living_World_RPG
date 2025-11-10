@@ -1,191 +1,209 @@
 using System.Collections.Generic;
 using UnityEngine;
+using LivingWorldRPG.Characters;
 
-public class WorldGenerator : MonoBehaviour, IWorldGenerator
+namespace LivingWorldRPG.World
 {
-    public static WorldGenerator Instance;
-
-    public int worldWidth = 100;
-    public int worldHeight = 100;
-    public int numberOfFactions = 5;
-    public int numberOfCastles = 5;
-    public int numberOfTowns = 10;
-    public int numberOfVillages = 20;
-
-    public TerrainType[,] TerrainMap { get; private set; }
-    public int WorldWidth => worldWidth;
-    public int WorldHeight => worldHeight;
-
-    private HashSet<Vector2Int> settlementPositions = new HashSet<Vector2Int>();
-    private IWorldStateRepository _worldRepo;
-
-    private void Awake()
+    public class WorldGenerator : MonoBehaviour, IWorldGenerator
     {
-        if (Instance == null)
+        public static WorldGenerator Instance { get; private set; }
+
+        [SerializeField, Min(10)] private int _worldWidth = 100;
+        [SerializeField, Min(10)] private int _worldHeight = 100;
+        [SerializeField, Min(1)] private int _numberOfFactions = 5;
+        [SerializeField, Min(0)] private int _numberOfCastles = 5;
+        [SerializeField, Min(0)] private int _numberOfTowns = 10;
+        [SerializeField, Min(0)] private int _numberOfVillages = 20;
+
+        public TerrainType[,] TerrainMap { get; private set; }
+        public int WorldWidth => _worldWidth;
+        public int WorldHeight => _worldHeight;
+
+        private readonly HashSet<Vector2Int> settlementPositions = new HashSet<Vector2Int>();
+        private IWorldStateRepository worldRepository;
+
+        private void Awake()
         {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        if (!ServiceLocator.TryResolve(out _worldRepo) || _worldRepo == null)
-        {
-            Debug.LogError("WorldGenerator requires an IWorldStateRepository registered in the ServiceLocator.");
-            enabled = false;
-        }
-    }
-
-    public void GenerateWorld(WorldGenerationSettings settings = null)
-    {
-        if (_worldRepo == null)
-        {
-            Debug.LogError("WorldGenerator cannot generate without a world repository instance.");
-            return;
-        }
-        ApplyOverrides(settings);
-        TerrainMap = new TerrainType[worldWidth, worldHeight];
-        settlementPositions.Clear();
-
-        GenerateTerrain();
-        GenerateFactions();
-        GenerateSettlements();
-        AssignSettlementsToFactions();
-        InitializeDiplomacy();
-    }
-
-    private void ApplyOverrides(WorldGenerationSettings settings)
-    {
-        if (settings == null) return;
-
-        if (settings.WorldWidth.HasValue) worldWidth = Mathf.Max(10, settings.WorldWidth.Value);
-        if (settings.WorldHeight.HasValue) worldHeight = Mathf.Max(10, settings.WorldHeight.Value);
-        if (settings.NumberOfFactions.HasValue) numberOfFactions = Mathf.Max(1, settings.NumberOfFactions.Value);
-        if (settings.NumberOfCastles.HasValue) numberOfCastles = Mathf.Max(0, settings.NumberOfCastles.Value);
-        if (settings.NumberOfTowns.HasValue) numberOfTowns = Mathf.Max(0, settings.NumberOfTowns.Value);
-        if (settings.NumberOfVillages.HasValue) numberOfVillages = Mathf.Max(0, settings.NumberOfVillages.Value);
-    }
-
-    private void GenerateTerrain()
-    {
-        for (int x = 0; x < worldWidth; x++)
-        {
-            for (int y = 0; y < worldHeight; y++)
+            if (Instance != null && Instance != this)
             {
-                // Simple noise-based terrain generation
-                float noise = Mathf.PerlinNoise(x * 0.1f, y * 0.1f);
-                if (noise < 0.3f)
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+
+            if (!ServiceLocator.TryResolve(out worldRepository) || worldRepository == null)
+            {
+                Debug.LogError("WorldGenerator requires an IWorldStateRepository registered in the ServiceLocator.");
+                enabled = false;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
+        public void GenerateWorld(WorldGenerationSettings settings = null)
+        {
+            if (worldRepository == null)
+            {
+                Debug.LogError("WorldGenerator cannot generate without a world repository instance.");
+                return;
+            }
+
+            ApplyOverrides(settings);
+            TerrainMap = new TerrainType[_worldWidth, _worldHeight];
+            settlementPositions.Clear();
+
+            GenerateTerrain();
+            GenerateFactions();
+            GenerateSettlements();
+            AssignSettlementsToFactions();
+            InitializeDiplomacy();
+        }
+
+        private void ApplyOverrides(WorldGenerationSettings settings)
+        {
+            if (settings == null)
+            {
+                return;
+            }
+
+            if (settings.WorldWidth.HasValue) _worldWidth = Mathf.Max(10, settings.WorldWidth.Value);
+            if (settings.WorldHeight.HasValue) _worldHeight = Mathf.Max(10, settings.WorldHeight.Value);
+            if (settings.NumberOfFactions.HasValue) _numberOfFactions = Mathf.Max(1, settings.NumberOfFactions.Value);
+            if (settings.NumberOfCastles.HasValue) _numberOfCastles = Mathf.Max(0, settings.NumberOfCastles.Value);
+            if (settings.NumberOfTowns.HasValue) _numberOfTowns = Mathf.Max(0, settings.NumberOfTowns.Value);
+            if (settings.NumberOfVillages.HasValue) _numberOfVillages = Mathf.Max(0, settings.NumberOfVillages.Value);
+        }
+
+        private void GenerateTerrain()
+        {
+            for (int x = 0; x < _worldWidth; x++)
+            {
+                for (int y = 0; y < _worldHeight; y++)
                 {
-                    TerrainMap[x, y] = TerrainType.Water;
-                }
-                else if (noise < 0.5f)
-                {
-                    TerrainMap[x, y] = TerrainType.Forest;
-                }
-                else if (noise < 0.7f)
-                {
-                    TerrainMap[x, y] = TerrainType.Grass;
-                }
-                else if (noise < 0.9f)
-                {
-                    TerrainMap[x, y] = TerrainType.Hills;
-                }
-                else
-                {
-                    TerrainMap[x, y] = TerrainType.Mountains;
+                    float noise = Mathf.PerlinNoise(x * 0.1f, y * 0.1f);
+                    if (noise < 0.3f)
+                    {
+                        TerrainMap[x, y] = TerrainType.Water;
+                    }
+                    else if (noise < 0.5f)
+                    {
+                        TerrainMap[x, y] = TerrainType.Forest;
+                    }
+                    else if (noise < 0.7f)
+                    {
+                        TerrainMap[x, y] = TerrainType.Grass;
+                    }
+                    else if (noise < 0.9f)
+                    {
+                        TerrainMap[x, y] = TerrainType.Hills;
+                    }
+                    else
+                    {
+                        TerrainMap[x, y] = TerrainType.Mountains;
+                    }
                 }
             }
         }
-    }
 
-    private void GenerateFactions()
-    {
-        if (_worldRepo == null) return;
-
-        _worldRepo.Factions.Clear();
-        for (int i = 0; i < numberOfFactions; i++)
+        private void GenerateFactions()
         {
-            Vector2 center = new Vector2(Random.Range(0, worldWidth), Random.Range(0, worldHeight));
-            Faction faction = new Faction($"Faction {i + 1}", center, i);
-            _worldRepo.Factions.Add(faction);
+            if (worldRepository == null)
+            {
+                return;
+            }
+
+            worldRepository.Factions.Clear();
+            for (int i = 0; i < _numberOfFactions; i++)
+            {
+                Vector2 center = new Vector2(Random.Range(0, _worldWidth), Random.Range(0, _worldHeight));
+                Faction faction = new Faction($"Faction {i + 1}", center, i);
+                worldRepository.Factions.Add(faction);
+            }
+
+            foreach (var faction in worldRepository.Factions)
+            {
+                faction.Castles ??= new List<Castle>();
+                faction.Towns ??= new List<Town>();
+                faction.Villages ??= new List<Village>();
+            }
         }
 
-        // Ensure factions have lists initialized
-        foreach (var faction in _worldRepo.Factions)
+        private void GenerateSettlements()
         {
-            if (faction.Castles == null) faction.Castles = new List<Castle>();
-            if (faction.Towns == null) faction.Towns = new List<Town>();
-            if (faction.Villages == null) faction.Villages = new List<Village>();
-        }
-    }
+            if (worldRepository == null)
+            {
+                return;
+            }
 
-    private void GenerateSettlements()
-    {
-        if (_worldRepo == null) return;
+            worldRepository.Castles.Clear();
+            worldRepository.Towns.Clear();
+            worldRepository.Villages.Clear();
 
-        _worldRepo.Castles.Clear();
-        _worldRepo.Towns.Clear();
-        _worldRepo.Villages.Clear();
+            for (int i = 0; i < _numberOfCastles; i++)
+            {
+                Vector3Int position = new Vector3Int(Random.Range(0, _worldWidth), Random.Range(0, _worldHeight), 0);
+                global::Characters lord = new NPC($"Lord {i + 1}", 100, 50, 5);
+                Castle castle = new Castle(position.x, position.y, lord);
+                worldRepository.Castles.Add(castle);
+            }
 
-        // Generate Castles
-        for (int i = 0; i < numberOfCastles; i++)
-        {
-            Vector3Int position = new Vector3Int(Random.Range(0, worldWidth), Random.Range(0, worldHeight), 0);
-            Characters lord = new NPC($"Lord {i + 1}", 100, 50, 5); // Assuming NPC constructor
-            Castle castle = new Castle(position.x, position.y, lord);
-            _worldRepo.Castles.Add(castle);
-        }
+            for (int i = 0; i < _numberOfTowns; i++)
+            {
+                Vector3Int position = new Vector3Int(Random.Range(0, _worldWidth), Random.Range(0, _worldHeight), 0);
+                Town town = new Town(position.x, position.y);
+                worldRepository.Towns.Add(town);
+            }
 
-        // Generate Towns
-        for (int i = 0; i < numberOfTowns; i++)
-        {
-            Vector3Int position = new Vector3Int(Random.Range(0, worldWidth), Random.Range(0, worldHeight), 0);
-            Town town = new Town(position.x, position.y);
-            _worldRepo.Towns.Add(town);
-        }
-
-        // Generate Villages
-        for (int i = 0; i < numberOfVillages; i++)
-        {
-            Vector3Int position = new Vector3Int(Random.Range(0, worldWidth), Random.Range(0, worldHeight), 0);
-            Village village = new Village(position.x, position.y);
-            _worldRepo.Villages.Add(village);
-        }
-    }
-
-    private void AssignSettlementsToFactions()
-    {
-        // Assign castles to factions
-        for (int i = 0; i < _worldRepo.Castles.Count; i++)
-        {
-            int factionId = i % _worldRepo.Factions.Count;
-            _worldRepo.Castles[i].FactionId = factionId;
-            _worldRepo.Factions[factionId].Castles.Add(_worldRepo.Castles[i]);
+            for (int i = 0; i < _numberOfVillages; i++)
+            {
+                Vector3Int position = new Vector3Int(Random.Range(0, _worldWidth), Random.Range(0, _worldHeight), 0);
+                Village village = new Village(position.x, position.y);
+                worldRepository.Villages.Add(village);
+            }
         }
 
-        // Assign towns and villages randomly to factions
-        foreach (var town in _worldRepo.Towns)
+        private void AssignSettlementsToFactions()
         {
-            int factionId = Random.Range(0, _worldRepo.Factions.Count);
-            town.FactionId = factionId;
-            _worldRepo.Factions[factionId].Towns.Add(town);
+            if (worldRepository == null || worldRepository.Factions.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < worldRepository.Castles.Count; i++)
+            {
+                int factionId = i % worldRepository.Factions.Count;
+                worldRepository.Castles[i].FactionId = factionId;
+                worldRepository.Factions[factionId].Castles.Add(worldRepository.Castles[i]);
+            }
+
+            foreach (var town in worldRepository.Towns)
+            {
+                int factionId = Random.Range(0, worldRepository.Factions.Count);
+                town.FactionId = factionId;
+                worldRepository.Factions[factionId].Towns.Add(town);
+            }
+
+            foreach (var village in worldRepository.Villages)
+            {
+                int factionId = Random.Range(0, worldRepository.Factions.Count);
+                village.FactionId = factionId;
+                worldRepository.Factions[factionId].Villages.Add(village);
+            }
         }
 
-        foreach (var village in _worldRepo.Villages)
+        private static void InitializeDiplomacy()
         {
-            int factionId = Random.Range(0, _worldRepo.Factions.Count);
-            village.FactionId = factionId;
-            _worldRepo.Factions[factionId].Villages.Add(village);
-        }
-    }
-
-    private void InitializeDiplomacy()
-    {
-        if (FactionDiplomacy.Instance != null)
-        {
-            FactionDiplomacy.Instance.InitializeDiplomacy();
+            if (FactionDiplomacy.Instance != null)
+            {
+                FactionDiplomacy.Instance.InitializeDiplomacy();
+            }
         }
     }
 }

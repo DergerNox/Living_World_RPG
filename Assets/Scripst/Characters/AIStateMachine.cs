@@ -1,54 +1,79 @@
 using UnityEngine;
 
-public enum AIState { Idle, Patrolling, Interacting, Working, Sleeping, Eating, Wandering }
-
-public class AIStateMachine : MonoBehaviour
+namespace LivingWorldRPG.Characters
 {
-    public AIState currentState = AIState.Idle;
-    private NPC npc;
-
-    void Start()
+    public enum AIState
     {
-        npc = GetComponent<NPC>();
-        if (npc == null)
-        {
-            Debug.LogError("AIStateMachine requires an NPC component.");
-        }
+        Idle,
+        Patrolling,
+        Interacting,
+        Working,
+        Sleeping,
+        Eating,
+        Wandering
     }
 
-    void Update()
+    [RequireComponent(typeof(NPC))]
+    public class AIStateMachine : MonoBehaviour
     {
-        switch (currentState)
-        {
-            case AIState.Idle:
-                HandleIdle();
-                break;
-            case AIState.Patrolling:
-                HandlePatrolling();
-                break;
-            case AIState.Interacting:
-                HandleInteracting();
-                break;
-            case AIState.Working:
-                HandleWorking();
-                break;
-            case AIState.Sleeping:
-                HandleSleeping();
-                break;
-            case AIState.Eating:
-                HandleEating();
-                break;
-            case AIState.Wandering:
-                HandleWandering();
-                break;
-        }
-    }
+        [SerializeField] private AIState currentState = AIState.Idle;
 
-    private void HandleIdle()
-    {
-        // Transition to patrolling or wandering based on activity
-        if (npc != null)
+        private NPC npc;
+        private NPC2DController controller;
+
+        public AIState CurrentState => currentState;
+
+        private void Awake()
         {
+            npc = GetComponent<NPC>();
+            controller = GetComponent<NPC2DController>();
+        }
+
+        private void Start()
+        {
+            if (npc == null)
+            {
+                Debug.LogError("AIStateMachine requires an NPC component.");
+                enabled = false;
+            }
+        }
+
+        private void Update()
+        {
+            if (!enabled || npc == null)
+            {
+                return;
+            }
+
+            switch (currentState)
+            {
+                case AIState.Idle:
+                    HandleIdle();
+                    break;
+                case AIState.Patrolling:
+                    HandlePatrolling();
+                    break;
+                case AIState.Interacting:
+                    HandleInteracting();
+                    break;
+                case AIState.Working:
+                    HandleWorking();
+                    break;
+                case AIState.Sleeping:
+                    HandleSleeping();
+                    break;
+                case AIState.Eating:
+                    HandleEating();
+                    break;
+                case AIState.Wandering:
+                    HandleWandering();
+                    break;
+            }
+        }
+
+        private void HandleIdle()
+        {
+            // Transition to patrolling or wandering based on the NPC's current activity.
             switch (npc.CurrentActivity)
             {
                 case Activity.Wandering:
@@ -63,48 +88,75 @@ public class AIStateMachine : MonoBehaviour
                 case Activity.Eating:
                     currentState = AIState.Eating;
                     break;
+                default:
+                    currentState = AIState.Patrolling;
+                    break;
             }
         }
-    }
 
-    private void HandlePatrolling()
-    {
-        // Implement patrolling logic (use NPC_Controller if available)
-        NPC2DController controller = GetComponent<NPC2DController>();
-        if (controller != null)
+        private void HandlePatrolling()
         {
-            // Controller handles movement
+            if (controller == null)
+            {
+                return;
+            }
+
+            // Controller handles actual movement while we keep state transitions here.
+            controller.enabled = true;
         }
-    }
 
-    private void HandleInteracting()
-    {
-        // Handle player interaction
-        // This could trigger dialogue or quests
-    }
+        private void HandleInteracting()
+        {
+            // Placeholder hook for quest/dialogue interactions.
+            if (npc == null)
+            {
+                return;
+            }
+        }
 
-    private void HandleWorking()
-    {
-        // Simulate working (perhaps move to a work location)
-    }
+        private void HandleWorking()
+        {
+            if (npc == null)
+            {
+                return;
+            }
 
-    private void HandleSleeping()
-    {
-        // Simulate sleeping (reduce activity)
-    }
+            npc.CurrentActivity = Activity.Working;
+        }
 
-    private void HandleEating()
-    {
-        // Simulate eating (perhaps move to a food location)
-    }
+        private void HandleSleeping()
+        {
+            if (npc == null)
+            {
+                return;
+            }
 
-    private void HandleWandering()
-    {
-        // Random wandering behavior
-    }
+            npc.CurrentActivity = Activity.Sleeping;
+        }
 
-    public void SetState(AIState newState)
-    {
-        currentState = newState;
+        private void HandleEating()
+        {
+            if (npc == null)
+            {
+                return;
+            }
+
+            npc.CurrentActivity = Activity.Eating;
+        }
+
+        private void HandleWandering()
+        {
+            if (npc == null)
+            {
+                return;
+            }
+
+            npc.CurrentActivity = Activity.Wandering;
+        }
+
+        public void SetState(AIState newState)
+        {
+            currentState = newState;
+        }
     }
 }

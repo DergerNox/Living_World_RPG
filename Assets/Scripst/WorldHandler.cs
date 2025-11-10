@@ -1,114 +1,123 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using LivingWorldRPG.World;
 
-public class WorldHandler : MonoBehaviour, IWorldStateRepository
+namespace LivingWorldRPG.World
 {
-    public static WorldHandler Instance { get; private set; }
-
-    // Constructor
-    public WorldHandler()
+    public class WorldHandler : MonoBehaviour, IWorldStateRepository
     {
-    }
+        public static WorldHandler Instance { get; private set; }
 
-    private void Awake()
-    {
-        if (Instance == null)
+        [SerializeField] private Player player;
+        private readonly List<Castle> castles = new List<Castle>();
+        private readonly List<Town> towns = new List<Town>();
+        private readonly List<Village> villages = new List<Village>();
+        private readonly List<Faction> factions = new List<Faction>();
+
+        private readonly Dictionary<Vector3Int, Town> townByPosition = new Dictionary<Vector3Int, Town>();
+        private readonly Dictionary<Vector3Int, Castle> castleByPosition = new Dictionary<Vector3Int, Castle>();
+        private readonly Dictionary<Vector3Int, Village> villageByPosition = new Dictionary<Vector3Int, Village>();
+
+        private IWorldGenerator worldGenerator;
+
+        private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             Instance = this;
+
+            if (!ServiceLocator.TryResolve(out worldGenerator))
+            {
+                Debug.LogError("WorldHandler requires an IWorldGenerator registered in the ServiceLocator.");
+            }
         }
-        else if (Instance != this)
+
+        private void Start()
         {
-            Destroy(gameObject);
-            return;
+            player ??= new Player("Player");
+            worldGenerator?.GenerateWorld();
+            BuildSpatialCaches();
+
+            if (Factions.Count > 0)
+            {
+                player.Party.FactionId = 0;
+            }
+
+            Debug.Log($"World generated with {Factions.Count} factions, {Castles.Count} castles, {Towns.Count} towns, {Villages.Count} villages.");
         }
-    }
 
-    // Start Method
-    void Start()
-    {
-        player = new Player("Player");
+        public Player Player => player;
+        public IList<Castle> Castles => castles;
+        public IList<Town> Towns => towns;
+        public IList<Village> Villages => villages;
+        public IList<Faction> Factions => factions;
 
-        // Generate world if not already done
-        if (WorldGenerator.Instance != null)
+        public Town GetTownAtPosition(Vector3Int position)
         {
-            WorldGenerator.Instance.GenerateWorld();
+            townByPosition.TryGetValue(position, out var town);
+            return town;
         }
 
-        BuildSpatialCaches();
-
-        // Assign player to a faction or make neutral
-        if (Factions.Count > 0)
+        public Castle GetCastleAtPosition(Vector3Int position)
         {
-            player.Party.FactionId = 0; // Assign to first faction or handle appropriately
+            castleByPosition.TryGetValue(position, out var castle);
+            return castle;
         }
 
-        Debug.Log($"World generated with {Factions.Count} factions, {Castles.Count} castles, {Towns.Count} towns, {Villages.Count} villages.");
+        public Village GetVillageAtPosition(Vector3Int position)
+        {
+            villageByPosition.TryGetValue(position, out var village);
+            return village;
+        }
+
+        public void RebuildSpatialCaches()
+        {
+            BuildSpatialCaches();
+        }
+
+        private void BuildSpatialCaches()
+        {
+            townByPosition.Clear();
+            castleByPosition.Clear();
+            villageByPosition.Clear();
+
+            foreach (var town in towns)
+            {
+                if (town == null)
+                {
+                    continue;
+                }
+
+                var key = (Vector3Int)town.Position;
+                townByPosition[key] = town;
+            }
+
+            foreach (var castle in castles)
+            {
+                if (castle == null)
+                {
+                    continue;
+                }
+
+                var key = (Vector3Int)castle.Position;
+                castleByPosition[key] = castle;
+            }
+
+            foreach (var village in villages)
+            {
+                if (village == null)
+                {
+                    continue;
+                }
+
+                var key = (Vector3Int)village.Position;
+                villageByPosition[key] = village;
+            }
+        }
     }
-
-    // Update Method
-    void Update() { }
-
-    public Player Player => player;
-    public IList<Castle> Castles => castles;
-    public IList<Town> Towns => towns;
-    public IList<Village> Villages => villages;
-    public IList<Faction> Factions => factions;
-
-    public Town GetTownAtPosition(Vector3Int position)
-    {
-        _townByPos.TryGetValue(position, out var town);
-        return town;
-    }
-
-    public Castle GetCastleAtPosition(Vector3Int position)
-    {
-        _castleByPos.TryGetValue(position, out var castle);
-        return castle;
-    }
-
-    public Village GetVillageAtPosition(Vector3Int position)
-    {
-        _villageByPos.TryGetValue(position, out var village);
-        return village;
-    }
-
-    public void RebuildSpatialCaches()
-    {
-        BuildSpatialCaches();
-    }
-
-    // Private Variables
-    [SerializeField] private Player player;
-    private readonly List<Castle> castles = new List<Castle>();
-    private readonly List<Town> towns = new List<Town>();
-    private readonly List<Village> villages = new List<Village>();
-    private readonly List<Faction> factions = new List<Faction>();
-
-	private readonly Dictionary<Vector3Int, Town> _townByPos = new Dictionary<Vector3Int, Town>();
-	private readonly Dictionary<Vector3Int, Castle> _castleByPos = new Dictionary<Vector3Int, Castle>();
-	private readonly Dictionary<Vector3Int, Village> _villageByPos = new Dictionary<Vector3Int, Village>();
-
-	private void BuildSpatialCaches()
-	{
-		_townByPos.Clear();
-		_castleByPos.Clear();
-		_villageByPos.Clear();
-
-		foreach (var town in towns)
-		{
-			if (town == null) continue;
-			try { _townByPos[(Vector3Int)town.Position] = town; } catch (Exception) { }
-		}
-		foreach (var castle in castles)
-		{
-			if (castle == null) continue;
-			try { _castleByPos[(Vector3Int)castle.Position] = castle; } catch (Exception) { }
-		}
-		foreach (var village in villages)
-		{
-			if (village == null) continue;
-			try { _villageByPos[(Vector3Int)village.Position] = village; } catch (Exception) { }
-		}
-	}
 }

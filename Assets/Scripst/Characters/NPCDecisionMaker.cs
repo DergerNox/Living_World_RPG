@@ -1,75 +1,87 @@
 using UnityEngine;
 
-public class NPCDecisionMaker : MonoBehaviour
+namespace LivingWorldRPG.Characters
 {
-    private NPC npc;
-    private AIStateMachine stateMachine;
-    private ITimeService timeService;
-
-    void Start()
+    [RequireComponent(typeof(NPC), typeof(AIStateMachine))]
+    public class NPCDecisionMaker : MonoBehaviour
     {
-        npc = GetComponent<NPC>();
-        stateMachine = GetComponent<AIStateMachine>();
-        ResolveTimeService();
-    }
+        private NPC npc;
+        private AIStateMachine stateMachine;
+        private ITimeService timeService;
 
-    void Update()
-    {
-        MakeDecision();
-    }
-
-    private void MakeDecision()
-    {
-        if (npc == null || stateMachine == null) return;
-
-        var service = ResolveTimeService();
-        int hour = service?.Hour ?? 0;
-
-        if (hour >= 22 || hour < 6)
+        private void Awake()
         {
-            if (npc.CurrentActivity != Activity.Sleeping)
-            {
-                npc.CurrentActivity = Activity.Sleeping;
-                stateMachine.SetState(AIState.Sleeping);
-            }
-        }
-        else if (hour >= 8 && hour < 18)
-        {
-            if (npc.CurrentActivity != Activity.Working)
-            {
-                npc.CurrentActivity = Activity.Working;
-                stateMachine.SetState(AIState.Working);
-            }
-        }
-        else if (hour >= 12 && hour < 14)
-        {
-            if (npc.CurrentActivity != Activity.Eating)
-            {
-                npc.CurrentActivity = Activity.Eating;
-                stateMachine.SetState(AIState.Eating);
-            }
-        }
-        else
-        {
-            if (npc.CurrentActivity != Activity.Wandering)
-            {
-                npc.CurrentActivity = Activity.Wandering;
-                stateMachine.SetState(AIState.Wandering);
-            }
+            npc = GetComponent<NPC>();
+            stateMachine = GetComponent<AIStateMachine>();
         }
 
-        // Add more complex decisions here, like reacting to player proximity, faction relations, etc.
-    }
-
-    private ITimeService ResolveTimeService()
-    {
-        if (timeService == null)
+        private void Start()
         {
+            ResolveTimeService();
+        }
+
+        private void Update()
+        {
+            MakeDecision();
+        }
+
+        private void MakeDecision()
+        {
+            if (npc == null || stateMachine == null)
+            {
+                return;
+            }
+
+            var service = ResolveTimeService();
+            if (service == null)
+            {
+                return;
+            }
+
+            int hour = service.Hour;
+
+            if (hour >= 22 || hour < 6)
+            {
+                ApplyState(Activity.Sleeping, AIState.Sleeping);
+            }
+            else if (hour >= 8 && hour < 18)
+            {
+                ApplyState(Activity.Working, AIState.Working);
+            }
+            else if (hour >= 12 && hour < 14)
+            {
+                ApplyState(Activity.Eating, AIState.Eating);
+            }
+            else
+            {
+                ApplyState(Activity.Wandering, AIState.Wandering);
+            }
+        }
+
+        private void ApplyState(Activity activity, AIState state)
+        {
+            if (npc.CurrentActivity == activity)
+            {
+                return;
+            }
+
+            npc.CurrentActivity = activity;
+            stateMachine.SetState(state);
+        }
+
+        private ITimeService ResolveTimeService()
+        {
+            if (timeService != null)
+            {
+                return timeService;
+            }
+
             if (!ServiceLocator.TryResolve(out timeService))
             {
-                timeService = TimeManager.Instance;
+                Debug.LogError("NPCDecisionMaker: ITimeService is not registered in the ServiceLocator.");
             }
+
+            return timeService;
         }
-        return timeService;
     }
 }
