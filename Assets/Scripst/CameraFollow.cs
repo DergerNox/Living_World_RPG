@@ -1,5 +1,7 @@
 using UnityEngine;
 
+namespace LivingWorldRPG.Camera
+{
 /// <summary>
 /// Simple smooth camera follow for 2D or 3D setups.
 /// Attach this to your Main Camera and assign the target (e.g. Player).
@@ -7,14 +9,14 @@ using UnityEngine;
 public class CameraFollow : MonoBehaviour
 {
     [Tooltip("The transform the camera will follow (e.g. the Player).")]
-    public Transform target;
+    [SerializeField] private Transform target;
     
     [Tooltip("Offset from the target's position.")]
-    public Vector3 offset = new Vector3(0f, 0f, -10f);
+    [SerializeField] private Vector3 offset = new Vector3(0f, 0f, -10f);
     
     [Tooltip("Lerp smoothing speed; 0 = instant, 1 = snappy.")]
-    [Range(0f, 1f)]
-    public float smoothSpeed = 0.125f;
+    [SerializeField]
+    [Range(0f, 1f)] private float smoothSpeed = 0.125f;
 
     void LateUpdate()
     {
@@ -27,4 +29,5 @@ public class CameraFollow : MonoBehaviour
         Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed);
         transform.position = smoothedPosition;
     }
+}
 }

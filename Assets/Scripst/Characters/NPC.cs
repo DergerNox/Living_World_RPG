@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace LivingWorldRPG.Characters
+{
 public enum Activity { Sleeping, Working, Wandering, Eating }
 
-public class NPC : Characters
+public class NPC : global::Characters
 {
     public NPC(string name, int maxHealth, int maxMana, int level = 1) : base(name, maxHealth, maxMana, level)
     {
@@ -35,4 +37,5 @@ public class NPC : Characters
     private string npcName;
     private int factionId;
     private Vector3Int gridPosition;
+}
 }

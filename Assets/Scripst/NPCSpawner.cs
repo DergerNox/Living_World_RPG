@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
+using LivingWorldRPG.Characters;
 
+namespace LivingWorldRPG.Spawning
+{
 public class NPCSpawner : MonoBehaviour
 {
     [SerializeField] private GameObject npcPrefab; // Assign your NPC prefab here in inspector
@@ -84,4 +87,5 @@ public class NPCSpawner : MonoBehaviour
         }
         return worldStateRepository;
     }
+}
 }

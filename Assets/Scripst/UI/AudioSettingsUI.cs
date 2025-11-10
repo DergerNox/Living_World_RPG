@@ -7,12 +7,12 @@ public class AudioSettingsUI : MonoBehaviour
     public static AudioSettingsUI Instance;
 
     [Header("UI Elements")]
-    public GameObject settingsPanel;
-    public Slider masterVolumeSlider;
-    public Slider musicVolumeSlider;
-    public Slider ambientVolumeSlider;
-    public Slider effectsVolumeSlider;
-    public Button closeButton;
+    [SerializeField] private GameObject settingsPanel;
+    [SerializeField] private Slider masterVolumeSlider;
+    [SerializeField] private Slider musicVolumeSlider;
+    [SerializeField] private Slider ambientVolumeSlider;
+    [SerializeField] private Slider effectsVolumeSlider;
+    [SerializeField] private Button closeButton;
 
     private AudioManager audioManager;
 
@@ -37,10 +37,10 @@ public class AudioSettingsUI : MonoBehaviour
         if (manager != null)
         {
             // Set initial slider values
-            masterVolumeSlider.value = manager.masterVolume;
-            musicVolumeSlider.value = manager.musicVolume;
-            ambientVolumeSlider.value = manager.ambientVolume;
-            effectsVolumeSlider.value = manager.effectsVolume;
+            masterVolumeSlider.value = manager.MasterVolume;
+            musicVolumeSlider.value = manager.MusicVolume;
+            ambientVolumeSlider.value = manager.AmbientVolume;
+            effectsVolumeSlider.value = manager.EffectsVolume;
 
             // Add listeners
             masterVolumeSlider.onValueChanged.AddListener(OnMasterVolumeChanged);
@@ -88,7 +88,7 @@ public class AudioSettingsUI : MonoBehaviour
         var manager = ResolveAudioManager();
         if (manager != null)
         {
-            manager.masterVolume = value;
+            manager.MasterVolume = value;
         }
     }
 
@@ -97,7 +97,7 @@ public class AudioSettingsUI : MonoBehaviour
         var manager = ResolveAudioManager();
         if (manager != null)
         {
-            manager.musicVolume = value;
+            manager.MusicVolume = value;
         }
     }
 
@@ -106,7 +106,7 @@ public class AudioSettingsUI : MonoBehaviour
         var manager = ResolveAudioManager();
         if (manager != null)
         {
-            manager.ambientVolume = value;
+            manager.AmbientVolume = value;
         }
     }
 
@@ -115,7 +115,7 @@ public class AudioSettingsUI : MonoBehaviour
         var manager = ResolveAudioManager();
         if (manager != null)
         {
-            manager.effectsVolume = value;
+            manager.EffectsVolume = value;
         }
     }
 

@@ -9,4 +9,7 @@ public interface IAudioService
     void PlayAmbientTrack(string trackId);
     void PlayQuestCompleteSound();
     void PlayItemPickupSound();
+    void PlayUIMenuOpen();
+    void PlayUIMenuClose();
+    void PlayUIClick();
 }

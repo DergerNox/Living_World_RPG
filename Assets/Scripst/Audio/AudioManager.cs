@@ -1,43 +1,64 @@
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
+[SuppressMessage("Design", "CA1050:DeclareTypesInNamespaces", Justification = "Unity MonoBehaviour root-level type.")]
 public class AudioManager : MonoBehaviour, IAudioService
 {
-    public static AudioManager Instance;
+    public static AudioManager Instance { get; private set; }
 
     [Header("Audio Sources")]
-    public AudioSource backgroundMusicSource;
-    public AudioSource ambientSoundSource;
-    public AudioSource soundEffectsSource;
+    [SerializeField] private AudioSource backgroundMusicSource;
+    [SerializeField] private AudioSource ambientSoundSource;
+    [SerializeField] private AudioSource soundEffectsSource;
 
     [Header("Volume Settings")]
-    [Range(0f, 1f)]
-    public float masterVolume = 1f;
-    [Range(0f, 1f)]
-    public float musicVolume = 0.5f;
-    [Range(0f, 1f)]
-    public float ambientVolume = 0.3f;
-    [Range(0f, 1f)]
-    public float effectsVolume = 0.7f;
+    [SerializeField][Range(0f, 1f)] private float masterVolume = 1f;
+    [SerializeField][Range(0f, 1f)] private float musicVolume = 0.5f;
+    [SerializeField][Range(0f, 1f)] private float ambientVolume = 0.3f;
+    [SerializeField][Range(0f, 1f)] private float effectsVolume = 0.7f;
 
     [Header("Sound Effects")]
-    public AudioClip attackSound;
-    public AudioClip hitSound;
-    public AudioClip deathSound;
-    public AudioClip victorySound;
-    public AudioClip defeatSound;
-    public AudioClip itemPickupSound;
-    public AudioClip questCompleteSound;
+    [SerializeField] private AudioClip attackSound;
+    [SerializeField] private AudioClip hitSound;
+    [SerializeField] private AudioClip deathSound;
+    [SerializeField] private AudioClip victorySound;
+    [SerializeField] private AudioClip defeatSound;
+    [SerializeField] private AudioClip itemPickupSound;
+    [SerializeField] private AudioClip questCompleteSound;
 
     [Header("UI Sound Effects")]
-    public AudioClip uiClickSound;
-    public AudioClip uiMenuOpenSound;
-    public AudioClip uiMenuCloseSound;
+    [SerializeField] private AudioClip uiClickSound;
+    [SerializeField] private AudioClip uiMenuOpenSound;
+    [SerializeField] private AudioClip uiMenuCloseSound;
 
     [Header("Pooling")]
-    [Range(1, 32)]
-    public int sfxPoolSize = 8;
+    [SerializeField][Range(1, 32)] private int sfxPoolSize = 8;
     private AudioSource[] _sfxPool;
     private int _sfxPoolIndex;
+
+    public float MasterVolume
+    {
+        get => masterVolume;
+        set => masterVolume = Mathf.Clamp01(value);
+    }
+
+    public float MusicVolume
+    {
+        get => musicVolume;
+        set => musicVolume = Mathf.Clamp01(value);
+    }
+
+    public float AmbientVolume
+    {
+        get => ambientVolume;
+        set => ambientVolume = Mathf.Clamp01(value);
+    }
+
+    public float EffectsVolume
+    {
+        get => effectsVolume;
+        set => effectsVolume = Mathf.Clamp01(value);
+    }
 
     private void Awake()
     {
