@@ -8,6 +8,8 @@ public class WorldMapBattleIntegration : MonoBehaviour
     [Header("Battle Settings")]
     public TerrainType defaultTerrain = TerrainType.Plain;
 
+    private IBattleResolver battleResolver;
+
     private void Awake()
     {
         if (Instance == null)
@@ -17,23 +19,26 @@ public class WorldMapBattleIntegration : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
+        }
+
+        if (!ServiceLocator.TryResolve(out battleResolver))
+        {
+            battleResolver = new Battle();
         }
     }
 
     public void InitiateBattle(List<Party> attackers, List<Party> defenders, TerrainType terrain = TerrainType.Plain)
     {
-        Battle battle = new Battle();
-        battle.AttackingParties = attackers;
-        battle.DefendingParties = defenders;
-        battle.Terrain = terrain;
-
-        // Start the battle UI
         if (BattleUI.Instance != null)
         {
-            BattleUI.Instance.StartBattle(battle, attackers, defenders);
+            BattleUI.Instance.StartBattle(attackers, defenders, terrain);
+            return;
         }
 
-        // Battle execution is now handled by the UI in a turn-based manner
+        // If no UI is available, resolve immediately
+        battleResolver?.ResolveParties(attackers, defenders, terrain);
+        HandleBattleResults(attackers, defenders);
     }
 
     private void HandleBattleResults(List<Party> attackers, List<Party> defenders)

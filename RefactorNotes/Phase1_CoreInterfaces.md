@@ -19,4 +19,9 @@ Created the initial set of service contracts under `Assets/Scripst/Core/Interfac
 - `TimeManager` exposes `Tick`/`SetTime`, decoupling time progression from the Unity `Update` loop for testing.
 - `Battle` implements `IBattleResolver`, allowing systems to request combat resolution without referencing the UI-specific battle object.
 
-Next steps: migrate call sites to request these services via `ServiceLocator.Resolve<T>()`, then progressively remove direct singleton usage.
+## Battle Flow Migration
+- `BattleUI` no longer depends on a concrete `Battle` instance; it resolves `IBattleResolver` via `ServiceLocator`, stores only party references, and drives duels through `ResolveDuel`.
+- `WorldMapBattleIntegration` resolves `IBattleResolver` once (with a `Battle` fallback) instead of `new`ing battles each time, and it hands attackers/defenders + terrain to the UI. If no UI exists (e.g., automated simulation), it invokes `ResolveParties` directly.
+- `Battle` itself now pulls `IAudioService` from the locator, removing repeat `AudioManager.Instance` lookups.
+
+Next steps: migrate remaining systems (UI panels, quests, inventory) away from `AudioManager.Instance`/other singletons and lean on the registered interfaces.

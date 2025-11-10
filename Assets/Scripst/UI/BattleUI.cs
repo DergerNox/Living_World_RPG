@@ -28,10 +28,13 @@ public class BattleUI : MonoBehaviour
     public Transform defenderTroopContainer;
     public GameObject troopCardPrefab;
 
-    private Battle currentBattle;
+    private IList<Party> currentAttackers;
+    private IList<Party> currentDefenders;
+    private TerrainType currentTerrain = TerrainType.Plain;
     private Troop selectedAttackerTroop;
     private Troop selectedDefenderTroop;
     private bool isPlayerTurn = true;
+    private IBattleResolver battleResolver;
 
     private void Awake()
     {
@@ -42,6 +45,12 @@ public class BattleUI : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
+        }
+
+        if (!ServiceLocator.TryResolve(out battleResolver))
+        {
+            battleResolver = new Battle();
         }
     }
 
@@ -59,15 +68,17 @@ public class BattleUI : MonoBehaviour
         HideBattleUI();
     }
 
-    public void StartBattle(Battle battle, List<Party> attackers, List<Party> defenders)
+    public void StartBattle(IList<Party> attackers, IList<Party> defenders, TerrainType terrain)
     {
-        currentBattle = battle;
+        currentAttackers = attackers;
+        currentDefenders = defenders;
+        currentTerrain = terrain;
         battlePanel.SetActive(true);
-        UpdateBattleUI(attackers, defenders);
+        UpdateBattleUI();
         battleStatusText.text = "Battle Started!";
     }
 
-    private void UpdateBattleUI(List<Party> attackers, List<Party> defenders)
+    private void UpdateBattleUI()
     {
         // Clear existing troop cards
         foreach (Transform child in attackerTroopContainer)
@@ -80,7 +91,12 @@ public class BattleUI : MonoBehaviour
         }
 
         // Populate attacker troops
-        foreach (var party in attackers)
+        if (currentAttackers == null || currentDefenders == null)
+        {
+            return;
+        }
+
+        foreach (var party in currentAttackers)
         {
             foreach (var troop in party.Troops)
             {
@@ -102,7 +118,7 @@ public class BattleUI : MonoBehaviour
         }
 
         // Populate defender troops
-        foreach (var party in defenders)
+        foreach (var party in currentDefenders)
         {
             foreach (var troop in party.Troops)
             {
@@ -140,9 +156,11 @@ public class BattleUI : MonoBehaviour
     {
         if (selectedAttackerTroop != null && selectedDefenderTroop != null && isPlayerTurn)
         {
-            bool attackerWins = currentBattle.BattleIndividual(selectedAttackerTroop, selectedDefenderTroop);
+            bool attackerWins = battleResolver != null
+                ? battleResolver.ResolveDuel(selectedAttackerTroop, selectedDefenderTroop, currentTerrain)
+                : new Battle().BattleIndividual(selectedAttackerTroop, selectedDefenderTroop);
             battleStatusText.text = attackerWins ? "Attacker wins the duel!" : "Defender wins the duel!";
-            UpdateBattleUI(currentBattle.AttackingParties, currentBattle.DefendingParties);
+            UpdateBattleUI();
             CheckBattleEnd();
             isPlayerTurn = false;
         }
@@ -182,7 +200,12 @@ public class BattleUI : MonoBehaviour
         bool attackersAlive = false;
         bool defendersAlive = false;
 
-        foreach (var party in currentBattle.AttackingParties)
+        if (currentAttackers == null || currentDefenders == null)
+        {
+            return;
+        }
+
+        foreach (var party in currentAttackers)
         {
             if (party.Troops.Count > 0)
             {
@@ -191,7 +214,7 @@ public class BattleUI : MonoBehaviour
             }
         }
 
-        foreach (var party in currentBattle.DefendingParties)
+        foreach (var party in currentDefenders)
         {
             if (party.Troops.Count > 0)
             {
@@ -209,7 +232,7 @@ public class BattleUI : MonoBehaviour
             // Award experience if attackers won
             if (attackersAlive)
             {
-                foreach (var party in currentBattle.AttackingParties)
+                foreach (var party in currentAttackers)
                 {
                     foreach (var troop in party.Troops)
                     {
@@ -227,7 +250,8 @@ public class BattleUI : MonoBehaviour
         battlePanel.SetActive(false);
         selectedAttackerTroop = null;
         selectedDefenderTroop = null;
-        currentBattle = null;
+        currentAttackers = null;
+        currentDefenders = null;
     }
 
     private void HideBattleUI()

@@ -13,14 +13,12 @@ public class Battle : IBattleResolver
     //public methods
     public bool BattleIndividual(Troop i_troopA, Troop i_troopB)
     {
+        var audio = GetAudioService();
         while (i_troopA.IsAlive && i_troopB.IsAlive)
         {
             // TroopA attacks TroopB
             // Play attack sound for troopA
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayAttackSound();
-            }
+            audio?.PlayAttackSound();
 
             // Apply terrain modifier
             float terrainModifierA = GetTerrainModifier(i_troopA, Terrain);
@@ -32,28 +30,19 @@ public class Battle : IBattleResolver
                 i_troopB.IsAlive = false;
                 i_troopB.Health = 0;
                 // Play death sound for troopB
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlayDeathSound();
-                }
+                audio?.PlayDeathSound();
             }
             else
             {
                 // Play hit sound for troopB
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlayHitSound();
-                }
+                audio?.PlayHitSound();
             }
 
             if (!i_troopB.IsAlive) break;
 
             // TroopB attacks TroopA
             // Play attack sound for troopB
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayAttackSound();
-            }
+            audio?.PlayAttackSound();
 
             // Apply terrain modifier
             float terrainModifierB = GetTerrainModifier(i_troopB, Terrain);
@@ -65,18 +54,12 @@ public class Battle : IBattleResolver
                 i_troopA.IsAlive = false;
                 i_troopA.Health = 0;
                 // Play death sound for troopA
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlayDeathSound();
-                }
+                audio?.PlayDeathSound();
             }
             else
             {
                 // Play hit sound for troopA
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlayHitSound();
-                }
+                audio?.PlayHitSound();
             }
         }
         return i_troopA.IsAlive;
@@ -203,7 +186,17 @@ public class Battle : IBattleResolver
         return attackerBonus / defenderBonus; // Attacker bonus vs defender bonus
     }
 
+    private IAudioService GetAudioService()
+    {
+        if (_audioService == null)
+        {
+            ServiceLocator.TryResolve(out _audioService);
+        }
+        return _audioService;
+    }
+
     //private variables
     private List<Party> attackingParties;
     private List<Party> defendingParties;
+    private IAudioService _audioService;
 }
