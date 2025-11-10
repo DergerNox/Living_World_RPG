@@ -3,10 +3,9 @@ using UnityEngine;
 
 public class NPCSpawner : MonoBehaviour
 {
-    public GameObject npcPrefab; // Assign your NPC prefab here in inspector
-    public int numberOfNPCs = 10;
-    public Transform npcParent;  // Optional: parent transform to keep hierarchy clean
-    public
+    [SerializeField] private GameObject npcPrefab; // Assign your NPC prefab here in inspector
+    [SerializeField] private int numberOfNPCs = 10;
+    [SerializeField] private Transform npcParent;  // Optional: parent transform to keep hierarchy clean
 
     private IWorldStateRepository worldStateRepository;
 
