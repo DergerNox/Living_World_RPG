@@ -8,6 +8,7 @@ public class PartyManager : MonoBehaviour, IPartyService
     public Party PlayerParty { get; private set; }
     public List<Party> AllParties { get; private set; } = new List<Party>();
     IReadOnlyList<Party> IPartyService.AllParties => AllParties;
+    private IWorldStateRepository worldStateRepository;
 
     private void Awake()
     {
@@ -24,8 +25,21 @@ public class PartyManager : MonoBehaviour, IPartyService
 
     private void Start()
     {
-        PlayerParty = WorldHandler.Player.Party;
-        AllParties.Add(PlayerParty);
+        var repo = ResolveWorldStateRepository();
+        var player = repo?.Player ?? WorldHandler.Player;
+        if (player != null)
+        {
+            PlayerParty = player.Party;
+            if (!AllParties.Contains(PlayerParty))
+            {
+                AllParties.Add(PlayerParty);
+            }
+        }
+        else
+        {
+            Debug.LogWarning("PartyManager could not find a player party.");
+        }
+
         GenerateAIParties();
     }
 
@@ -90,4 +104,16 @@ public class PartyManager : MonoBehaviour, IPartyService
 	{
 		UpdatePartyPositions();
 	}
+
+    private IWorldStateRepository ResolveWorldStateRepository()
+    {
+        if (worldStateRepository == null)
+        {
+            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            {
+                worldStateRepository = WorldHandler.Instance;
+            }
+        }
+        return worldStateRepository;
+    }
 }
