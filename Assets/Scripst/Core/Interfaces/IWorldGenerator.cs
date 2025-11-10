@@ -11,6 +11,9 @@ public interface IWorldGenerator
     /// </summary>
     TerrainType[,] TerrainMap { get; }
 
+    int WorldWidth { get; }
+    int WorldHeight { get; }
+
     /// <summary>
     /// Executes the full generation pipeline using the provided configuration.
     /// Partial overrides (null settings) should fall back to implementation defaults.

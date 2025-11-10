@@ -13,6 +13,8 @@ public class WorldGenerator : MonoBehaviour, IWorldGenerator
     public int numberOfVillages = 20;
 
     public TerrainType[,] TerrainMap { get; private set; }
+    public int WorldWidth => worldWidth;
+    public int WorldHeight => worldHeight;
 
     private HashSet<Vector2Int> settlementPositions = new HashSet<Vector2Int>();
 

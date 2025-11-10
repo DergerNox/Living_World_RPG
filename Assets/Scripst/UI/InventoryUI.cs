@@ -25,6 +25,23 @@ public class InventoryUI : MonoBehaviour
 
     private Characters currentCharacter;
     private Item selectedItem;
+    private IAudioService audioService;
+
+    private IAudioService AudioService
+    {
+        get
+        {
+            if (audioService == null)
+            {
+                if (!ServiceLocator.TryResolve(out audioService))
+                {
+                    audioService = AudioManager.Instance;
+                }
+            }
+
+            return audioService;
+        }
+    }
 
     private void Awake()
     {
@@ -35,7 +52,9 @@ public class InventoryUI : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
+        _ = AudioService;
     }
 
     private void Start()
@@ -71,10 +90,7 @@ public class InventoryUI : MonoBehaviour
 
         inventoryPanel.SetActive(true);
 
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIMenuOpen();
-        }
+        AudioService?.PlayUIMenuOpen();
     }
 
     public void CloseInventory()
@@ -84,10 +100,7 @@ public class InventoryUI : MonoBehaviour
         currentCharacter = null;
         selectedItem = null;
 
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIMenuClose();
-        }
+        AudioService?.PlayUIMenuClose();
     }
 
     private void UpdateInventoryUI()

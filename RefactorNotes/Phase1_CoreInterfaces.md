@@ -24,4 +24,9 @@ Created the initial set of service contracts under `Assets/Scripst/Core/Interfac
 - `WorldMapBattleIntegration` resolves `IBattleResolver` once (with a `Battle` fallback) instead of `new`ing battles each time, and it hands attackers/defenders + terrain to the UI. If no UI exists (e.g., automated simulation), it invokes `ResolveParties` directly.
 - `Battle` itself now pulls `IAudioService` from the locator, removing repeat `AudioManager.Instance` lookups.
 
+## UI Service Adoption
+- `WorldMapUI` now fetches `IAudioService`, `IWorldGenerator`, and `IWorldStateRepository` via the locator (with legacy fallbacks) so world map rendering and clicks no longer poke static singletons directly.
+- Settlement/party/inventory/character stats UIs cache `IAudioService` once and drop the repeated `AudioManager.Instance` guards.
+- `AudioSettingsUI` resolves a concrete `AudioManager` through the locator (or falls back) for slider bindings, keeping configuration centralized without static references.
+
 Next steps: migrate remaining systems (UI panels, quests, inventory) away from `AudioManager.Instance`/other singletons and lean on the registered interfaces.

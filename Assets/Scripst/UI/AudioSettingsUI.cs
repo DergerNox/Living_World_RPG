@@ -14,6 +14,8 @@ public class AudioSettingsUI : MonoBehaviour
     public Slider effectsVolumeSlider;
     public Button closeButton;
 
+    private AudioManager audioManager;
+
     private void Awake()
     {
         if (Instance == null)
@@ -23,18 +25,22 @@ public class AudioSettingsUI : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
+
+        ResolveAudioManager();
     }
 
     private void Start()
     {
-        if (AudioManager.Instance != null)
+        var manager = ResolveAudioManager();
+        if (manager != null)
         {
             // Set initial slider values
-            masterVolumeSlider.value = AudioManager.Instance.masterVolume;
-            musicVolumeSlider.value = AudioManager.Instance.musicVolume;
-            ambientVolumeSlider.value = AudioManager.Instance.ambientVolume;
-            effectsVolumeSlider.value = AudioManager.Instance.effectsVolume;
+            masterVolumeSlider.value = manager.masterVolume;
+            musicVolumeSlider.value = manager.musicVolume;
+            ambientVolumeSlider.value = manager.ambientVolume;
+            effectsVolumeSlider.value = manager.effectsVolume;
 
             // Add listeners
             masterVolumeSlider.onValueChanged.AddListener(OnMasterVolumeChanged);
@@ -62,10 +68,7 @@ public class AudioSettingsUI : MonoBehaviour
             settingsPanel.SetActive(true);
 
             // Play UI menu open sound
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayUIMenuOpen();
-            }
+            ResolveAudioManager()?.PlayUIMenuOpen();
         }
     }
 
@@ -76,42 +79,55 @@ public class AudioSettingsUI : MonoBehaviour
             settingsPanel.SetActive(false);
 
             // Play UI menu close sound
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayUIMenuClose();
-            }
+            ResolveAudioManager()?.PlayUIMenuClose();
         }
     }
 
     private void OnMasterVolumeChanged(float value)
     {
-        if (AudioManager.Instance != null)
+        var manager = ResolveAudioManager();
+        if (manager != null)
         {
-            AudioManager.Instance.masterVolume = value;
+            manager.masterVolume = value;
         }
     }
 
     private void OnMusicVolumeChanged(float value)
     {
-        if (AudioManager.Instance != null)
+        var manager = ResolveAudioManager();
+        if (manager != null)
         {
-            AudioManager.Instance.musicVolume = value;
+            manager.musicVolume = value;
         }
     }
 
     private void OnAmbientVolumeChanged(float value)
     {
-        if (AudioManager.Instance != null)
+        var manager = ResolveAudioManager();
+        if (manager != null)
         {
-            AudioManager.Instance.ambientVolume = value;
+            manager.ambientVolume = value;
         }
     }
 
     private void OnEffectsVolumeChanged(float value)
     {
-        if (AudioManager.Instance != null)
+        var manager = ResolveAudioManager();
+        if (manager != null)
         {
-            AudioManager.Instance.effectsVolume = value;
+            manager.effectsVolume = value;
         }
+    }
+
+    private AudioManager ResolveAudioManager()
+    {
+        if (audioManager == null)
+        {
+            if (!ServiceLocator.TryResolve(out audioManager))
+            {
+                audioManager = AudioManager.Instance;
+            }
+        }
+        return audioManager;
     }
 }

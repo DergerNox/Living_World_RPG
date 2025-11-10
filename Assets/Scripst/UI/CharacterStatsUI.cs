@@ -26,6 +26,23 @@ public class CharacterStatsUI : MonoBehaviour
     public GameObject itemSlotPrefab;
 
     private Characters currentCharacter;
+    private IAudioService audioService;
+
+    private IAudioService AudioService
+    {
+        get
+        {
+            if (audioService == null)
+            {
+                if (!ServiceLocator.TryResolve(out audioService))
+                {
+                    audioService = AudioManager.Instance;
+                }
+            }
+
+            return audioService;
+        }
+    }
 
     private void Awake()
     {
@@ -36,7 +53,9 @@ public class CharacterStatsUI : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
+        _ = AudioService;
     }
 
     private void Start()
@@ -56,10 +75,7 @@ public class CharacterStatsUI : MonoBehaviour
 
         statsPanel.SetActive(true);
 
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIMenuOpen();
-        }
+        AudioService?.PlayUIMenuOpen();
     }
 
     public void CloseStatsUI()
@@ -67,10 +83,7 @@ public class CharacterStatsUI : MonoBehaviour
         statsPanel.SetActive(false);
         currentCharacter = null;
 
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIMenuClose();
-        }
+        AudioService?.PlayUIMenuClose();
     }
 
     private void UpdateUI()

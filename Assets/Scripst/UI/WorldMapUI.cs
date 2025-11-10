@@ -26,6 +26,9 @@ public class WorldMapUI : MonoBehaviour
 
     private Texture2D worldMapTexture;
     private List<GameObject> settlementMarkers = new List<GameObject>();
+    private IAudioService audioService;
+    private IWorldGenerator worldGenerator;
+    private IWorldStateRepository worldStateRepository;
 
     private void Awake()
     {
@@ -36,7 +39,10 @@ public class WorldMapUI : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
+
+        ResolveServices();
     }
 
     private void Start()
@@ -52,33 +58,29 @@ public class WorldMapUI : MonoBehaviour
 
     public void OpenWorldMap()
     {
+        ResolveServices();
         GenerateWorldMapTexture();
         UpdateSettlementMarkers();
 
         worldMapPanel.SetActive(true);
 
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIMenuOpen();
-        }
+        audioService?.PlayUIMenuOpen();
     }
 
     public void CloseWorldMap()
     {
         worldMapPanel.SetActive(false);
 
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIMenuClose();
-        }
+        audioService?.PlayUIMenuClose();
     }
 
     private void GenerateWorldMapTexture()
     {
-        if (WorldGenerator.Instance == null) return;
+        var generator = GetWorldGenerator();
+        if (generator == null || generator.TerrainMap == null) return;
 
-        int width = WorldGenerator.Instance.worldWidth;
-        int height = WorldGenerator.Instance.worldHeight;
+        int width = generator.WorldWidth;
+        int height = generator.WorldHeight;
 
         worldMapTexture = new Texture2D(width, height);
         worldMapTexture.filterMode = FilterMode.Point;
@@ -87,7 +89,7 @@ public class WorldMapUI : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                Color color = GetTerrainColor(WorldGenerator.Instance.TerrainMap[x, y]);
+                Color color = GetTerrainColor(generator.TerrainMap[x, y]);
                 worldMapTexture.SetPixel(x, y, color);
             }
         }
@@ -111,6 +113,10 @@ public class WorldMapUI : MonoBehaviour
 
     private void UpdateSettlementMarkers()
     {
+        var repository = GetWorldStateRepository();
+        var generator = GetWorldGenerator();
+        if (repository == null || generator == null) return;
+
         // Clear existing markers
         foreach (var marker in settlementMarkers)
         {
@@ -119,17 +125,17 @@ public class WorldMapUI : MonoBehaviour
         settlementMarkers.Clear();
 
         // Add markers for settlements
-        foreach (var castle in WorldHandler.Castles)
+        foreach (var castle in repository.Castles)
         {
             CreateSettlementMarker(castle.Position, "Castle", Color.red);
         }
 
-        foreach (var town in WorldHandler.Towns)
+        foreach (var town in repository.Towns)
         {
             CreateSettlementMarker(town.Position, "Town", Color.yellow);
         }
 
-        foreach (var village in WorldHandler.Villages)
+        foreach (var village in repository.Villages)
         {
             CreateSettlementMarker(village.Position, "Village", Color.cyan);
         }
@@ -137,13 +143,16 @@ public class WorldMapUI : MonoBehaviour
 
     private void CreateSettlementMarker(Vector3Int position, string type, Color color)
     {
+        var generator = GetWorldGenerator();
+        if (generator == null) return;
+
         GameObject marker = Instantiate(settlementMarkerPrefab, markerContainer);
         RectTransform markerRect = marker.GetComponent<RectTransform>();
 
         // Convert world position to UI position
         Vector2 uiPosition = new Vector2(
-            (position.x / (float)WorldGenerator.Instance.worldWidth - 0.5f) * mapRect.rect.width,
-            (position.y / (float)WorldGenerator.Instance.worldHeight - 0.5f) * mapRect.rect.height
+            (position.x / (float)generator.WorldWidth - 0.5f) * mapRect.rect.width,
+            (position.y / (float)generator.WorldHeight - 0.5f) * mapRect.rect.height
         );
 
         markerRect.anchoredPosition = uiPosition;
@@ -159,7 +168,8 @@ public class WorldMapUI : MonoBehaviour
         Button markerButton = marker.GetComponent<Button>();
         if (markerButton != null)
         {
-            markerButton.onClick.AddListener(() => ShowSettlementInfo((Vector2Int)position, type));
+            Vector2Int cachedPosition = new Vector2Int(position.x, position.y);
+            markerButton.onClick.AddListener(() => ShowSettlementInfo(cachedPosition, type));
         }
 
         settlementMarkers.Add(marker);
@@ -169,5 +179,50 @@ public class WorldMapUI : MonoBehaviour
     {
         infoText.text = $"{type} at ({position.x}, {position.y})";
         infoPanel.SetActive(true);
+    }
+
+    private void ResolveServices()
+    {
+        if (audioService == null)
+        {
+            if (!ServiceLocator.TryResolve(out audioService))
+            {
+                audioService = AudioManager.Instance;
+            }
+        }
+
+        if (worldGenerator == null)
+        {
+            if (!ServiceLocator.TryResolve(out worldGenerator))
+            {
+                worldGenerator = WorldGenerator.Instance;
+            }
+        }
+
+        if (worldStateRepository == null)
+        {
+            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            {
+                worldStateRepository = WorldHandler.Instance;
+            }
+        }
+    }
+
+    private IWorldGenerator GetWorldGenerator()
+    {
+        if (worldGenerator == null)
+        {
+            ResolveServices();
+        }
+        return worldGenerator;
+    }
+
+    private IWorldStateRepository GetWorldStateRepository()
+    {
+        if (worldStateRepository == null)
+        {
+            ResolveServices();
+        }
+        return worldStateRepository;
     }
 }

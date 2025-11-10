@@ -22,6 +22,23 @@ public class SettlementUIManager : MonoBehaviour
     public GameObject troopCardPrefab;      // Prefab for displaying each troop card
 
     private ISettlement currentSettlement;
+    private IAudioService audioService;
+
+    private IAudioService AudioService
+    {
+        get
+        {
+            if (audioService == null)
+            {
+                if (!ServiceLocator.TryResolve(out audioService))
+                {
+                    audioService = AudioManager.Instance;
+                }
+            }
+
+            return audioService;
+        }
+    }
 
     void Start()
     {
@@ -57,10 +74,7 @@ public class SettlementUIManager : MonoBehaviour
         uiPanel.SetActive(true);
 
         // Play UI menu open sound
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIMenuOpen();
-        }
+        AudioService?.PlayUIMenuOpen();
 
         // Show recruit button for all settlements
         recruitButton.gameObject.SetActive(true);
@@ -82,19 +96,13 @@ public class SettlementUIManager : MonoBehaviour
         currentSettlement = null;
 
         // Play UI menu close sound
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIMenuClose();
-        }
+        AudioService?.PlayUIMenuClose();
     }
 
     public void OnRecruitButton()
     {
         // Play UI click sound
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIClick();
-        }
+        AudioService?.PlayUIClick();
 
         Debug.Log($"Opening recruitment at {GetSettlementName(currentSettlement)}");
 
@@ -134,10 +142,7 @@ public class SettlementUIManager : MonoBehaviour
     public void OnTradeButton()
     {
         // Play UI click sound
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIClick();
-        }
+        AudioService?.PlayUIClick();
 
         Debug.Log($"Opening trade at {GetSettlementName(currentSettlement)}");
         // TODO: Implement trade UI
@@ -146,10 +151,7 @@ public class SettlementUIManager : MonoBehaviour
     public void OnStatsButton()
     {
         // Play UI click sound
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIClick();
-        }
+        AudioService?.PlayUIClick();
 
         // Open character stats UI for player
         if (CharacterStatsUI.Instance != null && WorldHandler.Player != null)
@@ -161,10 +163,7 @@ public class SettlementUIManager : MonoBehaviour
     public void OnInventoryButton()
     {
         // Play UI click sound
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIClick();
-        }
+        AudioService?.PlayUIClick();
 
         // Open inventory UI for player
         if (InventoryUI.Instance != null && WorldHandler.Player != null)
@@ -176,10 +175,7 @@ public class SettlementUIManager : MonoBehaviour
     public void OnWorldMapButton()
     {
         // Play UI click sound
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIClick();
-        }
+        AudioService?.PlayUIClick();
 
         // Open world map UI
         if (WorldMapUI.Instance != null)
@@ -227,10 +223,7 @@ public class SettlementUIManager : MonoBehaviour
             cardButton.onClick.AddListener(() =>
             {
                 // Play UI click sound
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlayUIClick();
-                }
+                AudioService?.PlayUIClick();
                 troopSelectionPanelScript.Open(troop);
             });
         }

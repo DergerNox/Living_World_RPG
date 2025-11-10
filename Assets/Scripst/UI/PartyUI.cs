@@ -30,6 +30,23 @@ public class PartyUI : MonoBehaviour
     public GameObject troopItemPrefab;
 
     private Party currentParty;
+    private IAudioService audioService;
+
+    private IAudioService AudioService
+    {
+        get
+        {
+            if (audioService == null)
+            {
+                if (!ServiceLocator.TryResolve(out audioService))
+                {
+                    audioService = AudioManager.Instance;
+                }
+            }
+
+            return audioService;
+        }
+    }
 
     private void Awake()
     {
@@ -40,7 +57,10 @@ public class PartyUI : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
+
+        _ = AudioService;
     }
 
     private void Start()
@@ -71,10 +91,7 @@ public class PartyUI : MonoBehaviour
         UpdateUI();
         partyPanel.SetActive(true);
 
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIMenuOpen();
-        }
+        AudioService?.PlayUIMenuOpen();
     }
 
     public void ClosePartyUI()
@@ -82,10 +99,7 @@ public class PartyUI : MonoBehaviour
         partyPanel.SetActive(false);
         currentParty = null;
 
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayUIMenuClose();
-        }
+        AudioService?.PlayUIMenuClose();
     }
 
     private void UpdateUI()
