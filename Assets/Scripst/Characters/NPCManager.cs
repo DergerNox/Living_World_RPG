@@ -1,73 +1,106 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NPCManager : MonoBehaviour
+namespace LivingWorldRPG.Characters
 {
-    public static NPCManager Instance;
-
-    public List<NPC> npcs = new List<NPC>();
-    private ITimeService timeService;
-
-    private void Awake()
+    public class NPCManager : MonoBehaviour
     {
-        if (Instance == null)
+        public static NPCManager Instance { get; private set; }
+
+        [SerializeField] private List<NPC> npcs = new List<NPC>();
+        private ITimeService timeService;
+
+        public IReadOnlyList<NPC> NPCs => npcs;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             Instance = this;
-        else
-            Destroy(gameObject);
-    }
-
-    private void Start()
-    {
-        var service = ResolveTimeService();
-        if (service != null)
-        {
-            service.OnHourChanged += UpdateNPCActivities;
         }
-    }
 
-    private void OnDestroy()
-    {
-        var service = timeService;
-        if (service != null)
+        private void Start()
         {
-            service.OnHourChanged -= UpdateNPCActivities;
-        }
-    }
-
-    private void UpdateNPCActivities()
-    {
-        var service = ResolveTimeService();
-        int hour = service?.Hour ?? 0;
-        foreach (NPC npc in npcs)
-        {
-            if (hour >= 22 || hour < 6)
+            timeService = ResolveTimeService();
+            if (timeService != null)
             {
-                npc.CurrentActivity = Activity.Sleeping;
-            }
-            else if (hour >= 8 && hour < 18)
-            {
-                npc.CurrentActivity = Activity.Working;
-            }
-            else if (hour >= 12 && hour < 14)
-            {
-                npc.CurrentActivity = Activity.Eating;
-            }
-            else
-            {
-                npc.CurrentActivity = Activity.Wandering;
+                timeService.OnHourChanged += UpdateNPCActivities;
             }
         }
-    }
 
-    private ITimeService ResolveTimeService()
-    {
-        if (timeService == null)
+        private void OnDestroy()
         {
+            if (timeService != null)
+            {
+                timeService.OnHourChanged -= UpdateNPCActivities;
+            }
+
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
+        private void UpdateNPCActivities()
+        {
+            var service = timeService ?? ResolveTimeService();
+            if (service == null)
+            {
+                return;
+            }
+
+            int hour = service.Hour;
+            foreach (var npc in npcs)
+            {
+                if (npc == null)
+                {
+                    continue;
+                }
+
+                if (hour >= 22 || hour < 6)
+                {
+                    npc.CurrentActivity = Activity.Sleeping;
+                }
+                else if (hour >= 8 && hour < 18)
+                {
+                    npc.CurrentActivity = Activity.Working;
+                }
+                else if (hour >= 12 && hour < 14)
+                {
+                    npc.CurrentActivity = Activity.Eating;
+                }
+                else
+                {
+                    npc.CurrentActivity = Activity.Wandering;
+                }
+            }
+        }
+
+        private ITimeService ResolveTimeService()
+        {
+            if (timeService != null)
+            {
+                return timeService;
+            }
+
             if (!ServiceLocator.TryResolve(out timeService))
             {
-                timeService = TimeManager.Instance;
+                Debug.LogError("NPCManager: ITimeService is not registered in the ServiceLocator.");
+            }
+
+            return timeService;
+        }
+
+        public void RegisterNPC(NPC npc)
+        {
+            if (npc != null && !npcs.Contains(npc))
+            {
+                npcs.Add(npc);
             }
         }
-        return timeService;
     }
 }
