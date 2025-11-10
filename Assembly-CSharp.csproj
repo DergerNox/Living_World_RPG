@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripst\Settlemnets\Village.cs" />
+    <Compile Include="Assets\Scripst\Core\Interfaces\ITradeService.cs" />
     <Compile Include="Assets\Scripst\Characters\NPC_Controller.cs" />
     <Compile Include="Assets\Scripst\Skills\Core\SkillTreeNew.cs" />
     <Compile Include="Assets\Scripst\Buildings.cs" />
@@ -68,6 +69,7 @@
     <Compile Include="Assets\Scripst\Skills\StatusEffects\BuffStatusEffect.cs" />
     <Compile Include="Assets\Scripst\Characters\NPCManager.cs" />
     <Compile Include="Assets\Scripst\Interactions\Heap.cs" />
+    <Compile Include="Assets\Scripst\Core\Interfaces\ITimeService.cs" />
     <Compile Include="Assets\Scripst\UI\CharacterStatsUI.cs" />
     <Compile Include="Assets\Scripst\Interactions\HeapItem.cs" />
     <Compile Include="Assets\Scripst\Skills\Core\SkillFactory.cs" />
@@ -81,8 +83,10 @@
     <Compile Include="Assets\Scripst\UI\InventoryUI.cs" />
     <Compile Include="Assets\Scripst\UI\TimeWeatherUI.cs" />
     <Compile Include="Assets\Scripst\Dialogue.cs" />
+    <Compile Include="Assets\Scripst\Core\Interfaces\IQuestService.cs" />
     <Compile Include="Assets\Scripst\SkillTree.cs" />
     <Compile Include="Assets\Scripst\Interactions\IInteractable.cs" />
+    <Compile Include="Assets\Scripst\Core\QuestService.cs" />
     <Compile Include="Assets\Scripst\Skills\Data\SkillEffectData.cs" />
     <Compile Include="Assets\Scripst\TimeAndWeather\WeatherEffectManager.cs" />
     <Compile Include="Assets\Scripst\Skills\Core\GenericSkill.cs" />
@@ -92,7 +96,9 @@
     <Compile Include="Assets\Scripst\PartySystem\PartyManager.cs" />
     <Compile Include="Assets\Scripst\QuestManager.cs" />
     <Compile Include="Assets\Scripst\WalkerObject.cs" />
+    <Compile Include="Assets\Scripst\Economy\TradeService.cs" />
     <Compile Include="Assets\Scripst\TerrainTypeEnum.cs" />
+    <Compile Include="Assets\Scripst\Core\Interfaces\IAudioService.cs" />
     <Compile Include="Assets\Scripst\WorldHandler.cs" />
     <Compile Include="Assets\Scripst\Skills\Effects\DamageEffect.cs" />
     <Compile Include="Assets\Scripst\Interactions\MultiAgentPathfinder.cs" />
@@ -102,6 +108,7 @@
     <Compile Include="Assets\Scripst\UI\AudioSettingsUI.cs" />
     <Compile Include="Assets\Scripst\Troops\EnumTroopRanks.cs" />
     <Compile Include="Assets\Scripst\Skills\Core\MageSkill.cs" />
+    <Compile Include="Assets\Scripst\Core\Interfaces\IWorldStateRepository.cs" />
     <Compile Include="Assets\Scripst\Core\ServiceLocator.cs" />
     <Compile Include="Assets\Scripst\UI\PartyUI.cs" />
     <Compile Include="Assets\Scripst\PartySystem\PartyTypeEnum.cs" />
@@ -114,6 +121,7 @@
     <Compile Include="Assets\Scripst\GraphicsOptimizer.cs" />
     <Compile Include="Assets\Scripst\CameraFollow.cs" />
     <Compile Include="Assets\Scripst\Interactions\PathfindingManager.cs" />
+    <Compile Include="Assets\Scripst\Core\Interfaces\IBattleResolver.cs" />
     <Compile Include="Assets\Scripst\Characters\FactionDiplomacy.cs" />
     <Compile Include="Assets\Scripst\Core\DebugHUD.cs" />
     <Compile Include="Assets\Scripst\Materials\ResourceTypeEnum.cs" />
@@ -136,6 +144,7 @@
     <Compile Include="Assets\Scripst\UI\BattleUI.cs" />
     <Compile Include="Assets\Scripst\Troops\TroopCard.cs" />
     <Compile Include="Assets\Scripst\WlakerGenerator.cs" />
+    <Compile Include="Assets\Scripst\Core\Interfaces\IPartyService.cs" />
     <Compile Include="Assets\Scripst\Skills\Interfaces\ISkill.cs" />
     <Compile Include="Assets\Scripst\Inventory\Inventory.cs" />
     <Compile Include="Assets\Scripst\NameGenerator.cs" />
@@ -151,6 +160,7 @@
     <Compile Include="Assets\Scripst\Skill.cs" />
     <Compile Include="Assets\Scripst\TimeAndWeather\WeatherManager.cs" />
     <Compile Include="Assets\Scripst\TimeAndWeather\TimeManager.cs" />
+    <Compile Include="Assets\Scripst\Core\Interfaces\IWorldGenerator.cs" />
     <Compile Include="Assets\Scripst\Interactions\SettlementInteractable.cs" />
     <Compile Include="Assets\Scripst\Skills\Effects\HealEffect.cs" />
     <Compile Include="Assets\Scripst\UI\WorldMapUI.cs" />
