@@ -31,14 +31,20 @@ public class WorldGenerator : MonoBehaviour, IWorldGenerator
             return;
         }
 
-        if (!ServiceLocator.TryResolve(out _worldRepo))
+        if (!ServiceLocator.TryResolve(out _worldRepo) || _worldRepo == null)
         {
-            _worldRepo = WorldHandler.Instance;
+            Debug.LogError("WorldGenerator requires an IWorldStateRepository registered in the ServiceLocator.");
+            enabled = false;
         }
     }
 
     public void GenerateWorld(WorldGenerationSettings settings = null)
     {
+        if (_worldRepo == null)
+        {
+            Debug.LogError("WorldGenerator cannot generate without a world repository instance.");
+            return;
+        }
         ApplyOverrides(settings);
         TerrainMap = new TerrainType[worldWidth, worldHeight];
         settlementPositions.Clear();
@@ -96,6 +102,8 @@ public class WorldGenerator : MonoBehaviour, IWorldGenerator
 
     private void GenerateFactions()
     {
+        if (_worldRepo == null) return;
+
         _worldRepo.Factions.Clear();
         for (int i = 0; i < numberOfFactions; i++)
         {
@@ -115,6 +123,8 @@ public class WorldGenerator : MonoBehaviour, IWorldGenerator
 
     private void GenerateSettlements()
     {
+        if (_worldRepo == null) return;
+
         _worldRepo.Castles.Clear();
         _worldRepo.Towns.Clear();
         _worldRepo.Villages.Clear();

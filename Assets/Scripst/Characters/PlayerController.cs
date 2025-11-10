@@ -22,9 +22,9 @@ public class PlayerController : MonoBehaviour
     {
         if (generator == null)
             generator = FindFirstObjectByType<WalkerGenerator>();
-        if (!ServiceLocator.TryResolve(out worldStateRepository))
+        if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
         {
-            worldStateRepository = WorldHandler.Instance;
+            Debug.LogError("PlayerController requires an IWorldStateRepository for settlement interactions.");
         }
 
         // Correctly assign the tilemaps from WalkerGenerator
@@ -137,17 +137,17 @@ public class PlayerController : MonoBehaviour
         if (structureTile == generator.Town)
         {
             // Reference an existing Town object
-            return worldStateRepository?.GetTownAtPosition(position) ?? generator.GetTownAtPosition(position);  // Ensure this method is implemented in your generator
+            return worldStateRepository != null ? worldStateRepository.GetTownAtPosition(position) : generator.GetTownAtPosition(position);  // Ensure this method is implemented in your generator
         }
         else if (structureTile == generator.Castle)
         {
             // Reference an existing Castle object
-            return worldStateRepository?.GetCastleAtPosition(position) ?? generator.GetCastleAtPosition(position);  // Ensure this method is implemented in your generator
+            return worldStateRepository != null ? worldStateRepository.GetCastleAtPosition(position) : generator.GetCastleAtPosition(position);  // Ensure this method is implemented in your generator
         }
         else if (structureTile == generator.Village)
         {
             // Reference an existing Village object
-            return worldStateRepository?.GetVillageAtPosition(position) ?? generator.GetVillageAtPosition(position);  // Ensure this method is implemented in your generator
+            return worldStateRepository != null ? worldStateRepository.GetVillageAtPosition(position) : generator.GetVillageAtPosition(position);  // Ensure this method is implemented in your generator
         }
 
         // Return null if no settlement was found

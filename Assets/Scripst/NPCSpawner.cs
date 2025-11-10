@@ -77,9 +77,10 @@ public class NPCSpawner : MonoBehaviour
     {
         if (worldStateRepository == null)
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
             {
-                worldStateRepository = WorldHandler.Instance;
+                Debug.LogError("NPCSpawner requires an IWorldStateRepository.");
+                return null;
             }
         }
         return worldStateRepository;

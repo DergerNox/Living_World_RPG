@@ -18,9 +18,10 @@ public class FactionMaker : MonoBehaviour
         }
         Instance = this;
 
-        if (!ServiceLocator.TryResolve(out worldStateRepository))
+        if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
         {
-            worldStateRepository = WorldHandler.Instance;
+            Debug.LogError("FactionMaker requires an IWorldStateRepository. Please ensure WorldHandler is initialized before generating factions.");
+            enabled = false;
         }
     }
 

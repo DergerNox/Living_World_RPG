@@ -31,9 +31,9 @@ public class SettlementUIManager : MonoBehaviour
         {
             if (audioService == null)
             {
-                if (!ServiceLocator.TryResolve(out audioService))
+                if (!ServiceLocator.TryResolve(out audioService) || audioService == null)
                 {
-                    audioService = AudioManager.Instance;
+                    Debug.LogError("SettlementUIManager requires an IAudioService.");
                 }
             }
 
@@ -198,56 +198,55 @@ public class SettlementUIManager : MonoBehaviour
 
     // Load the available units into the recruitment UI
     private void LoadTroopCards(List<Troop> availableUnits)
-{
-    // Clear existing troop cards
-    foreach (Transform child in troopContainer)
     {
-        Destroy(child.gameObject);
-    }
+        if (availableUnits == null) return;
 
-    // Instantiate and set up troop cards
-    foreach (var troop in availableUnits)
-    {
-        GameObject troopCard = Instantiate(troopCardPrefab, troopContainer);
-        TroopCard troopCardScript = troopCard.GetComponent<TroopCard>();
-
-        if (troopCardScript == null)
+        foreach (Transform child in troopContainer)
         {
-            Debug.LogError("TroopCard script not found on the prefab!");
-            continue;
+            Destroy(child.gameObject);
         }
 
-        // Set the name and image on the card
-        troopCardScript.SetUpTroopCard(troop);
-
-        // Add listener to open the Troop Selection Panel when clicked
-        UnityEngine.UI.Button cardButton = troopCard.GetComponent<UnityEngine.UI.Button>();
-        if (cardButton != null && troopSelectionPanelScript != null)
+        foreach (var troop in availableUnits)
         {
-            cardButton.onClick.AddListener(() =>
+            GameObject troopCard = Instantiate(troopCardPrefab, troopContainer);
+            TroopCard troopCardScript = troopCard.GetComponent<TroopCard>();
+
+            if (troopCardScript == null)
             {
-                // Play UI click sound
-                AudioService?.PlayUIClick();
-                troopSelectionPanelScript.Open(troop);
-            });
-        }
-        else
-        {
-            Debug.LogWarning("Missing Button or TroopSelectionPanel reference!");
+                Debug.LogError("TroopCard script not found on the prefab!");
+                continue;
+            }
+
+            troopCardScript.SetUpTroopCard(troop);
+
+            UnityEngine.UI.Button cardButton = troopCard.GetComponent<UnityEngine.UI.Button>();
+            if (cardButton != null && troopSelectionPanelScript != null)
+            {
+                cardButton.onClick.AddListener(() =>
+                {
+                    AudioService?.PlayUIClick();
+                    troopSelectionPanelScript.Open(troop);
+                });
+            }
+            else
+            {
+                Debug.LogWarning("Missing Button or TroopSelectionPanel reference!");
+            }
         }
     }
+
     private Player GetPlayer()
     {
         if (worldStateRepository == null)
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
             {
-                worldStateRepository = WorldHandler.Instance;
+                Debug.LogError("SettlementUIManager requires an IWorldStateRepository.");
+                return null;
             }
         }
-        return worldStateRepository?.Player ?? WorldHandler.Player;
+        return worldStateRepository.Player;
     }
-}
 
 
     // Recruit the selected troop

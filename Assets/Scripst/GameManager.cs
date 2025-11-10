@@ -170,9 +170,9 @@ public class GameManager : MonoBehaviour
     {
         if (worldStateRepository == null)
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
             {
-                worldStateRepository = WorldHandler.Instance;
+                Debug.LogError("GameManager requires an IWorldStateRepository. Save/Load operations will be disabled.");
             }
         }
     }
@@ -180,6 +180,10 @@ public class GameManager : MonoBehaviour
     private Player GetPlayer()
     {
         ResolveWorldStateRepository();
-        return worldStateRepository?.Player ?? WorldHandler.Player;
+        if (worldStateRepository == null)
+        {
+            ResolveWorldStateRepository();
+        }
+        return worldStateRepository?.Player;
     }
 }

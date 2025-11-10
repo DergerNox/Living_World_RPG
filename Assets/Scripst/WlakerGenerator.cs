@@ -44,14 +44,16 @@ public class WalkerGenerator : MonoBehaviour
 
     void Start()
     {
-        if (!ServiceLocator.TryResolve(out worldStateRepository))
+        if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
         {
-            worldStateRepository = WorldHandler.Instance;
+            Debug.LogError("WalkerGenerator requires an IWorldStateRepository. Generation aborted.");
+            enabled = false;
+            return;
         }
 
         InitializeGrid();
         FactionMaker.Instance.AssignFactions(castleMap, townMap, villageMap);
-        worldStateRepository?.RebuildSpatialCaches();
+        worldStateRepository.RebuildSpatialCaches();
     }
 
     void InitializeGrid()

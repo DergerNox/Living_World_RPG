@@ -32,6 +32,10 @@ public class FactionDiplomacy : MonoBehaviour
         diplomacyMatrix.Clear();
         // Get all factions from WorldHandler
         var factions = GetFactions();
+        if (factions == null)
+        {
+            return;
+        }
         if (factions == null) return;
         foreach (var factionA in factions)
         {
@@ -105,11 +109,12 @@ public class FactionDiplomacy : MonoBehaviour
     {
         if (worldStateRepository == null)
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
             {
-                worldStateRepository = WorldHandler.Instance;
+                Debug.LogError("FactionDiplomacy requires an IWorldStateRepository.");
+                return null;
             }
         }
-        return worldStateRepository?.Factions ?? WorldHandler.Factions;
+        return worldStateRepository.Factions;
     }
 }

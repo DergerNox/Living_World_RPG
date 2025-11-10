@@ -99,11 +99,12 @@ public class QuestService : MonoBehaviour, IQuestService
     {
         if (worldStateRepository == null)
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
             {
-                worldStateRepository = WorldHandler.Instance;
+                Debug.LogError("QuestService requires an IWorldStateRepository to grant rewards.");
+                return null;
             }
         }
-        return worldStateRepository?.Player ?? WorldHandler.Player;
+        return worldStateRepository.Player;
     }
 }

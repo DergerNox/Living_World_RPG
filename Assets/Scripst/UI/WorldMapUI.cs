@@ -185,25 +185,25 @@ public class WorldMapUI : MonoBehaviour
     {
         if (audioService == null)
         {
-            if (!ServiceLocator.TryResolve(out audioService))
+            if (!ServiceLocator.TryResolve(out audioService) || audioService == null)
             {
-                audioService = AudioManager.Instance;
+                Debug.LogError("WorldMapUI requires an IAudioService.");
             }
         }
 
         if (worldGenerator == null)
         {
-            if (!ServiceLocator.TryResolve(out worldGenerator))
+            if (!ServiceLocator.TryResolve(out worldGenerator) || worldGenerator == null)
             {
-                worldGenerator = WorldGenerator.Instance;
+                Debug.LogError("WorldMapUI requires an IWorldGenerator.");
             }
         }
 
         if (worldStateRepository == null)
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
             {
-                worldStateRepository = WorldHandler.Instance;
+                Debug.LogError("WorldMapUI requires an IWorldStateRepository.");
             }
         }
     }

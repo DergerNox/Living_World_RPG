@@ -149,7 +149,7 @@ public class WorldEventManager : MonoBehaviour
     private void GenerateQuestEvent(int factionId)
     {
         var repo = ResolveWorldStateRepository();
-        var player = repo?.Player ?? WorldHandler.Player;
+        var player = repo?.Player;
         if (player == null) return;
 
         Quest quest = QuestGenerator.GenerateQuest(player.Level);
@@ -220,9 +220,10 @@ public class WorldEventManager : MonoBehaviour
     {
         if (questService == null)
         {
-            if (!ServiceLocator.TryResolve(out questService))
+            if (!ServiceLocator.TryResolve(out questService) || questService == null)
             {
-                questService = QuestService.Instance;
+                Debug.LogError("WorldEventManager requires an IQuestService.");
+                return null;
             }
         }
 
@@ -233,9 +234,10 @@ public class WorldEventManager : MonoBehaviour
     {
         if (timeService == null)
         {
-            if (!ServiceLocator.TryResolve(out timeService))
+            if (!ServiceLocator.TryResolve(out timeService) || timeService == null)
             {
-                timeService = TimeManager.Instance;
+                Debug.LogError("WorldEventManager requires an ITimeService.");
+                return null;
             }
         }
         return timeService;
@@ -245,9 +247,10 @@ public class WorldEventManager : MonoBehaviour
     {
         if (worldStateRepository == null)
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
             {
-                worldStateRepository = WorldHandler.Instance;
+                Debug.LogError("WorldEventManager requires an IWorldStateRepository.");
+                return null;
             }
         }
         return worldStateRepository;

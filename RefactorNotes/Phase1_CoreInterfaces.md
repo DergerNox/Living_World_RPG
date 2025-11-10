@@ -43,5 +43,6 @@ Created the initial set of service contracts under `Assets/Scripst/Core/Interfac
 - Player interactions now follow suit: Settlement UI stats/inventory buttons, NPC spawner, world events, and `PlayerController` all lean on `IWorldStateRepository` for player/settlement lookups instead of hard-coded static access.
 - `PartyManager` bootstraps its `PlayerParty` through `IWorldStateRepository`, removing the direct `WorldHandler.Player` dependency.
 - World-generation workflows (`WorldGenerator`, `WalkerGenerator`, `FactionMaker`) now write to the world repository rather than mutating `WorldHandler` statics, so procedural generation stays aligned with the DI architecture.
+- All consumers now resolve repositories/services exclusively through the locator (no `WorldHandler` fallbacks); missing registrations log explicit errors so issues surface early.
 
 Next steps: migrate remaining systems (UI panels, quests, inventory) away from `AudioManager.Instance`/other singletons and lean on the registered interfaces.

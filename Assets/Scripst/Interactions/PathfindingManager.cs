@@ -77,18 +77,11 @@ public class PathfindingManager : MonoBehaviour
     bool IsObstacleAt(Vector3Int cell)
     {
         var repo = ResolveWorldStateRepository();
-        if (repo != null)
-        {
-            if (repo.GetTownAtPosition(cell) != null) return true;
-            if (repo.GetCastleAtPosition(cell) != null) return true;
-            if (repo.GetVillageAtPosition(cell) != null) return true;
-        }
-        else
-        {
-            if (WorldHandler.GetTownAtPosition(cell) != null) return true;
-            if (WorldHandler.GetCastleAtPosition(cell) != null) return true;
-            if (WorldHandler.GetVillageAtPosition(cell) != null) return true;
-        }
+        if (repo == null) return true; // block movement until data exists
+
+        if (repo.GetTownAtPosition(cell) != null) return true;
+        if (repo.GetCastleAtPosition(cell) != null) return true;
+        if (repo.GetVillageAtPosition(cell) != null) return true;
         return false;
     }
 
@@ -216,9 +209,10 @@ public class PathfindingManager : MonoBehaviour
     {
         if (worldStateRepository == null)
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
             {
-                worldStateRepository = WorldHandler.Instance;
+                Debug.LogError("PathfindingManager requires an IWorldStateRepository.");
+                return null;
             }
         }
         return worldStateRepository;

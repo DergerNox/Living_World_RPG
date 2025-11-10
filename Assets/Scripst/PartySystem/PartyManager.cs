@@ -26,7 +26,7 @@ public class PartyManager : MonoBehaviour, IPartyService
     private void Start()
     {
         var repo = ResolveWorldStateRepository();
-        var player = repo?.Player ?? WorldHandler.Player;
+        var player = repo?.Player;
         if (player != null)
         {
             PlayerParty = player.Party;
@@ -37,7 +37,7 @@ public class PartyManager : MonoBehaviour, IPartyService
         }
         else
         {
-            Debug.LogWarning("PartyManager could not find a player party.");
+            Debug.LogWarning("PartyManager could not find a player party. AI party generation will continue without the player.");
         }
 
         GenerateAIParties();
@@ -109,9 +109,10 @@ public class PartyManager : MonoBehaviour, IPartyService
     {
         if (worldStateRepository == null)
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
             {
-                worldStateRepository = WorldHandler.Instance;
+                Debug.LogError("PartyManager requires an IWorldStateRepository.");
+                return null;
             }
         }
         return worldStateRepository;
