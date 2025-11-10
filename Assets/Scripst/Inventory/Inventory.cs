@@ -5,15 +5,13 @@ using UnityEngine;
 public class Inventory : MonoBehaviour
 {
     public List<Item> items = new List<Item>();
+    private IAudioService audioService;
 
     public void AddItem(Item item)
     {
         items.Add(item);
         // Play item pickup sound
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayItemPickupSound();
-        }
+        GetAudioService()?.PlayItemPickupSound();
     }
 
     public void RemoveItem(Item item)
@@ -24,5 +22,17 @@ public class Inventory : MonoBehaviour
     public bool HasItem(Item item)
     {
         return items.Contains(item);
+    }
+
+    private IAudioService GetAudioService()
+    {
+        if (audioService == null)
+        {
+            if (!ServiceLocator.TryResolve(out audioService))
+            {
+                audioService = AudioManager.Instance;
+            }
+        }
+        return audioService;
     }
 }

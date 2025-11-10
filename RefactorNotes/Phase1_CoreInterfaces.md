@@ -28,5 +28,6 @@ Created the initial set of service contracts under `Assets/Scripst/Core/Interfac
 - `WorldMapUI` now fetches `IAudioService`, `IWorldGenerator`, and `IWorldStateRepository` via the locator (with legacy fallbacks) so world map rendering and clicks no longer poke static singletons directly.
 - Settlement/party/inventory/character stats UIs cache `IAudioService` once and drop the repeated `AudioManager.Instance` guards.
 - `AudioSettingsUI` resolves a concrete `AudioManager` through the locator (or falls back) for slider bindings, keeping configuration centralized without static references.
+- Gameplay systems such as `QuestManager` and `Inventory` now retrieve `IAudioService` on demand (via locator fallback), so quest completion/item pickup effects no longer reach into `AudioManager.Instance`.
 
 Next steps: migrate remaining systems (UI panels, quests, inventory) away from `AudioManager.Instance`/other singletons and lean on the registered interfaces.

@@ -24,10 +24,7 @@ public static class QuestManager
         }
         activeQuests.Remove(quest);
         // Play quest complete sound
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayQuestCompleteSound();
-        }
+        GetAudioService()?.PlayQuestCompleteSound();
     }
 
     public static void UpdateObjective(Quest quest, int objectiveIndex)
@@ -41,4 +38,20 @@ public static class QuestManager
             }
         }
     }
+
+    private static IAudioService GetAudioService()
+    {
+        if (_audioService == null)
+        {
+            ServiceLocator.TryResolve(out _audioService);
+            if (_audioService == null)
+            {
+                _audioService = AudioManager.Instance;
+            }
+        }
+
+        return _audioService;
+    }
+
+    private static IAudioService _audioService;
 }
