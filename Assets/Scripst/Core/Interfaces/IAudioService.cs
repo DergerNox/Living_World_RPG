@@ -8,4 +8,5 @@ public interface IAudioService
     void PlayDeathSound();
     void PlayAmbientTrack(string trackId);
     void PlayQuestCompleteSound();
+    void PlayItemPickupSound();
 }

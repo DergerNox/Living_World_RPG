@@ -25,7 +25,7 @@ public class SkillFactory
         IAssetProvider provider;
         if (!ServiceLocator.TryResolve<IAssetProvider>(out provider))
         {
-            Object[] fallbackObjects = Resources.LoadAll("Skills");
+            Object[] fallbackObjects = UnityEngine.Resources.LoadAll("Skills");
             SkillData[] fallback = fallbackObjects.OfType<SkillData>().ToArray();
             IndexSkills(fallback);
             Debug.Log($"[SkillFactory] Loaded {skillDatabase.Count} skills from Resources (fallback)");
@@ -63,7 +63,7 @@ public class SkillFactory
         IAssetProvider provider;
         if (!ServiceLocator.TryResolve<IAssetProvider>(out provider))
         {
-            Object[] fallbackObjects = Resources.LoadAll("Skills");
+            Object[] fallbackObjects = UnityEngine.Resources.LoadAll("Skills");
             SkillData[] fallback = fallbackObjects.OfType<SkillData>().ToArray();
             IndexSkills(fallback);
             return skillDatabase.Count;

@@ -4,6 +4,7 @@ using UnityEngine;
 public class SkillTree
 {
     private Dictionary<SkillType, List<Skill>> skillTrees;
+    private readonly Dictionary<Characters, List<Skill>> learnedLegacySkills = new Dictionary<Characters, List<Skill>>();
 
     public SkillTree()
     {
@@ -28,15 +29,35 @@ public class SkillTree
 
     public void LearnSkill(Skill skill, Characters character)
     {
-        if (CanLearnSkill(skill, character))
-        {
-            character.SkillBook.AddSkill(skill);
-            Debug.Log($"{character.Name} learned {skill.SkillName}");
-        }
-        else
+        if (!CanLearnSkill(skill, character))
         {
             Debug.Log($"{character.Name} cannot learn {skill.SkillName} yet");
+            return;
         }
+
+        var list = GetOrCreateLegacySkillList(character);
+        if (!list.Contains(skill))
+        {
+            list.Add(skill);
+        }
+        Debug.Log($"{character.Name} learned legacy skill {skill.SkillName}");
+    }
+
+    public IReadOnlyList<Skill> GetLegacySkills(Characters character)
+    {
+        return learnedLegacySkills.TryGetValue(character, out var list)
+            ? list.AsReadOnly()
+            : new List<Skill>().AsReadOnly();
+    }
+
+    private List<Skill> GetOrCreateLegacySkillList(Characters character)
+    {
+        if (!learnedLegacySkills.TryGetValue(character, out var list))
+        {
+            list = new List<Skill>();
+            learnedLegacySkills[character] = list;
+        }
+        return list;
     }
 
     private void InitializeSkillTrees()
