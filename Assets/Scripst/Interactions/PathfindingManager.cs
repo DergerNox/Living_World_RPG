@@ -3,8 +3,8 @@ using UnityEngine;
 using UnityEngine.Profiling;
 
 /// <summary>
-/// Singleton A* Pathfinding manager using a tile-based grid from WorldHandler.
-/// Grid dimensions are derived from the WalkerGenerator's MapWidth and MapHeight, with fallback to WorldGenerator.
+/// Singleton A* Pathfinding manager that queries the shared world generator/repository services.
+/// Grid dimensions come from the registered `IWorldGenerator` implementation.
 /// </summary>
 public class PathfindingManager : MonoBehaviour
 {
@@ -191,7 +191,6 @@ public class PathfindingManager : MonoBehaviour
         path.Reverse();
         return path;
     }
-}
 
     private IWorldGenerator ResolveWorldGenerator()
     {
