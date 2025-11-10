@@ -101,7 +101,7 @@ public class FactionDiplomacy : MonoBehaviour
         return GetDiplomacyStatus(factionAId, factionBId) == DiplomacyStatus.AtWar;
     }
 
-    private IReadOnlyList<Faction> GetFactions()
+    private IList<Faction> GetFactions()
     {
         if (worldStateRepository == null)
         {

@@ -17,6 +17,7 @@ public class WorldGenerator : MonoBehaviour, IWorldGenerator
     public int WorldHeight => worldHeight;
 
     private HashSet<Vector2Int> settlementPositions = new HashSet<Vector2Int>();
+    private IWorldStateRepository _worldRepo;
 
     private void Awake()
     {
@@ -27,6 +28,12 @@ public class WorldGenerator : MonoBehaviour, IWorldGenerator
         else
         {
             Destroy(gameObject);
+            return;
+        }
+
+        if (!ServiceLocator.TryResolve(out _worldRepo))
+        {
+            _worldRepo = WorldHandler.Instance;
         }
     }
 
@@ -89,16 +96,16 @@ public class WorldGenerator : MonoBehaviour, IWorldGenerator
 
     private void GenerateFactions()
     {
-        WorldHandler.Factions.Clear();
+        _worldRepo.Factions.Clear();
         for (int i = 0; i < numberOfFactions; i++)
         {
             Vector2 center = new Vector2(Random.Range(0, worldWidth), Random.Range(0, worldHeight));
             Faction faction = new Faction($"Faction {i + 1}", center, i);
-            WorldHandler.Factions.Add(faction);
+            _worldRepo.Factions.Add(faction);
         }
 
         // Ensure factions have lists initialized
-        foreach (var faction in WorldHandler.Factions)
+        foreach (var faction in _worldRepo.Factions)
         {
             if (faction.Castles == null) faction.Castles = new List<Castle>();
             if (faction.Towns == null) faction.Towns = new List<Town>();
@@ -108,9 +115,9 @@ public class WorldGenerator : MonoBehaviour, IWorldGenerator
 
     private void GenerateSettlements()
     {
-        WorldHandler.Castles.Clear();
-        WorldHandler.Towns.Clear();
-        WorldHandler.Villages.Clear();
+        _worldRepo.Castles.Clear();
+        _worldRepo.Towns.Clear();
+        _worldRepo.Villages.Clear();
 
         // Generate Castles
         for (int i = 0; i < numberOfCastles; i++)
@@ -118,7 +125,7 @@ public class WorldGenerator : MonoBehaviour, IWorldGenerator
             Vector3Int position = new Vector3Int(Random.Range(0, worldWidth), Random.Range(0, worldHeight), 0);
             Characters lord = new NPC($"Lord {i + 1}", 100, 50, 5); // Assuming NPC constructor
             Castle castle = new Castle(position.x, position.y, lord);
-            WorldHandler.Castles.Add(castle);
+            _worldRepo.Castles.Add(castle);
         }
 
         // Generate Towns
@@ -126,7 +133,7 @@ public class WorldGenerator : MonoBehaviour, IWorldGenerator
         {
             Vector3Int position = new Vector3Int(Random.Range(0, worldWidth), Random.Range(0, worldHeight), 0);
             Town town = new Town(position.x, position.y);
-            WorldHandler.Towns.Add(town);
+            _worldRepo.Towns.Add(town);
         }
 
         // Generate Villages
@@ -134,33 +141,33 @@ public class WorldGenerator : MonoBehaviour, IWorldGenerator
         {
             Vector3Int position = new Vector3Int(Random.Range(0, worldWidth), Random.Range(0, worldHeight), 0);
             Village village = new Village(position.x, position.y);
-            WorldHandler.Villages.Add(village);
+            _worldRepo.Villages.Add(village);
         }
     }
 
     private void AssignSettlementsToFactions()
     {
         // Assign castles to factions
-        for (int i = 0; i < WorldHandler.Castles.Count; i++)
+        for (int i = 0; i < _worldRepo.Castles.Count; i++)
         {
-            int factionId = i % WorldHandler.Factions.Count;
-            WorldHandler.Castles[i].FactionId = factionId;
-            WorldHandler.Factions[factionId].Castles.Add(WorldHandler.Castles[i]);
+            int factionId = i % _worldRepo.Factions.Count;
+            _worldRepo.Castles[i].FactionId = factionId;
+            _worldRepo.Factions[factionId].Castles.Add(_worldRepo.Castles[i]);
         }
 
         // Assign towns and villages randomly to factions
-        foreach (var town in WorldHandler.Towns)
+        foreach (var town in _worldRepo.Towns)
         {
-            int factionId = Random.Range(0, WorldHandler.Factions.Count);
+            int factionId = Random.Range(0, _worldRepo.Factions.Count);
             town.FactionId = factionId;
-            WorldHandler.Factions[factionId].Towns.Add(town);
+            _worldRepo.Factions[factionId].Towns.Add(town);
         }
 
-        foreach (var village in WorldHandler.Villages)
+        foreach (var village in _worldRepo.Villages)
         {
-            int factionId = Random.Range(0, WorldHandler.Factions.Count);
+            int factionId = Random.Range(0, _worldRepo.Factions.Count);
             village.FactionId = factionId;
-            WorldHandler.Factions[factionId].Villages.Add(village);
+            _worldRepo.Factions[factionId].Villages.Add(village);
         }
     }
 

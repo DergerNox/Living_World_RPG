@@ -40,11 +40,18 @@ public class WalkerGenerator : MonoBehaviour
     private Dictionary<Vector3Int, Town> townMap = new Dictionary<Vector3Int, Town>();
     private Dictionary<Vector3Int, Castle> castleMap = new Dictionary<Vector3Int, Castle>();
     private Dictionary<Vector3Int, Village> villageMap = new Dictionary<Vector3Int, Village>();
+    private IWorldStateRepository worldStateRepository;
 
     void Start()
     {
+        if (!ServiceLocator.TryResolve(out worldStateRepository))
+        {
+            worldStateRepository = WorldHandler.Instance;
+        }
+
         InitializeGrid();
         FactionMaker.Instance.AssignFactions(castleMap, townMap, villageMap);
+        worldStateRepository?.RebuildSpatialCaches();
     }
 
     void InitializeGrid()
@@ -217,7 +224,7 @@ void CreateWalls()
                 gridHandler[x, y] = Grid.CASTLE;
                 hasCreatedCastle = true;
                 Castle castle = new Castle(x, y,new Characters("Lord", 100, 100, 1));
-                WorldHandler.Castles.Add(castle);
+                worldStateRepository?.Castles.Add(castle);
 
                 // Add the created Castle to the map
                 castleMap[new Vector3Int(x, y)] = castle;
@@ -257,7 +264,7 @@ void CreateWalls()
                 townMap[new Vector3Int(x, y)] = town;
 
 
-                WorldHandler.Towns.Add(town);
+                worldStateRepository?.Towns.Add(town);
                 count++;
             }
             cycleCount++;
@@ -292,7 +299,7 @@ void CreateWalls()
                 villageMap[new Vector3Int(x, y)] = village;
 
 
-                WorldHandler.Villages.Add(village);
+                worldStateRepository?.Villages.Add(village);
                 count++;
             }
             cycleCount++;

@@ -7,10 +7,10 @@ using UnityEngine;
 public interface IWorldStateRepository
 {
     Player Player { get; }
-    IReadOnlyList<Castle> Castles { get; }
-    IReadOnlyList<Town> Towns { get; }
-    IReadOnlyList<Village> Villages { get; }
-    IReadOnlyList<Faction> Factions { get; }
+    IList<Castle> Castles { get; }
+    IList<Town> Towns { get; }
+    IList<Village> Villages { get; }
+    IList<Faction> Factions { get; }
 
     Town GetTownAtPosition(Vector3Int position);
     Castle GetCastleAtPosition(Vector3Int position);

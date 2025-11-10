@@ -7,6 +7,7 @@ public class FactionMaker : MonoBehaviour
 
     public int numberOfFactions = 5;
     public List<Faction> Factions = new List<Faction>();
+    private IWorldStateRepository worldStateRepository;
 
     void Awake()
     {
@@ -16,6 +17,11 @@ public class FactionMaker : MonoBehaviour
             return;
         }
         Instance = this;
+
+        if (!ServiceLocator.TryResolve(out worldStateRepository))
+        {
+            worldStateRepository = WorldHandler.Instance;
+        }
     }
 
     public void AssignFactions(Dictionary<Vector3Int, Castle> castles,
@@ -110,7 +116,10 @@ public class FactionMaker : MonoBehaviour
    void CreateFactions()
 {
     Factions.Clear();
-    WorldHandler.Factions.Clear(); // Clear any previous data
+    if (worldStateRepository != null)
+    {
+        worldStateRepository.Factions.Clear();
+    }
 
     for (int i = 0; i < numberOfFactions; i++)
     {
@@ -118,7 +127,7 @@ public class FactionMaker : MonoBehaviour
         Vector2 center = Vector2.zero; // Will be set later
         Faction faction = new Faction(name, center, i);
         Factions.Add(faction);
-        WorldHandler.Factions.Add(faction); // Sync with WorldHandler
+        worldStateRepository?.Factions.Add(faction);
     }
 }
 }

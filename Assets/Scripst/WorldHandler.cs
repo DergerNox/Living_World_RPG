@@ -81,10 +81,10 @@ public class WorldHandler : MonoBehaviour, IWorldStateRepository
     }
 
     Player IWorldStateRepository.Player => player;
-    IReadOnlyList<Castle> IWorldStateRepository.Castles => castles;
-    IReadOnlyList<Town> IWorldStateRepository.Towns => towns;
-    IReadOnlyList<Village> IWorldStateRepository.Villages => villages;
-    IReadOnlyList<Faction> IWorldStateRepository.Factions => factions;
+    IList<Castle> IWorldStateRepository.Castles => castles;
+    IList<Town> IWorldStateRepository.Towns => towns;
+    IList<Village> IWorldStateRepository.Villages => villages;
+    IList<Faction> IWorldStateRepository.Factions => factions;
 
     public void RebuildSpatialCaches()
     {
