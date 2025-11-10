@@ -6,13 +6,6 @@ public class WorldHandler : MonoBehaviour, IWorldStateRepository
 {
     public static WorldHandler Instance { get; private set; }
 
-    // Public Variables
-    public static Player Player { get { return player; } set { player = value; } }
-    public static List<Castle> Castles { get { return castles; } set { castles = value; } }
-    public static List<Town> Towns { get { return towns; } set { towns = value; } }
-    public static List<Village> Villages { get { return villages; } set { villages = value; } }
-    public static List<Faction> Factions { get { return factions; } set { factions = value; } }
-
     // Constructor
     public WorldHandler()
     {
@@ -56,35 +49,29 @@ public class WorldHandler : MonoBehaviour, IWorldStateRepository
     // Update Method
     void Update() { }
 
-    // Get the Town at a specific position
-    public static Town GetTownAtPosition(Vector3Int position)
+    public Player Player => player;
+    public IList<Castle> Castles => castles;
+    public IList<Town> Towns => towns;
+    public IList<Village> Villages => villages;
+    public IList<Faction> Factions => factions;
+
+    public Town GetTownAtPosition(Vector3Int position)
     {
-        Town t;
-        if (_townByPos.TryGetValue(position, out t)) return t;
-        return null;
+        _townByPos.TryGetValue(position, out var town);
+        return town;
     }
 
-    // Get the Castle at a specific position
-    public static Castle GetCastleAtPosition(Vector3Int position)
+    public Castle GetCastleAtPosition(Vector3Int position)
     {
-        Castle c;
-        if (_castleByPos.TryGetValue(position, out c)) return c;
-        return null;
+        _castleByPos.TryGetValue(position, out var castle);
+        return castle;
     }
 
-    // Get the Village at a specific position
-    public static Village GetVillageAtPosition(Vector3Int position)
+    public Village GetVillageAtPosition(Vector3Int position)
     {
-        Village v;
-        if (_villageByPos.TryGetValue(position, out v)) return v;
-        return null;
+        _villageByPos.TryGetValue(position, out var village);
+        return village;
     }
-
-    Player IWorldStateRepository.Player => player;
-    IList<Castle> IWorldStateRepository.Castles => castles;
-    IList<Town> IWorldStateRepository.Towns => towns;
-    IList<Village> IWorldStateRepository.Villages => villages;
-    IList<Faction> IWorldStateRepository.Factions => factions;
 
     public void RebuildSpatialCaches()
     {
@@ -92,17 +79,17 @@ public class WorldHandler : MonoBehaviour, IWorldStateRepository
     }
 
     // Private Variables
-    private static Player player;
-    private static List<Castle> castles = new List<Castle>();
-    private static List<Town> towns = new List<Town>();
-    private static List<Village> villages = new List<Village>();
-    private static List<Faction> factions = new List<Faction>();
+    [SerializeField] private Player player;
+    private readonly List<Castle> castles = new List<Castle>();
+    private readonly List<Town> towns = new List<Town>();
+    private readonly List<Village> villages = new List<Village>();
+    private readonly List<Faction> factions = new List<Faction>();
 
-	private static readonly Dictionary<Vector3Int, Town> _townByPos = new Dictionary<Vector3Int, Town>();
-	private static readonly Dictionary<Vector3Int, Castle> _castleByPos = new Dictionary<Vector3Int, Castle>();
-	private static readonly Dictionary<Vector3Int, Village> _villageByPos = new Dictionary<Vector3Int, Village>();
+	private readonly Dictionary<Vector3Int, Town> _townByPos = new Dictionary<Vector3Int, Town>();
+	private readonly Dictionary<Vector3Int, Castle> _castleByPos = new Dictionary<Vector3Int, Castle>();
+	private readonly Dictionary<Vector3Int, Village> _villageByPos = new Dictionary<Vector3Int, Village>();
 
-	private static void BuildSpatialCaches()
+	private void BuildSpatialCaches()
 	{
 		_townByPos.Clear();
 		_castleByPos.Clear();
