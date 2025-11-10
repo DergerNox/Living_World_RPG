@@ -16,11 +16,16 @@ public class PlayerController : MonoBehaviour
 
     // Reference to the Settlement UI Manager
     public SettlementUIManager settlementUIManager;
+    private IWorldStateRepository worldStateRepository;
 
     void Start()
     {
         if (generator == null)
             generator = FindFirstObjectByType<WalkerGenerator>();
+        if (!ServiceLocator.TryResolve(out worldStateRepository))
+        {
+            worldStateRepository = WorldHandler.Instance;
+        }
 
         // Correctly assign the tilemaps from WalkerGenerator
         baseTilemap = generator.floorTilemap;
@@ -132,17 +137,17 @@ public class PlayerController : MonoBehaviour
         if (structureTile == generator.Town)
         {
             // Reference an existing Town object
-            return generator.GetTownAtPosition(position);  // Ensure this method is implemented in your generator
+            return worldStateRepository?.GetTownAtPosition(position) ?? generator.GetTownAtPosition(position);  // Ensure this method is implemented in your generator
         }
         else if (structureTile == generator.Castle)
         {
             // Reference an existing Castle object
-            return generator.GetCastleAtPosition(position);  // Ensure this method is implemented in your generator
+            return worldStateRepository?.GetCastleAtPosition(position) ?? generator.GetCastleAtPosition(position);  // Ensure this method is implemented in your generator
         }
         else if (structureTile == generator.Village)
         {
             // Reference an existing Village object
-            return generator.GetVillageAtPosition(position);  // Ensure this method is implemented in your generator
+            return worldStateRepository?.GetVillageAtPosition(position) ?? generator.GetVillageAtPosition(position);  // Ensure this method is implemented in your generator
         }
 
         // Return null if no settlement was found
