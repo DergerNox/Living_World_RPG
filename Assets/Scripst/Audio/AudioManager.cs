@@ -219,7 +219,7 @@ public class AudioManager : MonoBehaviour, IAudioService
             return;
         }
 
-        var clip = Resources.Load<AudioClip>(trackId);
+        var clip = UnityEngine.Resources.Load<AudioClip>(trackId);
         if (clip == null)
         {
             Debug.LogWarning($"Ambient track not found at Resources path: {trackId}");

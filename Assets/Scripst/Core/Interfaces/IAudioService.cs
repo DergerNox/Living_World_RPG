@@ -7,4 +7,5 @@ public interface IAudioService
     void PlayHitSound();
     void PlayDeathSound();
     void PlayAmbientTrack(string trackId);
+    void PlayQuestCompleteSound();
 }
