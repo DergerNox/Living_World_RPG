@@ -16,10 +16,15 @@ public class WeatherEffectManager : MonoBehaviour
             Destroy(gameObject);
     }
 
+    private WeatherManager weatherManager;
     private void Start()
     {
-        WeatherManager.Instance.OnWeatherChanged += UpdateWeatherEffects;
-        UpdateWeatherEffects(WeatherManager.Instance.currentWeather);
+        Subscribe();
+    }
+
+    private void OnDestroy()
+    {
+        Unsubscribe();
     }
 
     private void UpdateWeatherEffects(WeatherType weather)
@@ -45,6 +50,24 @@ public class WeatherEffectManager : MonoBehaviour
                 if (rainParticles != null) rainParticles.Play();
                 // Add lightning or something, but for simplicity, just rain
                 break;
+        }
+    }
+
+    private void Subscribe()
+    {
+        weatherManager = WeatherManager.Instance;
+        if (weatherManager != null)
+        {
+            weatherManager.OnWeatherChanged += UpdateWeatherEffects;
+            UpdateWeatherEffects(weatherManager.currentWeather);
+        }
+    }
+
+    private void Unsubscribe()
+    {
+        if (weatherManager != null)
+        {
+            weatherManager.OnWeatherChanged -= UpdateWeatherEffects;
         }
     }
 }
