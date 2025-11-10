@@ -17,7 +17,8 @@ public class Bootstrapper : MonoBehaviour
 		EnsureManager<AudioManager>();
 		EnsureManager<TimeManager>();
 		EnsureManager<WeatherManager>();
-		EnsureManager<WorldHandlerHost>();
+		EnsureManager<WorldHandler>();
+		EnsureManager<WorldGenerator>();
 		EnsureManager<PartyManager>();
 		EnsureManager<SkillManager>();
 
@@ -39,13 +40,35 @@ public class Bootstrapper : MonoBehaviour
 	{
 		// Register known singletons where appropriate; if not present, TryResolve pattern is used elsewhere
 		var audio = FindFirstObjectByType<AudioManager>();
-		if (audio != null) ServiceLocator.Register<AudioManager>(audio);
+		if (audio != null)
+		{
+			ServiceLocator.Register<AudioManager>(audio);
+			ServiceLocator.Register<IAudioService>(audio);
+		}
 
 		var time = FindFirstObjectByType<TimeManager>();
-		if (time != null) ServiceLocator.Register<TimeManager>(time);
+		if (time != null)
+		{
+			ServiceLocator.Register<TimeManager>(time);
+			ServiceLocator.Register<ITimeService>(time);
+		}
 
 		var weather = FindFirstObjectByType<WeatherManager>();
 		if (weather != null) ServiceLocator.Register<WeatherManager>(weather);
+
+		var worldGen = FindFirstObjectByType<WorldGenerator>();
+		if (worldGen != null)
+		{
+			ServiceLocator.Register<WorldGenerator>(worldGen);
+			ServiceLocator.Register<IWorldGenerator>(worldGen);
+		}
+
+		var worldHandler = FindFirstObjectByType<WorldHandler>();
+		if (worldHandler != null)
+		{
+			ServiceLocator.Register<WorldHandler>(worldHandler);
+			ServiceLocator.Register<IWorldStateRepository>(worldHandler);
+		}
 
 		var party = FindFirstObjectByType<PartyManager>();
 		if (party != null) ServiceLocator.Register<PartyManager>(party);
@@ -54,12 +77,9 @@ public class Bootstrapper : MonoBehaviour
 		var skills = FindFirstObjectByType<SkillManager>();
 		if (skills != null) ServiceLocator.Register<SkillManager>(skills);
 
+		ServiceLocator.Register<IBattleResolver>(new Battle());
+
 		// Asset provider (Resources fallback by default)
 		ServiceLocator.Register<IAssetProvider>(new ResourcesAssetProvider());
 	}
 }
-
-// WorldHandler is documented as a static hub; create a host MonoBehaviour for lifecycle if needed
-public class WorldHandlerHost : MonoBehaviour { }
-
-

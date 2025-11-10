@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WorldHandler : MonoBehaviour
+public class WorldHandler : MonoBehaviour, IWorldStateRepository
 {
+    public static WorldHandler Instance { get; private set; }
+
     // Public Variables
     public static Player Player { get { return player; } set { player = value; } }
     public static List<Castle> Castles { get { return castles; } set { castles = value; } }
@@ -14,6 +16,19 @@ public class WorldHandler : MonoBehaviour
     // Constructor
     public WorldHandler()
     {
+    }
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
     }
 
     // Start Method
@@ -63,6 +78,17 @@ public class WorldHandler : MonoBehaviour
         Village v;
         if (_villageByPos.TryGetValue(position, out v)) return v;
         return null;
+    }
+
+    Player IWorldStateRepository.Player => player;
+    IReadOnlyList<Castle> IWorldStateRepository.Castles => castles;
+    IReadOnlyList<Town> IWorldStateRepository.Towns => towns;
+    IReadOnlyList<Village> IWorldStateRepository.Villages => villages;
+    IReadOnlyList<Faction> IWorldStateRepository.Factions => factions;
+
+    public void RebuildSpatialCaches()
+    {
+        BuildSpatialCaches();
     }
 
     // Private Variables

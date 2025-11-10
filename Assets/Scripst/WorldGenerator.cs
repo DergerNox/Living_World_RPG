@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WorldGenerator : MonoBehaviour
+public class WorldGenerator : MonoBehaviour, IWorldGenerator
 {
     public static WorldGenerator Instance;
 
@@ -28,8 +28,9 @@ public class WorldGenerator : MonoBehaviour
         }
     }
 
-    public void GenerateWorld()
+    public void GenerateWorld(WorldGenerationSettings settings = null)
     {
+        ApplyOverrides(settings);
         TerrainMap = new TerrainType[worldWidth, worldHeight];
         settlementPositions.Clear();
 
@@ -38,6 +39,18 @@ public class WorldGenerator : MonoBehaviour
         GenerateSettlements();
         AssignSettlementsToFactions();
         InitializeDiplomacy();
+    }
+
+    private void ApplyOverrides(WorldGenerationSettings settings)
+    {
+        if (settings == null) return;
+
+        if (settings.WorldWidth.HasValue) worldWidth = Mathf.Max(10, settings.WorldWidth.Value);
+        if (settings.WorldHeight.HasValue) worldHeight = Mathf.Max(10, settings.WorldHeight.Value);
+        if (settings.NumberOfFactions.HasValue) numberOfFactions = Mathf.Max(1, settings.NumberOfFactions.Value);
+        if (settings.NumberOfCastles.HasValue) numberOfCastles = Mathf.Max(0, settings.NumberOfCastles.Value);
+        if (settings.NumberOfTowns.HasValue) numberOfTowns = Mathf.Max(0, settings.NumberOfTowns.Value);
+        if (settings.NumberOfVillages.HasValue) numberOfVillages = Mathf.Max(0, settings.NumberOfVillages.Value);
     }
 
     private void GenerateTerrain()

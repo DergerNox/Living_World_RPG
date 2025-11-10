@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class TimeManager : MonoBehaviour
+public class TimeManager : MonoBehaviour, ITimeService
 {
     public static TimeManager Instance;
 
@@ -18,6 +18,12 @@ public class TimeManager : MonoBehaviour
 
     private float timer = 0f;
 
+    public int Hour => hour;
+    public int Minute => minute;
+    public int Day => day;
+    public int Month => month;
+    public int Year => year;
+
     private void Awake()
     {
         if (Instance == null)
@@ -28,7 +34,12 @@ public class TimeManager : MonoBehaviour
 
     private void Update()
     {
-        timer += Time.deltaTime * timeScale;
+        Tick(Time.deltaTime);
+    }
+
+    public void Tick(float deltaTime)
+    {
+        timer += deltaTime * timeScale;
         if (timer >= 60f)
         {
             timer -= 60f;
@@ -62,6 +73,17 @@ public class TimeManager : MonoBehaviour
                 }
             }
         }
+    }
+
+    public void SetTime(int year, int month, int day, int hour, int minute)
+    {
+        this.year = Mathf.Max(1, year);
+        this.month = Mathf.Clamp(month, 1, 12);
+        this.day = Mathf.Max(1, day);
+        this.hour = Mathf.Clamp(hour, 0, 23);
+        this.minute = Mathf.Clamp(minute, 0, 59);
+        timer = 0f;
+        LightingManager.Instance?.UpdateLightingBasedOnTime((this.hour * 60f + this.minute) / 1440f);
     }
 
     private int DaysInMonth(int month, int year)

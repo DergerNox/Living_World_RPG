@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Profiling;
 
-public class Battle
+public class Battle : IBattleResolver
 {
     //public variables
     public List<Party> AttackingParties { get => attackingParties; set => attackingParties = value; }
@@ -151,6 +151,20 @@ public class Battle
             }
         }
         Profiler.EndSample();
+    }
+
+    public bool ResolveDuel(Troop attacker, Troop defender, TerrainType terrain)
+    {
+        Terrain = terrain;
+        return BattleIndividual(attacker, defender);
+    }
+
+    public void ResolveParties(IList<Party> attackers, IList<Party> defenders, TerrainType terrain)
+    {
+        Terrain = terrain;
+        AttackingParties = attackers as List<Party> ?? new List<Party>(attackers);
+        DefendingParties = defenders as List<Party> ?? new List<Party>(defenders);
+        BattleParties(AttackingParties, DefendingParties);
     }
     
     private float GetTerrainModifier(Troop troop, TerrainType terrain)

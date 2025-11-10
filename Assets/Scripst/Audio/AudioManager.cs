@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class AudioManager : MonoBehaviour
+public class AudioManager : MonoBehaviour, IAudioService
 {
     public static AudioManager Instance;
 
@@ -209,6 +209,24 @@ public class AudioManager : MonoBehaviour
     public void PlayUIMenuClose()
     {
         PlaySoundEffect(uiMenuCloseSound);
+    }
+
+    public void PlayAmbientTrack(string trackId)
+    {
+        if (string.IsNullOrEmpty(trackId))
+        {
+            Debug.LogWarning("PlayAmbientTrack called with empty trackId.");
+            return;
+        }
+
+        var clip = Resources.Load<AudioClip>(trackId);
+        if (clip == null)
+        {
+            Debug.LogWarning($"Ambient track not found at Resources path: {trackId}");
+            return;
+        }
+
+        PlayAmbientSound(clip);
     }
 
     private AudioSource NextSfxSource()
