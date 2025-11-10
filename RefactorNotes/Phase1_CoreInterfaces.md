@@ -33,5 +33,6 @@ Created the initial set of service contracts under `Assets/Scripst/Core/Interfac
 - Settlement/party/inventory/character stats UIs cache `IAudioService` once and drop the repeated `AudioManager.Instance` guards.
 - `AudioSettingsUI` resolves a concrete `AudioManager` through the locator (or falls back) for slider bindings, keeping configuration centralized without static references.
 - Gameplay systems such as `QuestManager` and `Inventory` now retrieve `IAudioService` on demand (via locator fallback), so quest completion/item pickup effects no longer reach into `AudioManager.Instance`.
+- `PartyUI` resolves `IPartyService`, enabling merges/splits without touching `PartyManager.Instance`, and `WorldEventManager` now pulls quests through `IQuestService` rather than the static `QuestManager`.
 
 Next steps: migrate remaining systems (UI panels, quests, inventory) away from `AudioManager.Instance`/other singletons and lean on the registered interfaces.

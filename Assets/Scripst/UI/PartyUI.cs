@@ -31,6 +31,7 @@ public class PartyUI : MonoBehaviour
 
     private Party currentParty;
     private IAudioService audioService;
+    private IPartyService partyService;
 
     private IAudioService AudioService
     {
@@ -48,6 +49,22 @@ public class PartyUI : MonoBehaviour
         }
     }
 
+    private IPartyService PartyService
+    {
+        get
+        {
+            if (partyService == null)
+            {
+                if (!ServiceLocator.TryResolve(out partyService))
+                {
+                    partyService = PartyManager.Instance;
+                }
+            }
+
+            return partyService;
+        }
+    }
+
     private void Awake()
     {
         if (Instance == null)
@@ -61,6 +78,7 @@ public class PartyUI : MonoBehaviour
         }
 
         _ = AudioService;
+        _ = PartyService;
     }
 
     private void Start()
@@ -155,14 +173,17 @@ public class PartyUI : MonoBehaviour
     private void MergeParties()
     {
         // Simple merge with first available party at same position
-        List<Party> partiesAtPos = PartyManager.Instance.GetPartiesAtPosition(currentParty.Position);
+        var service = PartyService;
+        if (service == null || currentParty == null) return;
+
+        List<Party> partiesAtPos = service.GetPartiesAtPosition(currentParty.Position);
         if (partiesAtPos.Count > 1)
         {
             Party otherParty = partiesAtPos.Find(p => p != currentParty);
             Party merged = currentParty.MergeWith(otherParty);
-            PartyManager.Instance.RemoveParty(currentParty);
-            PartyManager.Instance.RemoveParty(otherParty);
-            PartyManager.Instance.AddParty(merged);
+            service.RemoveParty(currentParty);
+            service.RemoveParty(otherParty);
+            service.AddParty(merged);
             currentParty = merged;
             UpdateUI();
         }
@@ -172,11 +193,14 @@ public class PartyUI : MonoBehaviour
     {
         if (currentParty.Size > 2)
         {
+            var service = PartyService;
+            if (service == null) return;
+
             List<Party> splitParties = currentParty.Split(currentParty.Size / 2);
-            PartyManager.Instance.RemoveParty(currentParty);
+            service.RemoveParty(currentParty);
             foreach (Party p in splitParties)
             {
-                PartyManager.Instance.AddParty(p);
+                service.AddParty(p);
             }
             currentParty = splitParties[0]; // Focus on first split party
             UpdateUI();

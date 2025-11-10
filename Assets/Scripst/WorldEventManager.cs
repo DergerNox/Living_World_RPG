@@ -26,6 +26,7 @@ public class WorldEventManager : MonoBehaviour
     public static WorldEventManager Instance;
 
     private List<WorldEvent> activeEvents = new List<WorldEvent>();
+    private IQuestService questService;
 
     private void Awake()
     {
@@ -36,7 +37,10 @@ public class WorldEventManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
+
+        ResolveQuestService();
     }
 
     private void Start()
@@ -126,11 +130,11 @@ public class WorldEventManager : MonoBehaviour
 
     private void GenerateQuestEvent(int factionId)
     {
-        if (WorldHandler.Player != null)
-        {
-            Quest quest = QuestGenerator.GenerateQuest(WorldHandler.Player.Level);
-            QuestManager.StartQuest(quest);
-        }
+        if (WorldHandler.Player == null) return;
+
+        Quest quest = QuestGenerator.GenerateQuest(WorldHandler.Player.Level);
+        var service = ResolveQuestService();
+        service?.StartQuest(quest);
     }
 
     private void TriggerSiegeEvent(Vector3Int location)
@@ -183,5 +187,18 @@ public class WorldEventManager : MonoBehaviour
                 Debug.Log($"Event {worldEvent.Type} resolved.");
                 break;
         }
+    }
+
+    private IQuestService ResolveQuestService()
+    {
+        if (questService == null)
+        {
+            if (!ServiceLocator.TryResolve(out questService))
+            {
+                questService = QuestService.Instance;
+            }
+        }
+
+        return questService;
     }
 }
