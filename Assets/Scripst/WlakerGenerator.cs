@@ -45,6 +45,12 @@ namespace LivingWorldRPG.World
 
         public int MapWidth => mapWidth;
         public int MapHeight => mapHeight;
+        public Tilemap FloorTilemap => floorTilemap;
+        public Tilemap StructureTilemap => structureTilemap;
+        public Tile FloorTile => floorTile;
+        public Tile CastleTile => castleTile;
+        public Tile TownTile => townTile;
+        public Tile VillageTile => villageTile;
 
         private readonly System.Random random = new System.Random();
         private Grid[,] gridHandler;

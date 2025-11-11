@@ -48,8 +48,8 @@ namespace LivingWorldRPG.Characters
                 Debug.LogWarning("PlayerController: IWorldSimulationService not available; falling back to WalkerGenerator data.");
             }
 
-            baseTilemap = generator.floorTilemap;
-            structureTilemap = generator.structureTilemap;
+            baseTilemap = generator.FloorTilemap;
+            structureTilemap = generator.StructureTilemap;
 
             Vector3Int startCell = new Vector3Int(generator.MapWidth / 2, generator.MapHeight / 2, 0);
             targetPosition = baseTilemap.GetCellCenterWorld(startCell);
@@ -112,14 +112,14 @@ namespace LivingWorldRPG.Characters
         private bool IsPassableTile(Vector3Int position)
     {
         var baseTile = baseTilemap.GetTile(position);
-        if (baseTile != null && baseTile == generator.Floor)
+        if (baseTile != null && baseTile == generator.FloorTile)
             return true;
 
         var structureTile = structureTilemap.GetTile(position);
         if (structureTile != null && (
-            structureTile == generator.Castle ||
-            structureTile == generator.Town ||
-            structureTile == generator.Village))
+            structureTile == generator.CastleTile ||
+            structureTile == generator.TownTile ||
+            structureTile == generator.VillageTile))
         {
             return true;
         }
@@ -134,9 +134,9 @@ namespace LivingWorldRPG.Characters
         TileBase structureTile = structureTilemap.GetTile(currentCell);
 
         if (structureTile != null && (
-            structureTile == generator.Castle ||
-            structureTile == generator.Town ||
-            structureTile == generator.Village))
+            structureTile == generator.CastleTile ||
+            structureTile == generator.TownTile ||
+            structureTile == generator.VillageTile))
         {
             ISettlement settlement = GetSettlementAtPosition(currentCell);
 
@@ -154,17 +154,17 @@ namespace LivingWorldRPG.Characters
         var structureTile = structureTilemap.GetTile(position);
 
         // Check if the tile is a known settlement tile (Town, Castle, Village)
-        if (structureTile == generator.Town)
+        if (structureTile == generator.TownTile)
         {
             // Reference an existing Town object
             return WorldRepository != null ? WorldRepository.GetTownAtPosition(position) : generator.GetTownAtPosition(position);
         }
-        else if (structureTile == generator.Castle)
+        else if (structureTile == generator.CastleTile)
         {
             // Reference an existing Castle object
             return WorldRepository != null ? WorldRepository.GetCastleAtPosition(position) : generator.GetCastleAtPosition(position);
         }
-        else if (structureTile == generator.Village)
+        else if (structureTile == generator.VillageTile)
         {
             // Reference an existing Village object
             return WorldRepository != null ? WorldRepository.GetVillageAtPosition(position) : generator.GetVillageAtPosition(position);
