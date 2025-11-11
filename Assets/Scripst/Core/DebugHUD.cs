@@ -1,44 +1,55 @@
 using UnityEngine;
+using LivingWorldRPG.PartySystem;
 
-public class DebugHUD : MonoBehaviour
+namespace LivingWorldRPG.Core
 {
-	public KeyCode toggleKey = KeyCode.BackQuote;
-	public bool visible;
-	private float _fps;
-	private float _accum;
-	private int _frames;
-
-	void Awake()
+	public class DebugHUD : MonoBehaviour
 	{
-		DontDestroyOnLoad(gameObject);
-	}
+		[SerializeField] private KeyCode toggleKey = KeyCode.BackQuote;
+		[SerializeField] private bool visible;
 
-	void Update()
-	{
-		if (Input.GetKeyDown(toggleKey)) visible = !visible;
-		_frames++;
-		_accum += Time.unscaledDeltaTime;
-		if (_accum >= 0.5f)
+		private float fps;
+		private float accum;
+		private int frames;
+
+		private void Awake()
 		{
-			_fps = _frames / _accum;
-			_accum = 0f;
-			_frames = 0;
+			DontDestroyOnLoad(gameObject);
+		}
+
+		private void Update()
+		{
+			if (Input.GetKeyDown(toggleKey))
+			{
+				visible = !visible;
+			}
+
+			frames++;
+			accum += Time.unscaledDeltaTime;
+			if (accum >= 0.5f)
+			{
+				fps = frames / accum;
+				accum = 0f;
+				frames = 0;
+			}
+		}
+
+		private void OnGUI()
+		{
+			if (!visible)
+			{
+				return;
+			}
+
+			GUI.color = Color.white;
+			GUI.Label(new Rect(10, 10, 300, 20), $"FPS: {fps:F1}");
+			GUI.Label(new Rect(10, 30, 300, 20), $"Parties: {SafeCountParties()}");
+		}
+
+		private static int SafeCountParties()
+		{
+			var pm = PartyManager.Instance;
+			return pm != null && pm.AllParties != null ? pm.AllParties.Count : 0;
 		}
 	}
-
-	void OnGUI()
-	{
-		if (!visible) return;
-		GUI.color = Color.white;
-		GUI.Label(new Rect(10, 10, 300, 20), $"FPS: {_fps:F1}");
-		GUI.Label(new Rect(10, 30, 300, 20), $"Parties: {SafeCountParties()}");
-	}
-
-	int SafeCountParties()
-	{
-		var pm = FindFirstObjectByType<PartyManager>();
-		return pm != null && pm.AllParties != null ? pm.AllParties.Count : 0;
-	}
 }
-
-
