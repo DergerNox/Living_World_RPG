@@ -48,9 +48,9 @@ public class Town : ISettlement
         AddRank2And3Troops();
 
         // Initialize market
-        Market.AddItem(new Item { name = "Sword", type = ItemType.Weapon, value = 100 });
-        Market.AddItem(new Item { name = "Armor", type = ItemType.Armor, value = 150 });
-        Market.AddItem(new Item { name = "Health Potion", type = ItemType.Consumable, value = 50 });
+        Market.AddItem(new ItemData { name = "Sword", type = ItemType.Weapon, value = 100 });
+        Market.AddItem(new ItemData { name = "Armor", type = ItemType.Armor, value = 150 });
+        Market.AddItem(new ItemData { name = "Health Potion", type = ItemType.Consumable, value = 50 });
 
         Income = 1000;
         Expenses = 500;

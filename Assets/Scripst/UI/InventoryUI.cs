@@ -24,7 +24,7 @@ public class InventoryUI : MonoBehaviour
     public Button dropButton;
 
     private Characters currentCharacter;
-    private Item selectedItem;
+    private ItemData selectedItem;
     private IAudioService audioService;
 
     private IAudioService AudioService
@@ -130,7 +130,7 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
-    private void SelectItem(Item item)
+    private void SelectItem(ItemData item)
     {
         selectedItem = item;
         itemNameText.text = item.name;
@@ -142,7 +142,7 @@ public class InventoryUI : MonoBehaviour
         itemDetailsPanel.SetActive(true);
     }
 
-    private string GetItemDescription(Item item)
+    private string GetItemDescription(ItemData item)
     {
         string description = $"{item.name}\nType: {item.type}";
 

@@ -3,12 +3,12 @@ using UnityEngine;
 
 public static class TradeManager
 {
-    public static bool TradeItemToMarket(Party party, Town town, Item item, int quantity)
+    public static bool TradeItemToMarket(Party party, Town town, ItemData item, int quantity)
     {
         return ResolveService()?.TradeItemToMarket(party, town, item, quantity) ?? false;
     }
 
-    public static bool TradeItemFromMarket(Party party, Town town, Item item, int quantity)
+    public static bool TradeItemFromMarket(Party party, Town town, ItemData item, int quantity)
     {
         return ResolveService()?.TradeItemFromMarket(party, town, item, quantity) ?? false;
     }

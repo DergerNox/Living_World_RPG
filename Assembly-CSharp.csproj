@@ -77,6 +77,7 @@
     <Compile Include="Assets\Scripst\Materials\WeaponTypes.cs" />
     <Compile Include="Assets\Scripst\Factions.cs" />
     <Compile Include="Assets\Scripst\Skills\Core\WarriorSkill.cs" />
+    <Compile Include="Assets\Scripst\Inventory\ItemData.cs" />
     <Compile Include="Assets\Scripst\Skills\Core\SkillManager.cs" />
     <Compile Include="Assets\Scripst\Characters\AIStateMachine.cs" />
     <Compile Include="Assets\Scripst\FactionMaker.cs" />
@@ -95,9 +96,11 @@
     <Compile Include="Assets\Scripst\Settlemnets\ISettlement.cs" />
     <Compile Include="Assets\Scripst\Economy\TradeManager.cs" />
     <Compile Include="Assets\Scripst\PartySystem\PartyManager.cs" />
+    <Compile Include="Assets\Scripst\Inventory\InventoryData.cs" />
     <Compile Include="Assets\Scripst\QuestManager.cs" />
     <Compile Include="Assets\Scripst\WalkerObject.cs" />
     <Compile Include="Assets\Scripst\Economy\TradeService.cs" />
+    <Compile Include="Assets\Scripst\Inventory\EquipmentData.cs" />
     <Compile Include="Assets\Scripst\TerrainTypeEnum.cs" />
     <Compile Include="Assets\Scripst\Core\Interfaces\IAudioService.cs" />
     <Compile Include="Assets\Scripst\WorldHandler.cs" />

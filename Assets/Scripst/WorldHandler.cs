@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using LivingWorldRPG.World;
@@ -20,6 +21,7 @@ namespace LivingWorldRPG.World
         private readonly Dictionary<Vector3Int, Village> villageByPosition = new Dictionary<Vector3Int, Village>();
 
         private IWorldGenerator worldGenerator;
+        private IWorldSimulationService worldSimulation;
 
         private void Awake()
         {
@@ -30,24 +32,30 @@ namespace LivingWorldRPG.World
             }
 
             Instance = this;
-
-            if (!ServiceLocator.TryResolve(out worldGenerator))
-            {
-                Debug.LogError("WorldHandler requires an IWorldGenerator registered in the ServiceLocator.");
-            }
+            ServiceLocator.Register<WorldHandler>(this);
+            ServiceLocator.Register<IWorldStateRepository>(this);
         }
 
-        private void Start()
+        private IEnumerator Start()
         {
             player ??= new Player("Player");
 
-            if (ServiceLocator.TryResolve(out IWorldSimulationService simulationService))
+            yield return WaitForWorldServices();
+
+            if (worldSimulation != null)
             {
-                simulationService.InitializeWorld();
-                return;
+                worldSimulation.InitializeWorld();
+                yield break;
             }
 
-            worldGenerator?.GenerateWorld();
+            if (worldGenerator == null)
+            {
+                Debug.LogError("WorldHandler could not resolve an IWorldGenerator; world generation aborted.");
+                enabled = false;
+                yield break;
+            }
+
+            worldGenerator.GenerateWorld();
             BuildSpatialCaches();
 
             if (Factions.Count > 0)
@@ -56,6 +64,26 @@ namespace LivingWorldRPG.World
             }
 
             Debug.Log($"World generated with {Factions.Count} factions, {Castles.Count} castles, {Towns.Count} towns, {Villages.Count} villages.");
+        }
+
+        private IEnumerator WaitForWorldServices(float timeoutSeconds = 5f)
+        {
+            float waited = 0f;
+            while (waited < timeoutSeconds)
+            {
+                if (worldSimulation == null && ServiceLocator.TryResolve(out worldSimulation) && worldSimulation != null)
+                {
+                    yield break;
+                }
+
+                if (worldGenerator == null && ServiceLocator.TryResolve(out worldGenerator) && worldGenerator != null)
+                {
+                    yield break;
+                }
+
+                waited += Time.deltaTime;
+                yield return null;
+            }
         }
 
         public Player Player => player;

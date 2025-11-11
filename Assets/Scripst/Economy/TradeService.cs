@@ -20,7 +20,7 @@ public class TradeService : MonoBehaviour, ITradeService
         }
     }
 
-    public bool TradeItemToMarket(Party party, Town town, Item item, int quantity)
+    public bool TradeItemToMarket(Party party, Town town, ItemData item, int quantity)
     {
         if (party == null || town == null || item == null || quantity <= 0) return false;
         var market = town.Market;
@@ -40,7 +40,7 @@ public class TradeService : MonoBehaviour, ITradeService
         return true;
     }
 
-    public bool TradeItemFromMarket(Party party, Town town, Item item, int quantity)
+    public bool TradeItemFromMarket(Party party, Town town, ItemData item, int quantity)
     {
         if (party == null || town == null || item == null || quantity <= 0) return false;
         var market = town.Market;

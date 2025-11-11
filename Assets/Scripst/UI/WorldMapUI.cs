@@ -113,6 +113,11 @@ namespace LivingWorldRPG.UI
 
             worldMapTexture.Apply();
             mapImage.texture = worldMapTexture;
+
+            if (mapRect != null)
+            {
+                mapRect.sizeDelta = new Vector2(width * mapScale, height * mapScale);
+            }
         }
 
     private Color GetTerrainColor(TerrainType terrain)

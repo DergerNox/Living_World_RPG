@@ -31,12 +31,10 @@ namespace LivingWorldRPG.World
             }
 
             Instance = this;
+            ServiceLocator.Register<WorldGenerator>(this);
+            ServiceLocator.Register<IWorldGenerator>(this);
 
-            if (!ServiceLocator.TryResolve(out worldRepository) || worldRepository == null)
-            {
-                Debug.LogError("WorldGenerator requires an IWorldStateRepository registered in the ServiceLocator.");
-                enabled = false;
-            }
+            TryResolveWorldRepository();
         }
 
         private void OnDestroy()
@@ -49,7 +47,7 @@ namespace LivingWorldRPG.World
 
         public void GenerateWorld(WorldGenerationSettings settings = null)
         {
-            if (worldRepository == null)
+            if (!TryResolveWorldRepository())
             {
                 Debug.LogError("WorldGenerator cannot generate without a world repository instance.");
                 return;
@@ -64,6 +62,21 @@ namespace LivingWorldRPG.World
             GenerateSettlements();
             AssignSettlementsToFactions();
             InitializeDiplomacy();
+        }
+
+        private bool TryResolveWorldRepository()
+        {
+            if (worldRepository != null)
+            {
+                return true;
+            }
+
+            if (ServiceLocator.TryResolve(out worldRepository) && worldRepository != null)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private void ApplyOverrides(WorldGenerationSettings settings)

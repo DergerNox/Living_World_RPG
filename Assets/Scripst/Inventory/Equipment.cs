@@ -8,7 +8,7 @@ public class Equipment : MonoBehaviour
 
     public void EquipItem(EquipmentSlot slot, Item item)
     {
-        EquippedItem existing = equippedItems.Find(e => e.slot == slot);
+        var existing = equippedItems.Find(e => e.slot == slot);
         if (existing != null)
         {
             existing.item = item;
@@ -21,7 +21,7 @@ public class Equipment : MonoBehaviour
 
     public Item UnequipItem(EquipmentSlot slot)
     {
-        EquippedItem existing = equippedItems.Find(e => e.slot == slot);
+        var existing = equippedItems.Find(e => e.slot == slot);
         if (existing != null)
         {
             Item item = existing.item;
@@ -33,7 +33,7 @@ public class Equipment : MonoBehaviour
 
     public Item GetEquippedItem(EquipmentSlot slot)
     {
-        EquippedItem existing = equippedItems.Find(e => e.slot == slot);
+        var existing = equippedItems.Find(e => e.slot == slot);
         return existing != null ? existing.item : null;
     }
 }

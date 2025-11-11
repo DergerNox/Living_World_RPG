@@ -3,6 +3,6 @@
 /// </summary>
 public interface ITradeService
 {
-    bool TradeItemToMarket(Party party, Town town, Item item, int quantity);
-    bool TradeItemFromMarket(Party party, Town town, Item item, int quantity);
+    bool TradeItemToMarket(Party party, Town town, ItemData item, int quantity);
+    bool TradeItemFromMarket(Party party, Town town, ItemData item, int quantity);
 }

@@ -4,7 +4,7 @@ using UnityEngine;
 [System.Serializable]
 public class Market
 {
-    public List<Item> availableItems = new List<Item>();
+    public List<ItemData> availableItems = new List<ItemData>();
     public Dictionary<string, int> supply = new Dictionary<string, int>();
     public Dictionary<string, int> demand = new Dictionary<string, int>();
     public Dictionary<string, int> prices = new Dictionary<string, int>();
@@ -20,12 +20,12 @@ public class Market
         }
     }
 
-    public int GetPrice(Item item)
+    public int GetPrice(ItemData item)
     {
         return prices.ContainsKey(item.name) ? prices[item.name] : item.value;
     }
 
-    public void AddItem(Item item)
+    public void AddItem(ItemData item)
     {
         if (!availableItems.Contains(item))
         {

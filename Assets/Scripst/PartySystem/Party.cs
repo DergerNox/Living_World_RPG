@@ -16,7 +16,7 @@ public class Party
     public List<int> ResourcesAmountInInventory { get => resourcesAmountInInventory; set => resourcesAmountInInventory = value; }
     public int CarryWeight { get => carryWeight; set => carryWeight = value; }
     public int Gold { get; set; }
-    public List<Item> TradeableItems { get; set; } = new List<Item>();
+    public List<ItemData> TradeableItems { get; set; } = new List<ItemData>();
     public List<Quest> ActiveQuests { get; set; } = new List<Quest>();
     public Vector3Int Position { get; set; } = Vector3Int.zero;
     public int Morale { get; set; } = 100; // 0-100 scale

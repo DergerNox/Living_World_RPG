@@ -15,8 +15,8 @@ public class Characters : ISkillTarget
     public int Experience { get { return experience; } set { experience = value; } }
     // REMOVED: public SkillBook SkillBook { get; set; } - replaced with direct skill management
     public Party Party { get { return party; } set { party = value; } }
-    public Inventory Inventory { get; set; } = new Inventory();
-    public Equipment Equipment { get; set; } = new Equipment();
+    public InventoryData Inventory { get; set; } = new InventoryData();
+    public EquipmentData Equipment { get; set; } = new EquipmentData();
     public int Strength { get; set; } = 10;
     public int Agility { get; set; } = 10;
     public int Intelligence { get; set; } = 10;
@@ -37,15 +37,15 @@ public class Characters : ISkillTarget
         this.experience = 0;
         this.gold = 0;
         // REMOVED: this.skillBook = new SkillBook();
-        this.Inventory = new Inventory();
-        this.Equipment = new Equipment();
+        this.Inventory = new InventoryData();
+        this.Equipment = new EquipmentData();
         this.Attack = 10;
         this.Defense = 5;
     }
     public Characters()
     {
-        this.Inventory = new Inventory();
-        this.Equipment = new Equipment();
+        this.Inventory = new InventoryData();
+        this.Equipment = new EquipmentData();
         this.Attack = 10;
         this.Defense = 5;
     }
@@ -82,9 +82,9 @@ public class Characters : ISkillTarget
         }
     }
 
-    public void EquipItem(EquipmentSlot slot, Item item)
+    public void EquipItem(EquipmentSlot slot, ItemData item)
     {
-        Item oldItem = Equipment.UnequipItem(slot);
+        ItemData oldItem = Equipment.UnequipItem(slot);
         if (oldItem != null)
         {
             Inventory.AddItem(oldItem);
@@ -103,7 +103,7 @@ public class Characters : ISkillTarget
         Mana += item.manaBonus;
     }
 
-    public void UseItem(Item item)
+    public void UseItem(ItemData item)
     {
         if (item.type == ItemType.Consumable)
         {

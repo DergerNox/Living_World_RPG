@@ -19,9 +19,9 @@ public class Player:Characters
         Party = new Party(); // Initialize party
         Party.Leader = this; // Set the player as the party leader
         Party.FactionId = 0; // Player starts in faction 0 or neutral
-        Inventory.AddItem(new Item { name = "Sword", type = ItemType.Weapon, attackBonus = 5 });
-        Inventory.AddItem(new Item { name = "Health Potion", type = ItemType.Consumable, healthBonus = 20 });
-        Inventory.AddItem(new Item { name = "Armor", type = ItemType.Armor, defenseBonus = 3 });
+        Inventory.AddItem(new ItemData { name = "Sword", type = ItemType.Weapon, attackBonus = 5 });
+        Inventory.AddItem(new ItemData { name = "Health Potion", type = ItemType.Consumable, healthBonus = 20 });
+        Inventory.AddItem(new ItemData { name = "Armor", type = ItemType.Armor, defenseBonus = 3 });
 
     }
 }

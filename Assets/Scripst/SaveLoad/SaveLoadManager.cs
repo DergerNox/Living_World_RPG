@@ -73,8 +73,8 @@ public class GameData
     public int playerGold;
     public int playerLevel;
     public int playerExperience;
-    public Inventory inventory;
-    public Equipment equipment;
+    public InventoryData inventory;
+    public EquipmentData equipment;
     public int playerAttack;
     public int playerDefense;
     public Vector3 playerPosition; // Added for saving/loading player position
