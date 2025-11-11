@@ -40,6 +40,13 @@ namespace LivingWorldRPG.World
         private void Start()
         {
             player ??= new Player("Player");
+
+            if (ServiceLocator.TryResolve(out IWorldSimulationService simulationService))
+            {
+                simulationService.InitializeWorld();
+                return;
+            }
+
             worldGenerator?.GenerateWorld();
             BuildSpatialCaches();
 

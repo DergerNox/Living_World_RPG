@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using LivingWorldRPG.Characters;
+using LivingWorldRPG.World;
 
 namespace LivingWorldRPG.Spawning
 {
@@ -10,7 +11,7 @@ public class NPCSpawner : MonoBehaviour
     [SerializeField] private int numberOfNPCs = 10;
     [SerializeField] private Transform npcParent;  // Optional: parent transform to keep hierarchy clean
 
-    private IWorldStateRepository worldStateRepository;
+    private IWorldSimulationService worldSimulationService;
 
     void Start()
     {
@@ -27,23 +28,14 @@ public class NPCSpawner : MonoBehaviour
         }
 
         // Access your settlements and factions from WorldHandler
-        var repo = GetWorldStateRepository();
-        if (repo == null)
+        var simulation = ResolveWorldSimulation();
+        if (simulation == null)
         {
-            Debug.LogError("World state repository unavailable. Cannot spawn NPCs.");
+            Debug.LogError("World simulation service unavailable. Cannot spawn NPCs.");
             return;
         }
 
-        var factions = repo.Factions;
-        var towns = repo.Towns;
-        var castles = repo.Castles;
-        var villages = repo.Villages;
-
-        // For demo: spawn NPCs mostly in towns or castles
-        List<ISettlement> possibleLocations = new List<ISettlement>();
-        possibleLocations.AddRange(towns);
-        possibleLocations.AddRange(castles);
-        possibleLocations.AddRange(villages);
+        List<ISettlement> possibleLocations = new List<ISettlement>(simulation.GetSettlements());
 
         int spawnedCount = 0;
         while (spawnedCount < numberOfNPCs && possibleLocations.Count > 0)
@@ -75,17 +67,16 @@ public class NPCSpawner : MonoBehaviour
         Debug.Log($"Spawned {spawnedCount} NPCs.");
     }
 
-    private IWorldStateRepository GetWorldStateRepository()
+    private IWorldSimulationService ResolveWorldSimulation()
     {
-        if (worldStateRepository == null)
+        if (worldSimulationService == null)
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
+            if (!ServiceLocator.TryResolve(out worldSimulationService))
             {
-                Debug.LogError("NPCSpawner requires an IWorldStateRepository.");
                 return null;
             }
         }
-        return worldStateRepository;
+        return worldSimulationService;
     }
 }
 }

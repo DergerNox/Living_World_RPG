@@ -79,6 +79,12 @@ namespace LivingWorldRPG.Core
 				ServiceLocator.Register<IWorldStateRepository>(worldHandler);
 			}
 
+			if (worldGen != null && worldHandler != null)
+			{
+				var simulationService = new WorldSimulationService(worldHandler, worldGen);
+				ServiceLocator.Register<IWorldSimulationService>(simulationService);
+			}
+
 			var party = FindFirstObjectByType<PartyManager>();
 			if (party != null)
 			{
