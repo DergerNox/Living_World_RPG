@@ -1,43 +1,63 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using LivingWorldRPG.World;
+using LivingWorldRPG.UI;
 
-public class PlayerController : MonoBehaviour
+namespace LivingWorldRPG.Characters
 {
-    [Tooltip("Reference to your WalkerGenerator (or WorldHandler) that holds the grid and tilemaps.")]
-    public WalkerGenerator generator;
-
-    private Tilemap baseTilemap;
-    private Tilemap structureTilemap;
-    private Vector3 targetPosition;
-    private bool isMoving;
-
-    [Tooltip("Movement speed in tiles per second.")]
-    public float moveSpeed = 5f;
-
-    // Reference to the Settlement UI Manager
-    public SettlementUIManager settlementUIManager;
-    private IWorldStateRepository worldStateRepository;
-
-    void Start()
+    public class PlayerController : MonoBehaviour
     {
-        if (generator == null)
-            generator = FindFirstObjectByType<WalkerGenerator>();
-        if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
+        [Tooltip("Reference to your WalkerGenerator that holds the grid and tilemaps.")]
+        [SerializeField] private WalkerGenerator generator;
+
+        [Tooltip("Movement speed in tiles per second.")]
+        [SerializeField, Min(0.1f)] private float moveSpeed = 5f;
+
+        [SerializeField] private SettlementUIManager settlementUIManager;
+
+        private Tilemap baseTilemap;
+        private Tilemap structureTilemap;
+        private Vector3 targetPosition;
+        private bool isMoving;
+        private IWorldSimulationService worldSimulation;
+
+        private IWorldStateRepository WorldRepository => worldSimulation?.State;
+
+        private void Start()
         {
-            Debug.LogError("PlayerController requires an IWorldStateRepository for settlement interactions.");
+            if (generator == null)
+            {
+                generator = FindFirstObjectByType<WalkerGenerator>();
+            }
+
+            if (generator == null)
+            {
+                Debug.LogError("PlayerController requires a WalkerGenerator reference.");
+                enabled = false;
+                return;
+            }
+
+            if (settlementUIManager == null)
+            {
+                settlementUIManager = FindFirstObjectByType<SettlementUIManager>();
+            }
+
+            ServiceLocator.TryResolve(out worldSimulation);
+            if (worldSimulation == null)
+            {
+                Debug.LogWarning("PlayerController: IWorldSimulationService not available; falling back to WalkerGenerator data.");
+            }
+
+            baseTilemap = generator.floorTilemap;
+            structureTilemap = generator.structureTilemap;
+
+            Vector3Int startCell = new Vector3Int(generator.MapWidth / 2, generator.MapHeight / 2, 0);
+            targetPosition = baseTilemap.GetCellCenterWorld(startCell);
+            transform.position = targetPosition;
+            isMoving = false;
         }
 
-        // Correctly assign the tilemaps from WalkerGenerator
-        baseTilemap = generator.floorTilemap;
-        structureTilemap = generator.structureTilemap;
-
-        Vector3Int startCell = new Vector3Int(generator.MapWidth / 2, generator.MapHeight / 2, 0);
-        targetPosition = baseTilemap.GetCellCenterWorld(startCell);
-        transform.position = targetPosition;
-        isMoving = false;
-    }
-
-    void Update()
+        private void Update()
     {
         if (isMoving)
         {
@@ -60,7 +80,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void HandleHoldInput()
+        private void HandleHoldInput()
     {
         int x = 0, y = 0;
         if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W)) y = 1;
@@ -74,7 +94,7 @@ public class PlayerController : MonoBehaviour
             TryMove(dir);
     }
 
-    void TryMove(Vector3Int direction)
+        private void TryMove(Vector3Int direction)
     {
         Vector3Int currentCell = baseTilemap.WorldToCell(transform.position);
         Vector3Int nextCell = currentCell + direction;
@@ -89,7 +109,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    bool IsPassableTile(Vector3Int position)
+        private bool IsPassableTile(Vector3Int position)
     {
         var baseTile = baseTilemap.GetTile(position);
         if (baseTile != null && baseTile == generator.Floor)
@@ -107,7 +127,7 @@ public class PlayerController : MonoBehaviour
         return false;
     }
 
-    void TryInteractWithSettlement()
+        private void TryInteractWithSettlement()
     {
         // Check if player is standing on a settlement tile (town, castle, village)
         Vector3Int currentCell = baseTilemap.WorldToCell(transform.position);
@@ -128,7 +148,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-   ISettlement GetSettlementAtPosition(Vector3Int position)
+        private ISettlement GetSettlementAtPosition(Vector3Int position)
     {
         // Get the tile at the current position
         var structureTile = structureTilemap.GetTile(position);
@@ -137,21 +157,21 @@ public class PlayerController : MonoBehaviour
         if (structureTile == generator.Town)
         {
             // Reference an existing Town object
-            return worldStateRepository != null ? worldStateRepository.GetTownAtPosition(position) : generator.GetTownAtPosition(position);  // Ensure this method is implemented in your generator
+            return WorldRepository != null ? WorldRepository.GetTownAtPosition(position) : generator.GetTownAtPosition(position);
         }
         else if (structureTile == generator.Castle)
         {
             // Reference an existing Castle object
-            return worldStateRepository != null ? worldStateRepository.GetCastleAtPosition(position) : generator.GetCastleAtPosition(position);  // Ensure this method is implemented in your generator
+            return WorldRepository != null ? WorldRepository.GetCastleAtPosition(position) : generator.GetCastleAtPosition(position);
         }
         else if (structureTile == generator.Village)
         {
             // Reference an existing Village object
-            return worldStateRepository != null ? worldStateRepository.GetVillageAtPosition(position) : generator.GetVillageAtPosition(position);  // Ensure this method is implemented in your generator
+            return WorldRepository != null ? WorldRepository.GetVillageAtPosition(position) : generator.GetVillageAtPosition(position);
         }
 
         // Return null if no settlement was found
-        return null;
+            return null;
+        }
     }
-
 }
