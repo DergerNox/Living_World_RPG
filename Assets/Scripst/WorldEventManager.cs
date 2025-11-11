@@ -1,13 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace LivingWorldRPG.World
+{
 public enum WorldEventType { War, Quest, Siege, Growth }
 
 public class WorldEvent
 {
     public WorldEventType Type { get; set; }
     public string Description { get; set; }
-    public int Duration { get; set; } // in days
+    public int Duration { get; set; }
     public int FactionId { get; set; }
     public Vector3Int Location { get; set; }
 
@@ -23,26 +25,24 @@ public class WorldEvent
 
 public class WorldEventManager : MonoBehaviour
 {
-    public static WorldEventManager Instance;
+    public static WorldEventManager Instance { get; private set; }
 
-    private List<WorldEvent> activeEvents = new List<WorldEvent>();
+    private readonly List<WorldEvent> activeEvents = new List<WorldEvent>();
     private IQuestService questService;
     private ITimeService timeService;
-    private IWorldStateRepository worldStateRepository;
+    private IWorldSimulationService worldSimulation;
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
 
+        Instance = this;
         ResolveQuestService();
+        ServiceLocator.TryResolve(out worldSimulation);
     }
 
     private void Start()
@@ -84,11 +84,14 @@ public class WorldEventManager : MonoBehaviour
 
     private void TriggerRandomEvent()
     {
-        var repo = ResolveWorldStateRepository();
-        if (repo == null || repo.Factions.Count == 0) return;
+        var simulation = ResolveWorldSimulation();
+        if (simulation == null || simulation.State.Factions.Count == 0)
+        {
+            return;
+        }
 
         WorldEventType type = (WorldEventType)Random.Range(0, System.Enum.GetValues(typeof(WorldEventType)).Length);
-        int factionId = Random.Range(0, repo.Factions.Count);
+        int factionId = Random.Range(0, simulation.State.Factions.Count);
         Vector3Int location = GetRandomSettlementLocation(factionId);
 
         string description = "";
@@ -98,9 +101,9 @@ public class WorldEventManager : MonoBehaviour
         {
             case WorldEventType.War:
                 description = $"Faction {factionId} declares war!";
-                if (FactionDiplomacy.Instance != null && repo.Factions.Count > 1)
+                if (FactionDiplomacy.Instance != null && simulation.State.Factions.Count > 1)
                 {
-                    int targetFaction = Random.Range(0, repo.Factions.Count);
+                    int targetFaction = Random.Range(0, simulation.State.Factions.Count);
                     if (targetFaction != factionId)
                     {
                         FactionDiplomacy.Instance.DeclareWar(factionId, targetFaction);
@@ -128,8 +131,12 @@ public class WorldEventManager : MonoBehaviour
 
     private Vector3Int GetRandomSettlementLocation(int factionId)
     {
-        var repo = ResolveWorldStateRepository();
-        if (repo == null) return Vector3Int.zero;
+        var simulation = ResolveWorldSimulation();
+        var repo = simulation?.State;
+        if (repo == null)
+        {
+            return Vector3Int.zero;
+        }
 
         if (factionId < 0 || factionId >= repo.Factions.Count) return Vector3Int.zero;
         var faction = repo.Factions[factionId];
@@ -148,8 +155,7 @@ public class WorldEventManager : MonoBehaviour
 
     private void GenerateQuestEvent(int factionId)
     {
-        var repo = ResolveWorldStateRepository();
-        var player = repo?.Player;
+        var player = ResolveWorldSimulation()?.State.Player;
         if (player == null) return;
 
         Quest quest = QuestGenerator.GenerateQuest(player.Level);
@@ -160,20 +166,20 @@ public class WorldEventManager : MonoBehaviour
     private void TriggerSiegeEvent(Vector3Int location)
     {
         // Find settlement at location and set siege flag
-        var repo = ResolveWorldStateRepository();
-        if (repo == null) return;
+        var state = ResolveWorldSimulation()?.State;
+        if (state == null) return;
 
-        var castle = repo.GetCastleAtPosition(location);
+        var castle = state.GetCastleAtPosition(location);
         if (castle != null)
         {
             castle.IsCastleUnderSiege = true;
         }
-        var town = repo.GetTownAtPosition(location);
+        var town = state.GetTownAtPosition(location);
         if (town != null)
         {
             town.IsTownUnderSiege = true;
         }
-        var village = repo.GetVillageAtPosition(location);
+        var village = state.GetVillageAtPosition(location);
         if (village != null)
         {
             // Villages don't have siege flag, but we can simulate damage
@@ -183,7 +189,7 @@ public class WorldEventManager : MonoBehaviour
 
     private void TriggerGrowthEvent(int factionId)
     {
-        var repo = ResolveWorldStateRepository();
+        var repo = ResolveWorldSimulation()?.State;
         if (repo == null || factionId < 0 || factionId >= repo.Factions.Count) return;
 
         var faction = repo.Factions[factionId];
@@ -203,10 +209,10 @@ public class WorldEventManager : MonoBehaviour
                 break;
             case WorldEventType.Siege:
                 // End siege
-                var repo = ResolveWorldStateRepository();
-                var castle = repo?.GetCastleAtPosition(worldEvent.Location);
+                var state = ResolveWorldSimulation()?.State;
+                var castle = state?.GetCastleAtPosition(worldEvent.Location);
                 if (castle != null) castle.IsCastleUnderSiege = false;
-                var town = repo?.GetTownAtPosition(worldEvent.Location);
+                var town = state?.GetTownAtPosition(worldEvent.Location);
                 if (town != null) town.IsTownUnderSiege = false;
                 Debug.Log($"Siege at {worldEvent.Location} has ended.");
                 break;
@@ -243,16 +249,14 @@ public class WorldEventManager : MonoBehaviour
         return timeService;
     }
 
-    private IWorldStateRepository ResolveWorldStateRepository()
+    private IWorldSimulationService ResolveWorldSimulation()
     {
-        if (worldStateRepository == null)
+        if (worldSimulation == null && !ServiceLocator.TryResolve(out worldSimulation))
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
-            {
-                Debug.LogError("WorldEventManager requires an IWorldStateRepository.");
-                return null;
-            }
+            Debug.LogError("WorldEventManager requires an IWorldSimulationService.");
         }
-        return worldStateRepository;
+
+        return worldSimulation;
     }
+}
 }
