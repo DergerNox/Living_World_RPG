@@ -138,7 +138,7 @@ namespace LivingWorldRPG.UI
             {
                 Destroy(child.gameObject);
             }
-            foreach (LivingWorldRPG.Characters.Characters member in currentParty.Members)
+            foreach (global::Characters member in currentParty.Members)
             {
                 GameObject item = Instantiate(memberItemPrefab, memberListContainer);
                 TextMeshProUGUI text = item.GetComponentInChildren<TextMeshProUGUI>();
