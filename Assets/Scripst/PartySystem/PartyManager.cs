@@ -1,47 +1,50 @@
 using System.Collections.Generic;
 using UnityEngine;
+using LivingWorldRPG.World;
 
-public class PartyManager : MonoBehaviour, IPartyService
+namespace LivingWorldRPG.PartySystem
 {
-    public static PartyManager Instance;
-
-    public Party PlayerParty { get; private set; }
-    public List<Party> AllParties { get; private set; } = new List<Party>();
-    IReadOnlyList<Party> IPartyService.AllParties => AllParties;
-    private IWorldStateRepository worldStateRepository;
-
-    private void Awake()
+    public class PartyManager : MonoBehaviour, IPartyService
     {
-        if (Instance == null)
+        public static PartyManager Instance { get; private set; }
+
+        public Party PlayerParty { get; private set; }
+        public List<Party> AllParties { get; private set; } = new List<Party>();
+        IReadOnlyList<Party> IPartyService.AllParties => AllParties;
+        private IWorldSimulationService worldSimulation;
+
+        private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             Instance = this;
             DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
 
-    private void Start()
-    {
-        var repo = ResolveWorldStateRepository();
-        var player = repo?.Player;
-        if (player != null)
+            ServiceLocator.TryResolve(out worldSimulation);
+        }
+
+        private void Start()
         {
-            PlayerParty = player.Party;
-            if (!AllParties.Contains(PlayerParty))
+            var player = worldSimulation?.State.Player;
+            if (player != null)
             {
-                AllParties.Add(PlayerParty);
+                PlayerParty = player.Party;
+                if (!AllParties.Contains(PlayerParty))
+                {
+                    AllParties.Add(PlayerParty);
+                }
             }
-        }
-        else
-        {
-            Debug.LogWarning("PartyManager could not find a player party. AI party generation will continue without the player.");
-        }
+            else
+            {
+                Debug.LogWarning("PartyManager could not find a player party. AI party generation will continue without the player.");
+            }
 
-        GenerateAIParties();
-    }
+            GenerateAIParties();
+        }
 
 	void OnEnable()
 	{
@@ -105,16 +108,14 @@ public class PartyManager : MonoBehaviour, IPartyService
 		UpdatePartyPositions();
 	}
 
-    private IWorldStateRepository ResolveWorldStateRepository()
-    {
-        if (worldStateRepository == null)
+        private IWorldSimulationService ResolveWorldSimulation()
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
+            if (worldSimulation == null && !ServiceLocator.TryResolve(out worldSimulation))
             {
-                Debug.LogError("PartyManager requires an IWorldStateRepository.");
-                return null;
+                Debug.LogError("PartyManager requires an IWorldSimulationService.");
             }
+
+            return worldSimulation;
         }
-        return worldStateRepository;
     }
 }

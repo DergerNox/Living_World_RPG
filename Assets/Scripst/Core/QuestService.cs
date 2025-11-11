@@ -1,110 +1,108 @@
 using System.Collections.Generic;
 using UnityEngine;
+using LivingWorldRPG.World;
 
-/// <summary>
-/// MonoBehaviour adapter that implements IQuestService using the existing static QuestManager logic.
-/// </summary>
-public class QuestService : MonoBehaviour, IQuestService
+namespace LivingWorldRPG.Core
 {
-    [SerializeField]
-    private AudioManager audioManagerFallback;
-
-    private readonly List<Quest> _activeQuests = new List<Quest>();
-    private IAudioService audioService;
-    private IWorldStateRepository worldStateRepository;
-
-    public static QuestService Instance { get; private set; }
-
-    public IReadOnlyList<Quest> ActiveQuests => _activeQuests;
-
-    private void Awake()
+    /// <summary>
+    /// MonoBehaviour adapter that implements IQuestService using the existing static QuestManager logic.
+    /// </summary>
+    public class QuestService : MonoBehaviour, IQuestService
     {
-        if (Instance == null)
+        [SerializeField] private AudioManager audioManagerFallback;
+
+        private readonly List<Quest> activeQuests = new List<Quest>();
+        private IAudioService audioService;
+        private IWorldSimulationService worldSimulation;
+
+        public static QuestService Instance { get; private set; }
+
+        public IReadOnlyList<Quest> ActiveQuests => activeQuests;
+
+        private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             Instance = this;
             DontDestroyOnLoad(gameObject);
-        }
-        else if (Instance != this)
-        {
-            Destroy(gameObject);
-            return;
+
+            ResolveAudioService();
+            ServiceLocator.TryResolve(out worldSimulation);
         }
 
-        ResolveAudioService();
-    }
-
-    public void StartQuest(Quest quest)
-    {
-        if (quest == null || _activeQuests.Contains(quest)) return;
-        quest.status = QuestStatus.InProgress;
-        _activeQuests.Add(quest);
-    }
-
-    public void CompleteQuest(Quest quest)
-    {
-        if (quest == null) return;
-
-        quest.status = QuestStatus.Completed;
-        GrantRewards(quest);
-        _activeQuests.Remove(quest);
-        ResolveAudioService()?.PlayQuestCompleteSound();
-    }
-
-    public void UpdateObjective(Quest quest, int objectiveIndex)
-    {
-        if (quest == null) return;
-        if (objectiveIndex < 0 || objectiveIndex >= quest.objectives.Count) return;
-
-        quest.objectives[objectiveIndex].completed = true;
-        if (quest.IsCompleted())
+        public void StartQuest(Quest quest)
         {
-            CompleteQuest(quest);
-        }
-    }
-
-    private void GrantRewards(Quest quest)
-    {
-        if (quest?.rewards == null) return;
-
-        foreach (string reward in quest.rewards)
-        {
-            if (reward.StartsWith("Gold: "))
+            if (quest == null || activeQuests.Contains(quest))
             {
-                if (int.TryParse(reward.Substring(6), out int gold))
+                return;
+            }
+
+            quest.status = QuestStatus.InProgress;
+            activeQuests.Add(quest);
+        }
+
+        public void CompleteQuest(Quest quest)
+        {
+            if (quest == null)
+            {
+                return;
+            }
+
+            quest.status = QuestStatus.Completed;
+            GrantRewards(quest);
+            activeQuests.Remove(quest);
+            ResolveAudioService()?.PlayQuestCompleteSound();
+        }
+
+        public void UpdateObjective(Quest quest, int objectiveIndex)
+        {
+            if (quest == null || objectiveIndex < 0 || objectiveIndex >= quest.objectives.Count)
+            {
+                return;
+            }
+
+            quest.objectives[objectiveIndex].completed = true;
+            if (quest.IsCompleted())
+            {
+                CompleteQuest(quest);
+            }
+        }
+
+        private void GrantRewards(Quest quest)
+        {
+            if (quest?.rewards == null)
+            {
+                return;
+            }
+
+            var player = worldSimulation?.State.Player;
+            if (player == null)
+            {
+                Debug.LogError("QuestService cannot grant rewards without a player reference.");
+                return;
+            }
+
+            foreach (string reward in quest.rewards)
+            {
+                if (reward.StartsWith("Gold: ") && int.TryParse(reward.Substring(6), out int gold))
                 {
-                    var player = GetPlayer();
-                    if (player != null)
-                    {
-                        player.Party.Gold += gold;
-                    }
+                    player.Party.Gold += gold;
                 }
             }
         }
-    }
 
-    private IAudioService ResolveAudioService()
-    {
-        if (audioService == null)
+        private IAudioService ResolveAudioService()
         {
-            if (!ServiceLocator.TryResolve(out audioService))
+            if (audioService == null && !ServiceLocator.TryResolve(out audioService))
             {
                 audioService = audioManagerFallback ?? AudioManager.Instance;
             }
-        }
 
-        return audioService;
-    }
-
-    private Player GetPlayer()
-    {
-        if (worldStateRepository == null)
-        {
-            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
-            {
-                Debug.LogError("QuestService requires an IWorldStateRepository to grant rewards.");
-                return null;
-            }
+            return audioService;
         }
-        return worldStateRepository.Player;
     }
 }
