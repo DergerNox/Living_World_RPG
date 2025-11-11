@@ -2,104 +2,107 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
-using UnityEngine.UIElements;
+using LivingWorldRPG.World;
 
-public class SettlementUIManager : MonoBehaviour
+namespace LivingWorldRPG.UI
 {
-    [Header("UI Panels")]
-    public GameObject uiPanel;             // Settlement info panel
-    public GameObject recruitmentPanel;    // Recruitment panel
-    public GameObject TroopSelectionPanel; // Troop selection panel
-    [Header("Scripts")]
-    public TroopSelectionPanel troopSelectionPanelScript; // Drag the script component in Inspector
-
-    [Header("UI Elements")]
-    public TextMeshProUGUI settlementNameText;
-    public UnityEngine.UI.Button recruitButton;
-    public UnityEngine.UI.Button tradeButton;
-
-    public Transform troopContainer;        // Parent object where troop cards will be displayed
-    public GameObject troopCardPrefab;      // Prefab for displaying each troop card
-
-    private ISettlement currentSettlement;
-    private IAudioService audioService;
-    private IWorldStateRepository worldStateRepository;
-
-    private IAudioService AudioService
+    public class SettlementUIManager : MonoBehaviour
     {
-        get
+        [Header("UI Panels")]
+        [SerializeField] private GameObject uiPanel;
+        [SerializeField] private GameObject recruitmentPanel;
+        [SerializeField] private GameObject troopSelectionPanel;
+
+        [Header("Scripts")]
+        [SerializeField] private TroopSelectionPanel troopSelectionPanelScript;
+
+        [Header("UI Elements")]
+        [SerializeField] private TextMeshProUGUI settlementNameText;
+        [SerializeField] private Button recruitButton;
+        [SerializeField] private Button tradeButton;
+
+        [Header("Troop List")]
+        [SerializeField] private Transform troopContainer;
+        [SerializeField] private GameObject troopCardPrefab;
+
+        private ISettlement currentSettlement;
+        private IAudioService audioService;
+        private IWorldSimulationService worldSimulationService;
+
+        private IAudioService AudioService
         {
-            if (audioService == null)
+            get
             {
-                if (!ServiceLocator.TryResolve(out audioService) || audioService == null)
+                if (audioService == null && !ServiceLocator.TryResolve(out audioService))
                 {
                     Debug.LogError("SettlementUIManager requires an IAudioService.");
                 }
+
+                return audioService;
+            }
+        }
+
+        private Player CurrentPlayer => ResolveWorldSimulation()?.State.Player;
+
+        private void Start()
+        {
+            ResolveWorldSimulation();
+
+            if (recruitmentPanel != null)
+            {
+                recruitmentPanel.SetActive(false);
+            }
+        }
+
+        private void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                HandleEscapeKey();
+            }
+        }
+
+        private void HandleEscapeKey()
+        {
+            if (recruitmentPanel != null && recruitmentPanel.activeSelf)
+            {
+                OnCloseRecruitment();
+            }
+            else if (uiPanel != null && uiPanel.activeSelf)
+            {
+                CloseUI();
+            }
+        }
+
+        public void OpenSettlementUI(ISettlement settlement)
+        {
+            if (uiPanel == null || recruitButton == null || tradeButton == null || settlementNameText == null)
+            {
+                Debug.LogError("SettlementUIManager is missing UI references.");
+                return;
             }
 
-            return audioService;
+            currentSettlement = settlement;
+
+            settlementNameText.text = GetSettlementName(settlement);
+            uiPanel.SetActive(true);
+
+            AudioService?.PlayUIMenuOpen();
+
+            recruitButton.gameObject.SetActive(true);
+            tradeButton.gameObject.SetActive(!(settlement is Castle));
         }
-    }
-    private Player CurrentPlayer => GetPlayer();
 
-    void Start()
-    {
-        if (recruitmentPanel != null)
-            recruitmentPanel.SetActive(false);  // Ensure recruitment panel is hidden on start
-    }
-
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        public void CloseUI()
         {
-            HandleEscapeKey();
+            if (uiPanel != null)
+            {
+                uiPanel.SetActive(false);
+            }
+
+            currentSettlement = null;
+            AudioService?.PlayUIMenuClose();
         }
-    }
-
-    private void HandleEscapeKey()
-    {
-        if (recruitmentPanel.activeSelf)
-        {
-            OnCloseRecruitment(); // Close recruitment panel and return to settlement UI
-        }
-        else if (uiPanel.activeSelf)
-        {
-            CloseUI(); // Close settlement UI entirely
-        }
-    }
-
-    public void OpenSettlementUI(ISettlement settlement)
-    {
-        currentSettlement = settlement;
-
-        settlementNameText.text = GetSettlementName(settlement);
-        uiPanel.SetActive(true);
-
-        // Play UI menu open sound
-        AudioService?.PlayUIMenuOpen();
-
-        // Show recruit button for all settlements
-        recruitButton.gameObject.SetActive(true);
-
-        // Hide trade button only for castles
-        if (settlement is Castle)
-        {
-            tradeButton.gameObject.SetActive(false);
-        }
-        else
-        {
-            tradeButton.gameObject.SetActive(true);
-        }
-    }
-
-    public void CloseUI()
-    {
-        uiPanel.SetActive(false);
-        currentSettlement = null;
-
-        // Play UI menu close sound
-        AudioService?.PlayUIMenuClose();
-    }
 
     public void OnRecruitButton()
     {
@@ -108,21 +111,24 @@ public class SettlementUIManager : MonoBehaviour
 
         Debug.Log($"Opening recruitment at {GetSettlementName(currentSettlement)}");
 
-        uiPanel.SetActive(false);                 // Hide the settlement UI
+            if (uiPanel != null)
+            {
+                uiPanel.SetActive(false);
+            }
 
         if (currentSettlement is Village village)
         {
-            recruitmentPanel.SetActive(true);
+            recruitmentPanel?.SetActive(true);
             LoadTroopCards(village.RecruitmentPool);  // Show only rank 1 and 2 troops
         }
         else if (currentSettlement is Town town)
         {
-            recruitmentPanel.SetActive(true);
+            recruitmentPanel?.SetActive(true);
             LoadTroopCards(town.AvailableUnits);  // Show all troops (no change)
         }
         else if (currentSettlement is Castle castle)
         {
-            recruitmentPanel.SetActive(true);
+            recruitmentPanel?.SetActive(true);
             LoadTroopCards(castle.AvailableUnits);  // Show all troops for castle like town and village
         }
         else
@@ -133,8 +139,15 @@ public class SettlementUIManager : MonoBehaviour
 
     public void OnCloseRecruitment()
     {
-        recruitmentPanel.SetActive(false);        // Hide recruitment panel
-        uiPanel.SetActive(true);
+            if (recruitmentPanel != null)
+            {
+                recruitmentPanel.SetActive(false);
+            }
+
+            if (uiPanel != null)
+            {
+                uiPanel.SetActive(true);
+            }
         if (currentSettlement != null)
         {
             settlementNameText.text = GetSettlementName(currentSettlement);
@@ -182,10 +195,10 @@ public class SettlementUIManager : MonoBehaviour
         AudioService?.PlayUIClick();
 
         // Open world map UI
-        if (WorldMapUI.Instance != null)
-        {
-            WorldMapUI.Instance.OpenWorldMap();
-        }
+            if (WorldMapUI.Instance != null)
+            {
+                WorldMapUI.Instance.OpenWorldMap();
+            }
     }
 
     private string GetSettlementName(ISettlement settlement)
@@ -199,16 +212,19 @@ public class SettlementUIManager : MonoBehaviour
     // Load the available units into the recruitment UI
     private void LoadTroopCards(List<Troop> availableUnits)
     {
-        if (availableUnits == null) return;
+            if (availableUnits == null || troopContainer == null || troopCardPrefab == null)
+            {
+                return;
+            }
 
-        foreach (Transform child in troopContainer)
-        {
-            Destroy(child.gameObject);
-        }
+            foreach (Transform child in troopContainer)
+            {
+                Destroy(child.gameObject);
+            }
 
         foreach (var troop in availableUnits)
         {
-            GameObject troopCard = Instantiate(troopCardPrefab, troopContainer);
+                GameObject troopCard = Instantiate(troopCardPrefab, troopContainer);
             TroopCard troopCardScript = troopCard.GetComponent<TroopCard>();
 
             if (troopCardScript == null)
@@ -235,25 +251,21 @@ public class SettlementUIManager : MonoBehaviour
         }
     }
 
-    private Player GetPlayer()
-    {
-        if (worldStateRepository == null)
+        private IWorldSimulationService ResolveWorldSimulation()
         {
-            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
+            if (worldSimulationService == null && !ServiceLocator.TryResolve(out worldSimulationService))
             {
-                Debug.LogError("SettlementUIManager requires an IWorldStateRepository.");
-                return null;
+                Debug.LogError("SettlementUIManager requires an IWorldSimulationService.");
             }
+
+            return worldSimulationService;
         }
-        return worldStateRepository.Player;
-    }
 
 
     // Recruit the selected troop
-    private void RecruitTroop(Troop selectedTroop)
-    {
-        // Handle recruitment logic here
-        Debug.Log($"Recruited {selectedTroop.Name}");
-        // You could also instantiate troops into the player's party, handle cost deduction, etc.
+        private void RecruitTroop(Troop selectedTroop)
+        {
+            Debug.Log($"Recruited {selectedTroop.Name}");
+        }
     }
 }

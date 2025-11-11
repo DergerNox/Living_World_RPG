@@ -2,101 +2,118 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using LivingWorldRPG.World;
 
-public class WorldMapUI : MonoBehaviour
+namespace LivingWorldRPG.UI
 {
-    public static WorldMapUI Instance;
-
-    [Header("UI Panels")]
-    public GameObject worldMapPanel;
-    public Button closeButton;
-
-    [Header("Map Display")]
-    public RawImage mapImage;
-    public RectTransform mapRect;
-    public float mapScale = 10f;
-
-    [Header("Settlement Markers")]
-    public GameObject settlementMarkerPrefab;
-    public Transform markerContainer;
-
-    [Header("Info Panel")]
-    public GameObject infoPanel;
-    public TextMeshProUGUI infoText;
-
-    private Texture2D worldMapTexture;
-    private List<GameObject> settlementMarkers = new List<GameObject>();
-    private IAudioService audioService;
-    private IWorldGenerator worldGenerator;
-    private IWorldStateRepository worldStateRepository;
-
-    private void Awake()
+    public class WorldMapUI : MonoBehaviour
     {
-        if (Instance == null)
+        public static WorldMapUI Instance { get; private set; }
+
+        [Header("UI Panels")]
+        [SerializeField] private GameObject worldMapPanel;
+        [SerializeField] private Button closeButton;
+
+        [Header("Map Display")]
+        [SerializeField] private RawImage mapImage;
+        [SerializeField] private RectTransform mapRect;
+        [SerializeField, Min(1f)] private float mapScale = 10f;
+
+        [Header("Settlement Markers")]
+        [SerializeField] private GameObject settlementMarkerPrefab;
+        [SerializeField] private Transform markerContainer;
+
+        [Header("Info Panel")]
+        [SerializeField] private GameObject infoPanel;
+        [SerializeField] private TextMeshProUGUI infoText;
+
+        private Texture2D worldMapTexture;
+        private readonly List<GameObject> settlementMarkers = new List<GameObject>();
+        private IAudioService audioService;
+        private IWorldGenerator worldGenerator;
+        private IWorldSimulationService worldSimulation;
+
+        private void Awake()
         {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        ResolveServices();
-    }
-
-    private void Start()
-    {
-        if (closeButton != null)
-        {
-            closeButton.onClick.AddListener(CloseWorldMap);
-        }
-
-        worldMapPanel.SetActive(false);
-        infoPanel.SetActive(false);
-    }
-
-    public void OpenWorldMap()
-    {
-        ResolveServices();
-        GenerateWorldMapTexture();
-        UpdateSettlementMarkers();
-
-        worldMapPanel.SetActive(true);
-
-        audioService?.PlayUIMenuOpen();
-    }
-
-    public void CloseWorldMap()
-    {
-        worldMapPanel.SetActive(false);
-
-        audioService?.PlayUIMenuClose();
-    }
-
-    private void GenerateWorldMapTexture()
-    {
-        var generator = GetWorldGenerator();
-        if (generator == null || generator.TerrainMap == null) return;
-
-        int width = generator.WorldWidth;
-        int height = generator.WorldHeight;
-
-        worldMapTexture = new Texture2D(width, height);
-        worldMapTexture.filterMode = FilterMode.Point;
-
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
+            if (Instance != null && Instance != this)
             {
-                Color color = GetTerrainColor(generator.TerrainMap[x, y]);
-                worldMapTexture.SetPixel(x, y, color);
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+            ResolveServices();
+        }
+
+        private void Start()
+        {
+            if (closeButton != null)
+            {
+                closeButton.onClick.AddListener(CloseWorldMap);
+            }
+
+            if (worldMapPanel != null)
+            {
+                worldMapPanel.SetActive(false);
+            }
+
+            if (infoPanel != null)
+            {
+                infoPanel.SetActive(false);
             }
         }
 
-        worldMapTexture.Apply();
-        mapImage.texture = worldMapTexture;
-    }
+        public void OpenWorldMap()
+        {
+            ResolveServices();
+
+            GenerateWorldMapTexture();
+            UpdateSettlementMarkers();
+
+            if (worldMapPanel != null)
+            {
+                worldMapPanel.SetActive(true);
+            }
+
+            audioService?.PlayUIMenuOpen();
+        }
+
+        public void CloseWorldMap()
+        {
+            if (worldMapPanel != null)
+            {
+                worldMapPanel.SetActive(false);
+            }
+
+            audioService?.PlayUIMenuClose();
+        }
+
+        private void GenerateWorldMapTexture()
+        {
+            var generator = GetWorldGenerator();
+            if (generator == null || generator.TerrainMap == null || mapImage == null)
+            {
+                return;
+            }
+
+            int width = generator.WorldWidth;
+            int height = generator.WorldHeight;
+
+            worldMapTexture = new Texture2D(width, height);
+            worldMapTexture.filterMode = FilterMode.Point;
+
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    Color color = GetTerrainColor(generator.TerrainMap[x, y]);
+                    worldMapTexture.SetPixel(x, y, color);
+                }
+            }
+
+            worldMapTexture.Apply();
+            mapImage.texture = worldMapTexture;
+        }
 
     private Color GetTerrainColor(TerrainType terrain)
     {
@@ -111,35 +128,36 @@ public class WorldMapUI : MonoBehaviour
         }
     }
 
-    private void UpdateSettlementMarkers()
-    {
-        var repository = GetWorldStateRepository();
-        var generator = GetWorldGenerator();
-        if (repository == null || generator == null) return;
-
-        // Clear existing markers
-        foreach (var marker in settlementMarkers)
+        private void UpdateSettlementMarkers()
         {
-            Destroy(marker);
-        }
-        settlementMarkers.Clear();
+            var simulation = ResolveWorldSimulation();
+            var generator = GetWorldGenerator();
+            if (simulation == null || generator == null || markerContainer == null || settlementMarkerPrefab == null)
+            {
+                return;
+            }
 
-        // Add markers for settlements
-        foreach (var castle in repository.Castles)
-        {
-            CreateSettlementMarker(castle.Position, "Castle", Color.red);
-        }
+            foreach (var marker in settlementMarkers)
+            {
+                Destroy(marker);
+            }
+            settlementMarkers.Clear();
 
-        foreach (var town in repository.Towns)
-        {
-            CreateSettlementMarker(town.Position, "Town", Color.yellow);
-        }
+            foreach (var castle in simulation.State.Castles)
+            {
+                CreateSettlementMarker(castle.Position, "Castle", Color.red);
+            }
 
-        foreach (var village in repository.Villages)
-        {
-            CreateSettlementMarker(village.Position, "Village", Color.cyan);
+            foreach (var town in simulation.State.Towns)
+            {
+                CreateSettlementMarker(town.Position, "Town", Color.yellow);
+            }
+
+            foreach (var village in simulation.State.Villages)
+            {
+                CreateSettlementMarker(village.Position, "Village", Color.cyan);
+            }
         }
-    }
 
     private void CreateSettlementMarker(Vector3Int position, string type, Color color)
     {
@@ -181,48 +199,42 @@ public class WorldMapUI : MonoBehaviour
         infoPanel.SetActive(true);
     }
 
-    private void ResolveServices()
-    {
-        if (audioService == null)
+        private void ResolveServices()
         {
-            if (!ServiceLocator.TryResolve(out audioService) || audioService == null)
+            if (audioService == null && !ServiceLocator.TryResolve(out audioService))
             {
                 Debug.LogError("WorldMapUI requires an IAudioService.");
             }
-        }
 
-        if (worldGenerator == null)
-        {
-            if (!ServiceLocator.TryResolve(out worldGenerator) || worldGenerator == null)
+            if (worldGenerator == null && !ServiceLocator.TryResolve(out worldGenerator))
             {
                 Debug.LogError("WorldMapUI requires an IWorldGenerator.");
             }
-        }
 
-        if (worldStateRepository == null)
-        {
-            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
+            if (worldSimulation == null && !ServiceLocator.TryResolve(out worldSimulation))
             {
-                Debug.LogError("WorldMapUI requires an IWorldStateRepository.");
+                Debug.LogError("WorldMapUI requires an IWorldSimulationService.");
             }
         }
-    }
 
-    private IWorldGenerator GetWorldGenerator()
-    {
-        if (worldGenerator == null)
+        private IWorldGenerator GetWorldGenerator()
         {
-            ResolveServices();
-        }
-        return worldGenerator;
-    }
+            if (worldGenerator == null)
+            {
+                ResolveServices();
+            }
 
-    private IWorldStateRepository GetWorldStateRepository()
-    {
-        if (worldStateRepository == null)
-        {
-            ResolveServices();
+            return worldGenerator;
         }
-        return worldStateRepository;
+
+        private IWorldSimulationService ResolveWorldSimulation()
+        {
+            if (worldSimulation == null)
+            {
+                ResolveServices();
+            }
+
+            return worldSimulation;
+        }
     }
 }

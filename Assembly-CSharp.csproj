@@ -57,6 +57,7 @@
     <Compile Include="Assets\Scripst\Skills\Interfaces\ISkillEffect.cs" />
     <Compile Include="Assets\Scripst\Inventory\Equipment.cs" />
     <Compile Include="Assets\Scripst\Troops\SpecialAbility.cs" />
+    <Compile Include="Assets\Scripst\World\WorldSimulationService.cs" />
     <Compile Include="Assets\Scripst\Skills\Interfaces\IStatusEffect.cs" />
     <Compile Include="Assets\Scripst\Characters\Characters.cs" />
     <Compile Include="Assets\Scripst\PartySystem\Party.cs" />
@@ -146,6 +147,7 @@
     <Compile Include="Assets\Scripst\WlakerGenerator.cs" />
     <Compile Include="Assets\Scripst\Core\Interfaces\IPartyService.cs" />
     <Compile Include="Assets\Scripst\Skills\Interfaces\ISkill.cs" />
+    <Compile Include="Assets\Scripst\Core\Interfaces\IWorldSimulationService.cs" />
     <Compile Include="Assets\Scripst\Inventory\Inventory.cs" />
     <Compile Include="Assets\Scripst\NameGenerator.cs" />
     <Compile Include="Assets\Scripst\WorldMapBattleIntegration.cs" />
