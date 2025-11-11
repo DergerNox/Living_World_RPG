@@ -1,5 +1,6 @@
 using UnityEngine;
 using LivingWorldRPG.World;
+using LivingWorldRPG.PartySystem;
 
 namespace LivingWorldRPG.Core
 {
