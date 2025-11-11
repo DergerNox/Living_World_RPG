@@ -138,7 +138,7 @@ namespace LivingWorldRPG.UI
             {
                 Destroy(child.gameObject);
             }
-        foreach (Characters member in currentParty.Members)
+            foreach (LivingWorldRPG.Characters.Characters member in currentParty.Members)
             {
                 GameObject item = Instantiate(memberItemPrefab, memberListContainer);
                 TextMeshProUGUI text = item.GetComponentInChildren<TextMeshProUGUI>();
@@ -172,40 +172,40 @@ namespace LivingWorldRPG.UI
             }
         }
 
-    private void MergeParties()
-    {
-        // Simple merge with first available party at same position
-        var service = PartyService;
-        if (service == null || currentParty == null) return;
-
-        List<Party> partiesAtPos = service.GetPartiesAtPosition(currentParty.Position);
-        if (partiesAtPos.Count > 1)
+        private void MergeParties()
         {
-            Party otherParty = partiesAtPos.Find(p => p != currentParty);
-            Party merged = currentParty.MergeWith(otherParty);
-            service.RemoveParty(currentParty);
-            service.RemoveParty(otherParty);
-            service.AddParty(merged);
-            currentParty = merged;
-            UpdateUI();
+            var service = PartyService;
+            if (service == null || currentParty == null) return;
+
+            List<Party> partiesAtPos = service.GetPartiesAtPosition(currentParty.Position);
+            if (partiesAtPos.Count > 1)
+            {
+                Party otherParty = partiesAtPos.Find(p => p != currentParty);
+                Party merged = currentParty.MergeWith(otherParty);
+                service.RemoveParty(currentParty);
+                service.RemoveParty(otherParty);
+                service.AddParty(merged);
+                currentParty = merged;
+                UpdateUI();
+            }
         }
-    }
 
         private void SplitParty()
         {
             if (currentParty != null && currentParty.Size > 2)
             {
-            var service = PartyService;
-            if (service == null) return;
+                var service = PartyService;
+                if (service == null) return;
 
-            List<Party> splitParties = currentParty.Split(currentParty.Size / 2);
-            service.RemoveParty(currentParty);
-            foreach (Party p in splitParties)
-            {
-                service.AddParty(p);
+                List<Party> splitParties = currentParty.Split(currentParty.Size / 2);
+                service.RemoveParty(currentParty);
+                foreach (Party p in splitParties)
+                {
+                    service.AddParty(p);
+                }
+                currentParty = splitParties[0];
+                UpdateUI();
             }
-            currentParty = splitParties[0]; // Focus on first split party
-            UpdateUI();
         }
     }
 }
