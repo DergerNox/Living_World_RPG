@@ -19,7 +19,6 @@ namespace LivingWorldRPG.World
         public int WorldWidth => _worldWidth;
         public int WorldHeight => _worldHeight;
 
-        private readonly HashSet<Vector2Int> settlementPositions = new HashSet<Vector2Int>();
         private IWorldStateRepository worldRepository;
 
         private void Awake()
@@ -54,29 +53,27 @@ namespace LivingWorldRPG.World
             }
 
             ApplyOverrides(settings);
+
+            if (!ValidateRepositoryCollections())
+            {
+                return;
+            }
+
+            ResetWorldCollections();
             TerrainMap = new TerrainType[_worldWidth, _worldHeight];
-            settlementPositions.Clear();
 
             GenerateTerrain();
             GenerateFactions();
             GenerateSettlements();
             AssignSettlementsToFactions();
             InitializeDiplomacy();
+            worldRepository?.RebuildSpatialCaches();
         }
 
         private bool TryResolveWorldRepository()
         {
-            if (worldRepository != null)
-            {
-                return true;
-            }
-
-            if (ServiceLocator.TryResolve(out worldRepository) && worldRepository != null)
-            {
-                return true;
-            }
-
-            return false;
+            return worldRepository != null ||
+                   (ServiceLocator.TryResolve(out worldRepository) && worldRepository != null);
         }
 
         private void ApplyOverrides(WorldGenerationSettings settings)
@@ -132,10 +129,9 @@ namespace LivingWorldRPG.World
                 return;
             }
 
-            worldRepository.Factions.Clear();
             for (int i = 0; i < _numberOfFactions; i++)
             {
-                Vector2 center = new Vector2(Random.Range(0, _worldWidth), Random.Range(0, _worldHeight));
+                Vector2 center = GetRandomMapPosition2D();
                 Faction faction = new Faction($"Faction {i + 1}", center, i);
                 worldRepository.Factions.Add(faction);
             }
@@ -155,28 +151,24 @@ namespace LivingWorldRPG.World
                 return;
             }
 
-            worldRepository.Castles.Clear();
-            worldRepository.Towns.Clear();
-            worldRepository.Villages.Clear();
-
             for (int i = 0; i < _numberOfCastles; i++)
             {
-                Vector3Int position = new Vector3Int(Random.Range(0, _worldWidth), Random.Range(0, _worldHeight), 0);
-                global::Characters lord = new NPC($"Lord {i + 1}", 100, 50, 5);
+                Vector3Int position = GetRandomMapPosition3D();
+                NPC lord = new NPC($"Lord {i + 1}", 100, 50, 5);
                 Castle castle = new Castle(position.x, position.y, lord);
                 worldRepository.Castles.Add(castle);
             }
 
             for (int i = 0; i < _numberOfTowns; i++)
             {
-                Vector3Int position = new Vector3Int(Random.Range(0, _worldWidth), Random.Range(0, _worldHeight), 0);
+                Vector3Int position = GetRandomMapPosition3D();
                 Town town = new Town(position.x, position.y);
                 worldRepository.Towns.Add(town);
             }
 
             for (int i = 0; i < _numberOfVillages; i++)
             {
-                Vector3Int position = new Vector3Int(Random.Range(0, _worldWidth), Random.Range(0, _worldHeight), 0);
+                Vector3Int position = GetRandomMapPosition3D();
                 Village village = new Village(position.x, position.y);
                 worldRepository.Villages.Add(village);
             }
@@ -184,7 +176,7 @@ namespace LivingWorldRPG.World
 
         private void AssignSettlementsToFactions()
         {
-            if (worldRepository == null || worldRepository.Factions.Count == 0)
+            if (worldRepository?.Factions == null || worldRepository.Factions.Count == 0)
             {
                 return;
             }
@@ -211,12 +203,44 @@ namespace LivingWorldRPG.World
             }
         }
 
+        private void ResetWorldCollections()
+        {
+            worldRepository?.Factions?.Clear();
+            worldRepository?.Castles?.Clear();
+            worldRepository?.Towns?.Clear();
+            worldRepository?.Villages?.Clear();
+        }
+
+        private bool ValidateRepositoryCollections()
+        {
+            if (worldRepository?.Factions == null ||
+                worldRepository?.Castles == null ||
+                worldRepository?.Towns == null ||
+                worldRepository?.Villages == null)
+            {
+                Debug.LogError("WorldGenerator requires world repository collections to be initialized before generation.");
+                return false;
+            }
+
+            return true;
+        }
+
         private static void InitializeDiplomacy()
         {
             if (FactionDiplomacy.Instance != null)
             {
                 FactionDiplomacy.Instance.InitializeDiplomacy();
             }
+        }
+
+        private Vector2 GetRandomMapPosition2D()
+        {
+            return new Vector2(Random.Range(0, _worldWidth), Random.Range(0, _worldHeight));
+        }
+
+        private Vector3Int GetRandomMapPosition3D()
+        {
+            return new Vector3Int(Random.Range(0, _worldWidth), Random.Range(0, _worldHeight), 0);
         }
     }
 }
