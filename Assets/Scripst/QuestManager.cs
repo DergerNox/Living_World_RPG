@@ -1,36 +1,37 @@
 using System.Collections.Generic;
+using LivingWorldRPG.Core;
 
-public static class QuestManager
+namespace LivingWorldRPG.Core
 {
-    public static List<Quest> activeQuests => new List<Quest>(ResolveService()?.ActiveQuests ?? new List<Quest>());
-
-    public static void StartQuest(Quest quest)
+    public static class QuestManager
     {
-        ResolveService()?.StartQuest(quest);
-    }
+        public static List<Quest> ActiveQuests => new List<Quest>(ResolveService()?.ActiveQuests ?? new List<Quest>());
 
-    public static void CompleteQuest(Quest quest)
-    {
-        ResolveService()?.CompleteQuest(quest);
-    }
-
-    public static void UpdateObjective(Quest quest, int objectiveIndex)
-    {
-        ResolveService()?.UpdateObjective(quest, objectiveIndex);
-    }
-
-    private static IQuestService ResolveService()
-    {
-        if (_questService == null)
+        public static void StartQuest(Quest quest)
         {
-            if (!ServiceLocator.TryResolve(out _questService))
-            {
-                _questService = QuestService.Instance;
-            }
+            ResolveService()?.StartQuest(quest);
         }
 
-        return _questService;
-    }
+        public static void CompleteQuest(Quest quest)
+        {
+            ResolveService()?.CompleteQuest(quest);
+        }
 
-    private static IQuestService _questService;
+        public static void UpdateObjective(Quest quest, int objectiveIndex)
+        {
+            ResolveService()?.UpdateObjective(quest, objectiveIndex);
+        }
+
+        private static IQuestService ResolveService()
+        {
+            if (questService == null && !ServiceLocator.TryResolve(out questService))
+            {
+                questService = QuestService.Instance;
+            }
+
+            return questService;
+        }
+
+        private static IQuestService questService;
+    }
 }
