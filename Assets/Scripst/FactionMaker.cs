@@ -103,14 +103,16 @@ namespace LivingWorldRPG.World
             Debug.Log("Factions assigned without border gore.");
         }
 
-        private void AssignSettlementToFaction(Dictionary<Vector3Int, ISettlement> all, Vector3Int pos, Faction faction)
+        private static void AssignSettlementToFaction(Dictionary<Vector3Int, ISettlement> all, Vector3Int pos, Faction faction)
         {
-            if (!all.ContainsKey(pos)) return;
+            if (!all.TryGetValue(pos, out var settlement))
+            {
+                return;
+            }
 
-            ISettlement s = all[pos];
-            s.FactionId = faction.Id;
+            settlement.FactionId = faction.Id;
 
-            switch (s)
+            switch (settlement)
             {
                 case Castle c:
                     faction.Castles.Add(c);
@@ -138,6 +140,5 @@ namespace LivingWorldRPG.World
                 worldSimulation?.State.Factions.Add(faction);
             }
         }
-    {
     }
 }
