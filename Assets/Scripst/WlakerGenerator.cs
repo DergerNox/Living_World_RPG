@@ -102,7 +102,7 @@ namespace LivingWorldRPG.World
             CreateVillages();
         }
 
-        private Vector2 GetDirection()
+        private static Vector2 GetDirection()
         {
             int choice = Mathf.FloorToInt(UnityEngine.Random.value * 3.99f);
             switch (choice)
@@ -119,7 +119,6 @@ namespace LivingWorldRPG.World
         {
             while (tileCount / (float)(mapWidth * mapHeight) < fillPercentage)
             {
-                bool hasCreatedFloor = false;
                 foreach (WalkerObject curWalker in walkers)
                 {
                     Vector3Int curPos = new Vector3Int((int)curWalker.Posistion.x, (int)curWalker.Posistion.y, 0);
@@ -128,7 +127,6 @@ namespace LivingWorldRPG.World
                         floorTilemap?.SetTile(curPos, floorTile);
                         tileCount++;
                         gridHandler[curPos.x, curPos.y] = Grid.FLOOR;
-                        hasCreatedFloor = true;
                     }
                 }
 
@@ -241,7 +239,7 @@ namespace LivingWorldRPG.World
                     structureTilemap?.SetTile(new Vector3Int(x, y, 0), castleTile);
                     gridHandler[x, y] = Grid.CASTLE;
                     hasCreated = true;
-                    Castle castle = new Castle(x, y, new Characters("Lord", 100, 100, 1));
+                    Castle castle = new Castle(x, y, new global::Characters("Lord", 100, 100, 1));
                     castleMap[new Vector3Int(x, y)] = castle;
                     WorldState?.Castles.Add(castle);
                     count++;
