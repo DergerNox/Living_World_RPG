@@ -2,36 +2,39 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using LivingWorldRPG.PartySystem;
 
-public class PartyUI : MonoBehaviour
+namespace LivingWorldRPG.UI
 {
-    public static PartyUI Instance;
+    public class PartyUI : MonoBehaviour
+    {
+        public static PartyUI Instance { get; private set; }
 
-    [Header("UI Panels")]
-    public GameObject partyPanel;
-    public GameObject memberPanel;
-    public GameObject troopPanel;
+        [Header("UI Panels")]
+        [SerializeField] private GameObject partyPanel;
+        [SerializeField] private GameObject memberPanel;
+        [SerializeField] private GameObject troopPanel;
 
-    [Header("UI Elements")]
-    public TextMeshProUGUI partyNameText;
-    public TextMeshProUGUI partySizeText;
-    public TextMeshProUGUI moraleText;
-    public TextMeshProUGUI fatigueText;
-    public TextMeshProUGUI goldText;
-    public Button closeButton;
-    public Button restButton;
-    public Button mergeButton;
-    public Button splitButton;
+        [Header("UI Elements")]
+        [SerializeField] private TextMeshProUGUI partyNameText;
+        [SerializeField] private TextMeshProUGUI partySizeText;
+        [SerializeField] private TextMeshProUGUI moraleText;
+        [SerializeField] private TextMeshProUGUI fatigueText;
+        [SerializeField] private TextMeshProUGUI goldText;
+        [SerializeField] private Button closeButton;
+        [SerializeField] private Button restButton;
+        [SerializeField] private Button mergeButton;
+        [SerializeField] private Button splitButton;
 
-    [Header("Lists")]
-    public Transform memberListContainer;
-    public Transform troopListContainer;
-    public GameObject memberItemPrefab;
-    public GameObject troopItemPrefab;
+        [Header("Lists")]
+        [SerializeField] private Transform memberListContainer;
+        [SerializeField] private Transform troopListContainer;
+        [SerializeField] private GameObject memberItemPrefab;
+        [SerializeField] private GameObject troopItemPrefab;
 
-    private Party currentParty;
-    private IAudioService audioService;
-    private IPartyService partyService;
+        private Party currentParty;
+        private IAudioService audioService;
+        private IPartyService partyService;
 
     private IAudioService AudioService
     {
@@ -49,21 +52,21 @@ public class PartyUI : MonoBehaviour
         }
     }
 
-    private IPartyService PartyService
-    {
-        get
+        private IPartyService PartyService
         {
-            if (partyService == null)
+            get
             {
-                if (!ServiceLocator.TryResolve(out partyService))
+                if (partyService == null)
                 {
-                    partyService = PartyManager.Instance;
+                    if (!ServiceLocator.TryResolve(out partyService))
+                    {
+                        partyService = PartyManager.Instance;
+                    }
                 }
-            }
 
-            return partyService;
+                return partyService;
+            }
         }
-    }
 
     private void Awake()
     {
@@ -81,30 +84,30 @@ public class PartyUI : MonoBehaviour
         _ = PartyService;
     }
 
-    private void Start()
-    {
-        if (closeButton != null)
+        private void Start()
         {
-            closeButton.onClick.AddListener(ClosePartyUI);
-        }
-        if (restButton != null)
-        {
-            restButton.onClick.AddListener(RestParty);
-        }
-        if (mergeButton != null)
-        {
-            mergeButton.onClick.AddListener(MergeParties);
-        }
-        if (splitButton != null)
-        {
-            splitButton.onClick.AddListener(SplitParty);
+            if (closeButton != null)
+            {
+                closeButton.onClick.AddListener(ClosePartyUI);
+            }
+            if (restButton != null)
+            {
+                restButton.onClick.AddListener(RestParty);
+            }
+            if (mergeButton != null)
+            {
+                mergeButton.onClick.AddListener(MergeParties);
+            }
+            if (splitButton != null)
+            {
+                splitButton.onClick.AddListener(SplitParty);
+            }
+
+            partyPanel?.SetActive(false);
         }
 
-        partyPanel.SetActive(false);
-    }
-
-    public void OpenPartyUI(Party party)
-    {
+        public void OpenPartyUI(Party party)
+        {
         currentParty = party;
         UpdateUI();
         partyPanel.SetActive(true);
@@ -112,63 +115,62 @@ public class PartyUI : MonoBehaviour
         AudioService?.PlayUIMenuOpen();
     }
 
-    public void ClosePartyUI()
-    {
-        partyPanel.SetActive(false);
-        currentParty = null;
+        public void ClosePartyUI()
+        {
+            partyPanel?.SetActive(false);
+            currentParty = null;
 
-        AudioService?.PlayUIMenuClose();
-    }
+            AudioService?.PlayUIMenuClose();
+        }
 
-    private void UpdateUI()
-    {
-        if (currentParty == null) return;
+        private void UpdateUI()
+        {
+            if (currentParty == null) return;
 
-        partyNameText.text = currentParty.Name;
-        partySizeText.text = "Size: " + currentParty.Size;
-        moraleText.text = "Morale: " + currentParty.Morale;
-        fatigueText.text = "Fatigue: " + currentParty.Fatigue;
-        goldText.text = "Gold: " + currentParty.Gold;
+            partyNameText.text = currentParty.Name;
+            partySizeText.text = "Size: " + currentParty.Size;
+            moraleText.text = "Morale: " + currentParty.Morale;
+            fatigueText.text = "Fatigue: " + currentParty.Fatigue;
+            goldText.text = "Gold: " + currentParty.Gold;
 
         // Clear and populate member list
-        foreach (Transform child in memberListContainer)
-        {
-            Destroy(child.gameObject);
-        }
+            foreach (Transform child in memberListContainer)
+            {
+                Destroy(child.gameObject);
+            }
         foreach (Characters member in currentParty.Members)
-        {
-            GameObject item = Instantiate(memberItemPrefab, memberListContainer);
-            TextMeshProUGUI text = item.GetComponentInChildren<TextMeshProUGUI>();
-            if (text != null)
             {
-                text.text = member.Name + " (Lv." + member.Level + ")";
+                GameObject item = Instantiate(memberItemPrefab, memberListContainer);
+                TextMeshProUGUI text = item.GetComponentInChildren<TextMeshProUGUI>();
+                if (text != null)
+                {
+                    text.text = member.Name + " (Lv." + member.Level + ")";
+                }
+            }
+
+            foreach (Transform child in troopListContainer)
+            {
+                Destroy(child.gameObject);
+            }
+            foreach (Troop troop in currentParty.Troops)
+            {
+                GameObject item = Instantiate(troopItemPrefab, troopListContainer);
+                TextMeshProUGUI text = item.GetComponentInChildren<TextMeshProUGUI>();
+                if (text != null)
+                {
+                    text.text = troop.Name + " (Lv." + troop.Level + ")";
+                }
             }
         }
 
-        // Clear and populate troop list
-        foreach (Transform child in troopListContainer)
+        private void RestParty()
         {
-            Destroy(child.gameObject);
-        }
-        foreach (Troop troop in currentParty.Troops)
-        {
-            GameObject item = Instantiate(troopItemPrefab, troopListContainer);
-            TextMeshProUGUI text = item.GetComponentInChildren<TextMeshProUGUI>();
-            if (text != null)
+            if (currentParty != null)
             {
-                text.text = troop.Name + " (Lv." + troop.Level + ")";
+                currentParty.Rest();
+                UpdateUI();
             }
         }
-    }
-
-    private void RestParty()
-    {
-        if (currentParty != null)
-        {
-            currentParty.Rest();
-            UpdateUI();
-        }
-    }
 
     private void MergeParties()
     {
@@ -189,10 +191,10 @@ public class PartyUI : MonoBehaviour
         }
     }
 
-    private void SplitParty()
-    {
-        if (currentParty.Size > 2)
+        private void SplitParty()
         {
+            if (currentParty != null && currentParty.Size > 2)
+            {
             var service = PartyService;
             if (service == null) return;
 
