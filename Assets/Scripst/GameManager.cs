@@ -1,12 +1,13 @@
 using UnityEngine;
+using LivingWorldRPG.World;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
-    public GameObject saveLoadPanel;
-    public Transform playerTransform;
+    [SerializeField] private GameObject saveLoadPanel;
+    [SerializeField] private Transform playerTransform;
 
-    private IWorldStateRepository worldStateRepository;
+    private IWorldSimulationService worldSimulation;
 
     void Awake()
     {
@@ -20,7 +21,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        ResolveWorldStateRepository();
+        ServiceLocator.TryResolve(out worldSimulation);
     }
     void Update()
     {
@@ -166,24 +167,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void ResolveWorldStateRepository()
-    {
-        if (worldStateRepository == null)
-        {
-            if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
-            {
-                Debug.LogError("GameManager requires an IWorldStateRepository. Save/Load operations will be disabled.");
-            }
-        }
-    }
-
     private Player GetPlayer()
     {
-        ResolveWorldStateRepository();
-        if (worldStateRepository == null)
+        if (worldSimulation == null && !ServiceLocator.TryResolve(out worldSimulation))
         {
-            ResolveWorldStateRepository();
+            Debug.LogError("GameManager requires an IWorldSimulationService. Save/Load operations will be disabled.");
+            return null;
         }
-        return worldStateRepository?.Player;
+        return worldSimulation.State.Player;
     }
 }

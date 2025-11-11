@@ -20,7 +20,7 @@ namespace LivingWorldRPG.Interactions
         private Vector2Int gridSize;      // dimensions in cells, set at runtime
         private Node[,] grid;
         private IWorldGenerator worldGenerator;
-        private IWorldStateRepository worldStateRepository;
+        private IWorldSimulationService worldSimulation;
 
         public float NodeSize => nodeSize;
 
@@ -80,16 +80,19 @@ namespace LivingWorldRPG.Interactions
         }
     }
 
-    private bool IsObstacleAt(Vector3Int cell)
-    {
-        var repo = ResolveWorldStateRepository();
-        if (repo == null) return true; // block movement until data exists
+        private bool IsObstacleAt(Vector3Int cell)
+        {
+            var state = ResolveWorldSimulation()?.State;
+            if (state == null)
+            {
+                return true;
+            }
 
-        if (repo.GetTownAtPosition(cell) != null) return true;
-        if (repo.GetCastleAtPosition(cell) != null) return true;
-        if (repo.GetVillageAtPosition(cell) != null) return true;
-        return false;
-    }
+            if (state.GetTownAtPosition(cell) != null) return true;
+            if (state.GetCastleAtPosition(cell) != null) return true;
+            if (state.GetVillageAtPosition(cell) != null) return true;
+            return false;
+        }
 
     /// <summary>
     /// Finds a path from start to target cells (inclusive), returns list of cell positions or null.
@@ -213,19 +216,19 @@ namespace LivingWorldRPG.Interactions
             return worldGenerator;
         }
 
-        private IWorldStateRepository ResolveWorldStateRepository()
+        private IWorldSimulationService ResolveWorldSimulation()
         {
-            if (worldStateRepository != null)
+            if (worldSimulation != null)
             {
-                return worldStateRepository;
+                return worldSimulation;
             }
 
-            if (!ServiceLocator.TryResolve(out worldStateRepository))
+            if (!ServiceLocator.TryResolve(out worldSimulation))
             {
-                Debug.LogError("PathfindingManager requires an IWorldStateRepository.");
+                Debug.LogError("PathfindingManager requires an IWorldSimulationService.");
             }
 
-            return worldStateRepository;
+            return worldSimulation;
         }
     }
 }
