@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -33,18 +34,31 @@ namespace LivingWorldRPG.Interactions
             }
 
             Instance = this;
+        }
 
-            var generator = ResolveWorldGenerator();
-            if (generator != null)
+        private IEnumerator Start()
+        {
+            yield return InitializeWhenReady();
+        }
+
+        private IEnumerator InitializeWhenReady()
+        {
+            const float timeoutSeconds = 5f;
+            float waited = 0f;
+            while (ResolveWorldGenerator() == null && waited < timeoutSeconds)
             {
-                gridSize = new Vector2Int(generator.WorldWidth, generator.WorldHeight);
-            }
-            else
-            {
-                Debug.LogError("PathfindingManager: IWorldGenerator not available; defaulting grid to 100x100.");
-                gridSize = new Vector2Int(100, 100);
+                waited += Time.deltaTime;
+                yield return null;
             }
 
+            if (worldGenerator == null)
+            {
+                Debug.LogError("PathfindingManager: unable to resolve IWorldGenerator after waiting; pathfinding disabled.");
+                enabled = false;
+                yield break;
+            }
+
+            gridSize = new Vector2Int(worldGenerator.WorldWidth, worldGenerator.WorldHeight);
             InitGrid();
         }
 
@@ -70,6 +84,11 @@ namespace LivingWorldRPG.Interactions
     /// </summary>
     public void UpdateGrid()
     {
+        if (grid == null)
+        {
+            return;
+        }
+
         for (int x = 0; x < gridSize.x; x++)
         {
             for (int y = 0; y < gridSize.y; y++)
@@ -101,6 +120,12 @@ namespace LivingWorldRPG.Interactions
     public List<Vector3Int> FindPath(Vector3Int startCell, Vector3Int targetCell)
     {
         Profiler.BeginSample("Pathfinding.FindPath");
+        if (grid == null)
+        {
+            Profiler.EndSample();
+            return null;
+        }
+
         if (!InBounds(startCell) || !InBounds(targetCell)) return null;
 
         // Reset node data
@@ -208,7 +233,21 @@ namespace LivingWorldRPG.Interactions
                 return worldGenerator;
             }
 
-            if (!ServiceLocator.TryResolve(out worldGenerator))
+            if (ServiceLocator.TryResolve(out worldGenerator) && worldGenerator != null)
+            {
+                return worldGenerator;
+            }
+
+            // Fallback for early execution before Bootstrapper registers services.
+            var discovered = FindFirstObjectByType<WorldGenerator>();
+            if (discovered != null)
+            {
+                worldGenerator = discovered;
+                ServiceLocator.Register<WorldGenerator>(discovered);
+                ServiceLocator.Register<IWorldGenerator>(discovered);
+                Debug.LogWarning("PathfindingManager resolved IWorldGenerator via scene lookup and registered it with the ServiceLocator.");
+            }
+            else
             {
                 Debug.LogError("PathfindingManager requires an IWorldGenerator registered in the ServiceLocator.");
             }
@@ -223,12 +262,32 @@ namespace LivingWorldRPG.Interactions
                 return worldSimulation;
             }
 
-            if (!ServiceLocator.TryResolve(out worldSimulation))
+            if (ServiceLocator.TryResolve(out worldSimulation) && worldSimulation != null)
             {
-                Debug.LogError("PathfindingManager requires an IWorldSimulationService.");
+                return worldSimulation;
             }
 
-            return worldSimulation;
+            if (!ServiceLocator.TryResolve(out IWorldStateRepository stateRepository) || stateRepository == null)
+            {
+                var handler = FindFirstObjectByType<WorldHandler>();
+                if (handler != null)
+                {
+                    stateRepository = handler;
+                    ServiceLocator.Register<WorldHandler>(handler);
+                    ServiceLocator.Register<IWorldStateRepository>(handler);
+                }
+            }
+
+            var generator = ResolveWorldGenerator();
+            if (stateRepository != null && generator != null)
+            {
+                worldSimulation = new WorldSimulationService(stateRepository, generator);
+                ServiceLocator.Register<IWorldSimulationService>(worldSimulation);
+                return worldSimulation;
+            }
+
+            Debug.LogError("PathfindingManager requires an IWorldSimulationService.");
+            return null;
         }
     }
 }

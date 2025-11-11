@@ -4,9 +4,22 @@ using LivingWorldRPG.PartySystem;
 
 namespace LivingWorldRPG.Core
 {
+	[DefaultExecutionOrder(-1000)]
 	public class Bootstrapper : MonoBehaviour
 	{
 		private static bool _initialized;
+
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+		private static void EnsureBootstrapper()
+		{
+			if (FindFirstObjectByType<Bootstrapper>() != null)
+			{
+				return;
+			}
+
+			var go = new GameObject(nameof(Bootstrapper));
+			go.AddComponent<Bootstrapper>();
+		}
 
 		private void Awake()
 		{
