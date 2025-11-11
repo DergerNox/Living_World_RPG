@@ -2,365 +2,345 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-public class WalkerGenerator : MonoBehaviour
+namespace LivingWorldRPG.World
 {
-    public enum Grid
+    /// <summary>
+    /// Legacy walker-based terrain/settlement generator used for prototyping.
+    /// Writes its results back into the shared world simulation service.
+    /// </summary>
+    public class WalkerGenerator : MonoBehaviour
     {
-        FLOOR,
-        WALL,
-        EMPTY,
-        CASTLE,
-        TOWN,
-        VILLAGE
-    }
-
-    public System.Random random = new System.Random();
-    public Grid[,] gridHandler;
-    public List<WalkerObject> Walkers;
-    public Tilemap floorTilemap;
-    public Tilemap structureTilemap; // New Tilemap for structures (Castle, Town, Village)
-    public Tile Floor;
-    public Tile Wall;
-    public Tile Castle;
-    public Tile Town;
-    public Tile Village;
-    public int MapWidth = 30;
-    public int MapHeight = 30;
-    public int maxNumOfWalkers = 10;
-    public int tileCount = default;
-    public int CastleCount = 30;
-    public int TownCount = 20;
-    public int VillageCount = 50;
-    public float waitTime = 0.05f;
-    public float fillPercentage = 0.4f;
-    public int NumberOfFactions = 4;
-    public GameObject GameLogic;
-
-    // Collections to store the settlements at specific positions
-    private Dictionary<Vector3Int, Town> townMap = new Dictionary<Vector3Int, Town>();
-    private Dictionary<Vector3Int, Castle> castleMap = new Dictionary<Vector3Int, Castle>();
-    private Dictionary<Vector3Int, Village> villageMap = new Dictionary<Vector3Int, Village>();
-    private IWorldStateRepository worldStateRepository;
-
-    void Start()
-    {
-        if (!ServiceLocator.TryResolve(out worldStateRepository) || worldStateRepository == null)
+        public enum Grid
         {
-            Debug.LogError("WalkerGenerator requires an IWorldStateRepository. Generation aborted.");
-            enabled = false;
-            return;
+            FLOOR,
+            WALL,
+            EMPTY,
+            CASTLE,
+            TOWN,
+            VILLAGE
         }
 
-        InitializeGrid();
-        FactionMaker.Instance.AssignFactions(castleMap, townMap, villageMap);
-        worldStateRepository.RebuildSpatialCaches();
-    }
+        [Header("Tilemaps")]
+        [SerializeField] private Tilemap floorTilemap;
+        [SerializeField] private Tilemap structureTilemap;
 
-    void InitializeGrid()
-    {
-        gridHandler = new Grid[MapWidth, MapHeight];
-        for (int x = 0; x < gridHandler.GetLength(0); x++)
+        [Header("Tiles")]
+        [SerializeField] private Tile floorTile;
+        [SerializeField] private Tile wallTile;
+        [SerializeField] private Tile castleTile;
+        [SerializeField] private Tile townTile;
+        [SerializeField] private Tile villageTile;
+
+        [Header("Generation Settings")]
+        [SerializeField, Min(1)] private int mapWidth = 30;
+        [SerializeField, Min(1)] private int mapHeight = 30;
+        [SerializeField, Min(1)] private int maxNumOfWalkers = 10;
+        [SerializeField, Range(0.1f, 0.9f)] private float fillPercentage = 0.4f;
+        [SerializeField, Min(0)] private int castleCount = 30;
+        [SerializeField, Min(0)] private int townCount = 20;
+        [SerializeField, Min(0)] private int villageCount = 50;
+
+        [Header("Debug/References")]
+        [SerializeField] private GameObject gameLogicRoot;
+
+        public int MapWidth => mapWidth;
+        public int MapHeight => mapHeight;
+
+        private readonly System.Random random = new System.Random();
+        private Grid[,] gridHandler;
+        private List<WalkerObject> walkers;
+
+        private readonly Dictionary<Vector3Int, Town> townMap = new Dictionary<Vector3Int, Town>();
+        private readonly Dictionary<Vector3Int, Castle> castleMap = new Dictionary<Vector3Int, Castle>();
+        private readonly Dictionary<Vector3Int, Village> villageMap = new Dictionary<Vector3Int, Village>();
+
+        private IWorldSimulationService worldSimulation;
+        private IWorldStateRepository WorldState => worldSimulation?.State;
+
+        private int tileCount;
+
+        private void Start()
         {
-            for (int y = 0; y < gridHandler.GetLength(1); y++)
+            if (!ServiceLocator.TryResolve(out worldSimulation) || worldSimulation == null)
+            {
+                Debug.LogError("WalkerGenerator requires an IWorldSimulationService. Generation aborted.");
+                enabled = false;
+                return;
+            }
+
+            InitializeGrid();
+            FactionMaker.Instance?.AssignFactions(castleMap, townMap, villageMap);
+            WorldState?.RebuildSpatialCaches();
+        }
+
+        private void InitializeGrid()
+        {
+            gridHandler = new Grid[mapWidth, mapHeight];
+            for (int x = 0; x < mapWidth; x++)
+            for (int y = 0; y < mapHeight; y++)
             {
                 gridHandler[x, y] = Grid.EMPTY;
             }
+
+            walkers = new List<WalkerObject>();
+            Vector3Int tileCenter = new Vector3Int(mapWidth / 2, mapHeight / 2, 0);
+            WalkerObject curWalker = new WalkerObject(new Vector2(tileCenter.x, tileCenter.y), GetDirection(), 0.5f);
+            gridHandler[tileCenter.x, tileCenter.y] = Grid.FLOOR;
+            floorTilemap?.SetTile(tileCenter, floorTile);
+            walkers.Add(curWalker);
+            tileCount = 1;
+
+            CreateFloors();
+            CreateCastles();
+            CreateTowns();
+            CreateVillages();
         }
 
-        Walkers = new List<WalkerObject>();
-        Vector3Int TileCenter = new Vector3Int(gridHandler.GetLength(0) / 2, gridHandler.GetLength(1) / 2, 0);
-        WalkerObject curWalker = new WalkerObject(new Vector2(TileCenter.x, TileCenter.y), GetDirection(), 0.5f);
-        gridHandler[TileCenter.x, TileCenter.y] = Grid.FLOOR;
-        floorTilemap.SetTile(TileCenter, Floor);
-        Walkers.Add(curWalker);
-        tileCount++;
-
-        CreateFloors();
-        CreateCastles();
-        CreateTowns();
-        CreateVillages();
-    }
-
-    Vector2 GetDirection()
-    {
-        int choice = Mathf.FloorToInt(UnityEngine.Random.value * 3.99f);
-        switch (choice)
+        private Vector2 GetDirection()
         {
-            case 0: return Vector2.down;
-            case 1: return Vector2.left;
-            case 2: return Vector2.up;
-            case 3: return Vector2.right;
-            default: return Vector2.zero;
-        }
-    }
-    void CreateFloors()
-    {
-        while ((float)tileCount / (float)(gridHandler.GetLength(0) * gridHandler.GetLength(1)) < fillPercentage)
-        {
-            bool hasCreatedFloor = false;
-            foreach (WalkerObject curWalker in Walkers)
+            int choice = Mathf.FloorToInt(UnityEngine.Random.value * 3.99f);
+            switch (choice)
             {
-                Vector3Int curPos = new Vector3Int((int)curWalker.Posistion.x, (int)curWalker.Posistion.y, 0);
-                if (gridHandler[curPos.x, curPos.y] != Grid.FLOOR)
-                {
-                    floorTilemap.SetTile(curPos, Floor);
-                    tileCount++;
-                    gridHandler[curPos.x, curPos.y] = Grid.FLOOR;
-                    hasCreatedFloor = true;
-                }
-            }
-
-            ChanceToRemove();
-            ChanceToRedirect();
-            ChanceToCreate();
-            UpdatePosition();
-        }
-
-        CreateWalls();
-    }
- void ChanceToRemove()
-    {
-        int updatedCount = Walkers.Count;
-        for (int i = 0; i < updatedCount; i++)
-        {
-            if (UnityEngine.Random.value < Walkers[i].ChanceToChange && Walkers.Count > 1)
-            {
-                Walkers.RemoveAt(i);
-                break;
+                case 0: return Vector2.down;
+                case 1: return Vector2.left;
+                case 2: return Vector2.up;
+                case 3: return Vector2.right;
+                default: return Vector2.zero;
             }
         }
-    }
- void ChanceToRedirect()
-    {
-        for (int i = 0; i < Walkers.Count; i++)
-        {
-            if (UnityEngine.Random.value < Walkers[i].ChanceToChange)
-            {
-                WalkerObject curWalker = Walkers[i];
-                curWalker.Direction = GetDirection();
-                Walkers[i] = curWalker;
-            }
-        }
-    }
- void ChanceToCreate()
-    {
-        int updatedCount = Walkers.Count;
-        for (int i = 0; i < updatedCount; i++)
-        {
-            if (UnityEngine.Random.value < Walkers[i].ChanceToChange && Walkers.Count < maxNumOfWalkers)
-            {
-                Vector2 newDirection = GetDirection();
-                Vector2 newPosition = Walkers[i].Posistion;
-                WalkerObject newWalker = new WalkerObject(newPosition, newDirection, 0.5f);
-                Walkers.Add(newWalker);
-            }
-        }
-    }
 
-
- void UpdatePosition()
-    {
-        for (int i = 0; i < Walkers.Count; i++)
+        private void CreateFloors()
         {
-            WalkerObject foundWalker = Walkers[i];
-            foundWalker.Posistion += foundWalker.Direction;
-            foundWalker.Posistion.x = Mathf.Clamp(foundWalker.Posistion.x, 1, gridHandler.GetLength(0) - 2);
-            foundWalker.Posistion.y = Mathf.Clamp(foundWalker.Posistion.y, 1, gridHandler.GetLength(1) - 2);
-            Walkers[i] = foundWalker;
-        }
-    }
-void CreateWalls()
-{
-    for (int x = 0; x < gridHandler.GetLength(0) - 1; x++)
-    {
-        for (int y = 0; y < gridHandler.GetLength(1) - 1; y++)
-        {
-            if (gridHandler[x, y] == Grid.FLOOR)
+            while (tileCount / (float)(mapWidth * mapHeight) < fillPercentage)
             {
-                bool hasCreatedWall = false;
-                if (gridHandler[x + 1, y] == Grid.EMPTY)
+                bool hasCreatedFloor = false;
+                foreach (WalkerObject curWalker in walkers)
                 {
-                    floorTilemap.SetTile(new Vector3Int(x + 1, y, 0), Wall);
-                    gridHandler[x + 1, y] = Grid.WALL;
-                    hasCreatedWall = true;
+                    Vector3Int curPos = new Vector3Int((int)curWalker.Posistion.x, (int)curWalker.Posistion.y, 0);
+                    if (gridHandler[curPos.x, curPos.y] != Grid.FLOOR)
+                    {
+                        floorTilemap?.SetTile(curPos, floorTile);
+                        tileCount++;
+                        gridHandler[curPos.x, curPos.y] = Grid.FLOOR;
+                        hasCreatedFloor = true;
+                    }
                 }
-                if (gridHandler[x - 1, y] == Grid.EMPTY)
+
+                ChanceToRemove();
+                ChanceToRedirect();
+                ChanceToCreate();
+                UpdatePosition();
+            }
+
+            CreateWalls();
+        }
+
+        private void ChanceToRemove()
+        {
+            int updatedCount = walkers.Count;
+            for (int i = 0; i < updatedCount; i++)
+            {
+                if (UnityEngine.Random.value < walkers[i].ChanceToChange && walkers.Count > 1)
                 {
-                    floorTilemap.SetTile(new Vector3Int(x - 1, y, 0), Wall);
-                    gridHandler[x - 1, y] = Grid.WALL;
-                    hasCreatedWall = true;
-                }
-                if (gridHandler[x, y + 1] == Grid.EMPTY)
-                {
-                    floorTilemap.SetTile(new Vector3Int(x, y + 1, 0), Wall);
-                    gridHandler[x, y + 1] = Grid.WALL;
-                    hasCreatedWall = true;
-                }
-                if (gridHandler[x, y - 1] == Grid.EMPTY)
-                {
-                    floorTilemap.SetTile(new Vector3Int(x, y - 1, 0), Wall);
-                    gridHandler[x, y - 1] = Grid.WALL;
-                    hasCreatedWall = true;
+                    walkers.RemoveAt(i);
+                    break;
                 }
             }
         }
-    }
-}
 
-
-
-    void CreateCastles()
-    {
-        int count = 0;
-        int cycleCount = 0;
-        bool hasCreatedCastle = false;
-
-        while (CastleCount != count)
+        private void ChanceToRedirect()
         {
-            int x = random.Next(0, gridHandler.GetLength(0) - 1);
-            int y = random.Next(0, gridHandler.GetLength(1) - 1);
-
-            if (gridHandler[x, y] == Grid.FLOOR && !SettlementNearby(x, y))
+            for (int i = 0; i < walkers.Count; i++)
             {
-                structureTilemap.SetTile(new Vector3Int(x, y, 0), Castle);
-                gridHandler[x, y] = Grid.CASTLE;
-                hasCreatedCastle = true;
-                Castle castle = new Castle(x, y,new Characters("Lord", 100, 100, 1));
-                worldStateRepository?.Castles.Add(castle);
-
-                // Add the created Castle to the map
-                castleMap[new Vector3Int(x, y)] = castle;
-
-
-                count++;
+                if (UnityEngine.Random.value < walkers[i].ChanceToChange)
+                {
+                    WalkerObject curWalker = walkers[i];
+                    curWalker.Direction = GetDirection();
+                    walkers[i] = curWalker;
+                }
             }
-            cycleCount++;
-            if (cycleCount == 30 && !hasCreatedCastle)
+        }
+
+        private void ChanceToCreate()
+        {
+            int updatedCount = walkers.Count;
+            for (int i = 0; i < updatedCount; i++)
             {
-                CastleCount--;
-                cycleCount = 0;
+                if (UnityEngine.Random.value < walkers[i].ChanceToChange && walkers.Count < maxNumOfWalkers)
+                {
+                    Vector2 newDirection = GetDirection();
+                    Vector2 newPosition = walkers[i].Posistion;
+                    WalkerObject newWalker = new WalkerObject(newPosition, newDirection, 0.5f);
+                    walkers.Add(newWalker);
+                }
             }
-            hasCreatedCastle = false;
         }
-    }
 
-    void CreateTowns()
-    {
-        int count = 0;
-        int cycleCount = 0;
-        bool hasCreatedTown = false;
-
-        while (TownCount != count)
+        private void UpdatePosition()
         {
-            int x = random.Next(0, gridHandler.GetLength(0) - 1);
-            int y = random.Next(0, gridHandler.GetLength(1) - 1);
-
-            if (gridHandler[x, y] == Grid.FLOOR && !SettlementNearby(x, y))
+            for (int i = 0; i < walkers.Count; i++)
             {
-                structureTilemap.SetTile(new Vector3Int(x, y, 0), Town);
-                gridHandler[x, y] = Grid.TOWN;
-                hasCreatedTown = true;
-                Town town = new Town(x, y);
-
-                // Add the created Town to the map
-                townMap[new Vector3Int(x, y)] = town;
-
-
-                worldStateRepository?.Towns.Add(town);
-                count++;
+                WalkerObject foundWalker = walkers[i];
+                foundWalker.Posistion += foundWalker.Direction;
+                foundWalker.Posistion.x = Mathf.Clamp(foundWalker.Posistion.x, 1, mapWidth - 2);
+                foundWalker.Posistion.y = Mathf.Clamp(foundWalker.Posistion.y, 1, mapHeight - 2);
+                walkers[i] = foundWalker;
             }
-            cycleCount++;
-            if (cycleCount == 30 && !hasCreatedTown)
+        }
+
+        private void CreateWalls()
+        {
+            for (int x = 0; x < mapWidth - 1; x++)
+            for (int y = 0; y < mapHeight - 1; y++)
             {
-                TownCount--;
-                cycleCount = 0;
+                if (gridHandler[x, y] != Grid.FLOOR)
+                {
+                    continue;
+                }
+
+                TryPlaceWall(new Vector3Int(x + 1, y, 0));
+                TryPlaceWall(new Vector3Int(x - 1, y, 0));
+                TryPlaceWall(new Vector3Int(x, y + 1, 0));
+                TryPlaceWall(new Vector3Int(x, y - 1, 0));
             }
-            hasCreatedTown = false;
         }
-    }
 
-    void CreateVillages()
-    {
-        int count = 0;
-        int cycleCount = 0;
-        bool hasCreatedVillage = false;
-
-        while (VillageCount != count)
+        private void TryPlaceWall(Vector3Int cell)
         {
-            int x = random.Next(0, gridHandler.GetLength(0) - 1);
-            int y = random.Next(0, gridHandler.GetLength(1) - 1);
-
-            if (gridHandler[x, y] == Grid.FLOOR && !SettlementNearby(x, y))
+            if (cell.x <= 0 || cell.x >= mapWidth || cell.y <= 0 || cell.y >= mapHeight)
             {
-                structureTilemap.SetTile(new Vector3Int(x, y, 0), Village);
-                gridHandler[x, y] = Grid.VILLAGE;
-                hasCreatedVillage = true;
-                Village village = new Village(x, y);
-
-                // Add the created Village to the map
-                villageMap[new Vector3Int(x, y)] = village;
-
-
-                worldStateRepository?.Villages.Add(village);
-                count++;
+                return;
             }
-            cycleCount++;
-            if (cycleCount == 50 && !hasCreatedVillage)
+
+            if (gridHandler[cell.x, cell.y] == Grid.EMPTY)
             {
-                VillageCount--;
-                cycleCount = 0;
+                floorTilemap?.SetTile(cell, wallTile);
+                gridHandler[cell.x, cell.y] = Grid.WALL;
             }
-            hasCreatedVillage = false;
         }
-    }
 
-    // New methods to get settlements at specific positions
-    public ISettlement GetTownAtPosition(Vector3Int position)
-    {
-        if (townMap.ContainsKey(position))
+        private void CreateCastles()
         {
-            return townMap[position];
-        }
-        return null;
-    }
+            int count = 0;
+            int cycleCount = 0;
+            bool hasCreated = false;
 
-    public ISettlement GetCastleAtPosition(Vector3Int position)
-    {
-        if (castleMap.ContainsKey(position))
-        {
-            return castleMap[position];
-        }
-        return null;
-    }
-
-    public ISettlement GetVillageAtPosition(Vector3Int position)
-    {
-        if (villageMap.ContainsKey(position))
-        {
-            return villageMap[position];
-        }
-        return null;
-    }
-
-    private bool SettlementNearby(int i_xExisting, int i_yExisting)
-    {
-        bool foundSettlement = false;
-        for (int x = i_xExisting + 1; x < i_xExisting + 5; x++)
-        {
-            for (int y = i_yExisting + 1; y < i_yExisting + 5; y++)
+            while (count < castleCount)
             {
-                if (x >= gridHandler.GetLength(0) - 1 || y >= gridHandler.GetLength(1) - 1 || x < 0 || y < 0 && foundSettlement == false)
+                int x = random.Next(0, mapWidth - 1);
+                int y = random.Next(0, mapHeight - 1);
+
+                if (gridHandler[x, y] == Grid.FLOOR && !SettlementNearby(x, y))
+                {
+                    structureTilemap?.SetTile(new Vector3Int(x, y, 0), castleTile);
+                    gridHandler[x, y] = Grid.CASTLE;
+                    hasCreated = true;
+                    Castle castle = new Castle(x, y, new Characters("Lord", 100, 100, 1));
+                    castleMap[new Vector3Int(x, y)] = castle;
+                    WorldState?.Castles.Add(castle);
+                    count++;
+                }
+
+                cycleCount++;
+                if (cycleCount == 30 && !hasCreated)
+                {
+                    castleCount--;
+                    cycleCount = 0;
+                }
+                hasCreated = false;
+            }
+        }
+
+        private void CreateTowns()
+        {
+            int count = 0;
+            int cycleCount = 0;
+            bool hasCreated = false;
+
+            while (count < townCount)
+            {
+                int x = random.Next(0, mapWidth - 1);
+                int y = random.Next(0, mapHeight - 1);
+
+                if (gridHandler[x, y] == Grid.FLOOR && !SettlementNearby(x, y))
+                {
+                    structureTilemap?.SetTile(new Vector3Int(x, y, 0), townTile);
+                    gridHandler[x, y] = Grid.TOWN;
+                    hasCreated = true;
+                    Town town = new Town(x, y);
+                    townMap[new Vector3Int(x, y)] = town;
+                    WorldState?.Towns.Add(town);
+                    count++;
+                }
+
+                cycleCount++;
+                if (cycleCount == 30 && !hasCreated)
+                {
+                    townCount--;
+                    cycleCount = 0;
+                }
+                hasCreated = false;
+            }
+        }
+
+        private void CreateVillages()
+        {
+            int count = 0;
+            int cycleCount = 0;
+            bool hasCreated = false;
+
+            while (count < villageCount)
+            {
+                int x = random.Next(0, mapWidth - 1);
+                int y = random.Next(0, mapHeight - 1);
+
+                if (gridHandler[x, y] == Grid.FLOOR && !SettlementNearby(x, y))
+                {
+                    structureTilemap?.SetTile(new Vector3Int(x, y, 0), villageTile);
+                    gridHandler[x, y] = Grid.VILLAGE;
+                    hasCreated = true;
+                    Village village = new Village(x, y);
+                    villageMap[new Vector3Int(x, y)] = village;
+                    WorldState?.Villages.Add(village);
+                    count++;
+                }
+
+                cycleCount++;
+                if (cycleCount == 50 && !hasCreated)
+                {
+                    villageCount--;
+                    cycleCount = 0;
+                }
+                hasCreated = false;
+            }
+        }
+
+        public ISettlement GetTownAtPosition(Vector3Int position) =>
+            townMap.TryGetValue(position, out var town) ? town : null;
+
+        public ISettlement GetCastleAtPosition(Vector3Int position) =>
+            castleMap.TryGetValue(position, out var castle) ? castle : null;
+
+        public ISettlement GetVillageAtPosition(Vector3Int position) =>
+            villageMap.TryGetValue(position, out var village) ? village : null;
+
+        private bool SettlementNearby(int existingX, int existingY)
+        {
+            for (int x = existingX + 1; x < existingX + 5; x++)
+            for (int y = existingY + 1; y < existingY + 5; y++)
+            {
+                if (x >= mapWidth - 1 || y >= mapHeight - 1 || x < 0 || y < 0)
                 {
                     return false;
                 }
 
                 if (gridHandler[x, y] == Grid.CASTLE || gridHandler[x, y] == Grid.TOWN || gridHandler[x, y] == Grid.VILLAGE)
                 {
-                    foundSettlement = true;
-                    return foundSettlement;
+                    return true;
                 }
             }
+
+            return false;
         }
-        return false;
     }
 }
