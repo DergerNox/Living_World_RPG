@@ -361,8 +361,8 @@
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Listeners\MonoBehaviour\UnityOnTriggerStay2DMListener.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Unity\IUnityObjectOwnable.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Reflection\Optimization\InstanceActionInvokerBase.cs" />
-    <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Collections\FlexibleDictionary.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Events\IGraphEventHandler.cs" />
+    <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Collections\FlexibleDictionary.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Dependencies\FullSerializer\Converters\fsPrimitiveConverter.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Listeners\MonoBehaviour\UnityOnCollisionEnter2DMessageListener.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Serialization\DoNotSerializeAttribute.cs" />
@@ -374,12 +374,12 @@
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Utilities\RuntimeVSUsageUtility.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Listeners\MonoBehaviour\UnityOnMouseDragMessageListener.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Utilities\UnityObjectUtility.cs" />
-    <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\EditorBinding\Inspector\InspectorDelayedAttribute.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Dependencies\FullSerializer\fsConverterRegistrar.cs" />
+    <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\EditorBinding\Inspector\InspectorDelayedAttribute.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Dependencies\FullSerializer\Converters\Unity\RectOffset_DirectConverter.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Graphs\IGraph.cs" />
-    <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\EditorBinding\NullMeansSelfAttribute.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Reflection\Operators\OrHandler.cs" />
+    <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\EditorBinding\NullMeansSelfAttribute.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Unity\SingletonAttribute.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Reflection\Operators\AmbiguousOperatorException.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Dependencies\FullSerializer\Converters\Unity\InputAction_DirectConverter.cs" />

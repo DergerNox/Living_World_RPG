@@ -435,8 +435,8 @@
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Flow\Framework\Graph\GetGraph.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Flow\Framework\Events\Physics2D\OnCollisionEnter2D.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Flow\Framework\Control\SelectOnEnum.cs" />
-    <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Flow\Framework\Events\Physics2D\OnTriggerStay2D.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Flow\Framework\Math\Generic\DeprecatedGenericAdd.cs" />
+    <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Flow\Framework\Events\Physics2D\OnTriggerStay2D.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Flow\Framework\Events\GUI\OnPointerClick.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Flow\Framework\Control\While.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Flow\Framework\Time\WaitWhileUnit.cs" />

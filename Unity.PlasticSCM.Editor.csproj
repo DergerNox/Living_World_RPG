@@ -397,8 +397,8 @@
     <Compile Include="Library\PackageCache\com.unity.collab-proxy@ab839cc7d2ad\Editor\Views\Diff\Dialogs\GetRestorePathDialog.cs" />
     <Compile Include="Library\PackageCache\com.unity.collab-proxy@ab839cc7d2ad\Editor\Views\Merge\Developer\MergeViewMenu.cs" />
     <Compile Include="Library\PackageCache\com.unity.collab-proxy@ab839cc7d2ad\Editor\Views\ConfirmContinueWithPendingChangesDialog.cs" />
-    <Compile Include="Library\PackageCache\com.unity.collab-proxy@ab839cc7d2ad\Editor\UI\EditorProgressBar.cs" />
     <Compile Include="Library\PackageCache\com.unity.collab-proxy@ab839cc7d2ad\Editor\Views\Merge\Gluon\IncomingChangesViewMenu.cs" />
+    <Compile Include="Library\PackageCache\com.unity.collab-proxy@ab839cc7d2ad\Editor\UI\EditorProgressBar.cs" />
     <Compile Include="Library\PackageCache\com.unity.collab-proxy@ab839cc7d2ad\Editor\Views\Merge\Developer\SerializableMergeTabState.cs" />
     <Compile Include="Library\PackageCache\com.unity.collab-proxy@ab839cc7d2ad\Editor\Views\PendingChanges\PendingMergeLinks\MergeLinkListViewItem.cs" />
     <Compile Include="Library\PackageCache\com.unity.collab-proxy@ab839cc7d2ad\Editor\UVCSToolbar\UVCSToolbar.cs" />

@@ -51,8 +51,8 @@
     <Compile Include="Assets\Scripts\Skills\Core\SkillFactory.cs" />
     <Compile Include="Assets\Scripts\Troops\SpecialAbility.cs" />
     <Compile Include="Assets\Scripts\Skills\Core\SkillTreeNew.cs" />
-    <Compile Include="Assets\Scripts\Core\Interfaces\IBattleResolver.cs" />
     <Compile Include="Assets\Scripts\UI\TimeWeatherUI.cs" />
+    <Compile Include="Assets\Scripts\Core\Interfaces\IBattleResolver.cs" />
     <Compile Include="Assets\Scripts\Core\Interfaces\ITradeService.cs" />
     <Compile Include="Assets\Scripts\Skills\Interfaces\ISkill.cs" />
     <Compile Include="Assets\Scripts\Materials\Resources.cs" />
@@ -61,6 +61,7 @@
     <Compile Include="Assets\Scripts\Troops\TroopTypeEnum.cs" />
     <Compile Include="Assets\Scripts\World\WorldMapBattleIntegration.cs" />
     <Compile Include="Assets\Scripts\Core\AssetLoading\ResourcesAssetProvider.cs" />
+    <Compile Include="Assets\Scripts\Core\GameSessionBootstrapper.cs" />
     <Compile Include="Assets\Scripts\Materials\WeaponTypes.cs" />
     <Compile Include="Assets\Scripts\Dialogue.cs" />
     <Compile Include="Assets\Scripts\Inventory\Inventory.cs" />
@@ -111,6 +112,7 @@
     <Compile Include="Assets\Scripts\Skills\Effects\BuffEffect.cs" />
     <Compile Include="Assets\Scripts\NameGenerator.cs" />
     <Compile Include="Assets\Scripts\World\WorldEventManager.cs" />
+    <Compile Include="Assets\Scripts\UI\MainMenuUI.cs" />
     <Compile Include="Assets\Scripts\Skills\Interfaces\IStatusEffect.cs" />
     <Compile Include="Assets\Scripts\Skills\Events\SkillEvents.cs" />
     <Compile Include="Assets\Scripts\Economy\TradeManager.cs" />

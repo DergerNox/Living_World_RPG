@@ -23,6 +23,14 @@ public class GameManager : MonoBehaviour
 
         ServiceLocator.TryResolve(out worldSimulation);
     }
+
+    void Start()
+    {
+        if (GameSessionBootstrapper.ConsumeLoadRequest())
+        {
+            LoadGame();
+        }
+    }
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.F5))

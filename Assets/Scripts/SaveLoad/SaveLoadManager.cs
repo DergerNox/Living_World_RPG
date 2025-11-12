@@ -23,8 +23,9 @@ public class SaveLoadManager : MonoBehaviour
         if (instance == null)
         {
             instance = this;
+            DontDestroyOnLoad(gameObject);
         }
-        else
+        else if (instance != this)
         {
             Destroy(gameObject);
         }
@@ -32,7 +33,13 @@ public class SaveLoadManager : MonoBehaviour
 
     public static void SaveGame(GameData data)
     {
+        EnsureInstance();
         instance.SaveGameImpl(data);
+    }
+
+    public static bool HasSaveData()
+    {
+        return File.Exists(SaveFilePath);
     }
 
     private void SaveGameImpl(GameData data)
@@ -44,6 +51,7 @@ public class SaveLoadManager : MonoBehaviour
 
     public static GameData LoadGame()
     {
+        EnsureInstance();
         return instance.LoadGameImpl();
     }
 
@@ -59,6 +67,18 @@ public class SaveLoadManager : MonoBehaviour
         GameData data = JsonUtility.FromJson<GameData>(json);
         Debug.Log("Game loaded from " + SaveFilePath);
         return data;
+    }
+
+    private static void EnsureInstance()
+    {
+        if (instance != null)
+        {
+            return;
+        }
+
+        GameObject go = new GameObject("SaveLoadManager");
+        instance = go.AddComponent<SaveLoadManager>();
+        DontDestroyOnLoad(go);
     }
 }
 

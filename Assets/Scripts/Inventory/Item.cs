@@ -3,7 +3,7 @@ using UnityEngine;
 [System.Serializable]
 public class Item : MonoBehaviour
 {
-    public string name;
+    public new string name;
     public ItemType type;
     public int value;
     public int attackBonus;

@@ -52,8 +52,8 @@
     <Compile Include="Library\PackageCache\com.unity.2d.aseprite@f6e7e126ac6d\Editor\AssetGeneration\SpriteAtlasGeneration.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.aseprite@f6e7e126ac6d\Editor\Utilities\PlatformSettingsUtilities.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.aseprite@f6e7e126ac6d\Editor\TextContent.cs" />
-    <Compile Include="Library\PackageCache\com.unity.2d.aseprite@f6e7e126ac6d\Editor\AssetGeneration\TextureGeneration.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.aseprite@f6e7e126ac6d\Editor\Aseprite\Chunks\BaseChunk.cs" />
+    <Compile Include="Library\PackageCache\com.unity.2d.aseprite@f6e7e126ac6d\Editor\AssetGeneration\TextureGeneration.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.aseprite@f6e7e126ac6d\Editor\Aseprite\Chunks\CellChunk.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.aseprite@f6e7e126ac6d\Editor\Aseprite\FrameData.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.aseprite@f6e7e126ac6d\Editor\Aseprite\Chunks\TilesetChunk.cs" />
