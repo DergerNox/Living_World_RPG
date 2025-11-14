@@ -19,6 +19,7 @@ namespace LivingWorldRPG.Characters
         private Tilemap structureTilemap;
         private Vector3 targetPosition;
         private bool isMoving;
+        private bool playerInitialized;
         private IWorldSimulationService worldSimulation;
 
         private IWorldStateRepository WorldRepository => worldSimulation?.State;
@@ -48,6 +49,26 @@ namespace LivingWorldRPG.Characters
                 Debug.LogWarning("PlayerController: IWorldSimulationService not available; falling back to WalkerGenerator data.");
             }
 
+            if (generator.IsGenerationComplete)
+            {
+                InitializePlayerState();
+            }
+            else
+            {
+                generator.GenerationCompleted += HandleWorldGenerated;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (generator != null)
+            {
+                generator.GenerationCompleted -= HandleWorldGenerated;
+            }
+        }
+
+        private void InitializePlayerState()
+        {
             baseTilemap = generator.FloorTilemap;
             structureTilemap = generator.StructureTilemap;
 
@@ -55,10 +76,22 @@ namespace LivingWorldRPG.Characters
             targetPosition = baseTilemap.GetCellCenterWorld(startCell);
             transform.position = targetPosition;
             isMoving = false;
+            playerInitialized = true;
+        }
+
+        private void HandleWorldGenerated()
+        {
+            generator.GenerationCompleted -= HandleWorldGenerated;
+            InitializePlayerState();
         }
 
         private void Update()
     {
+        if (!playerInitialized)
+        {
+            return;
+        }
+
         if (isMoving)
         {
             transform.position = Vector3.MoveTowards(transform.position, targetPosition, moveSpeed * Time.deltaTime);

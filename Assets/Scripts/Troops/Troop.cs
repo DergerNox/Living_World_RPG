@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using LivingWorldRPG.World;
 
 public class Troop
 {
@@ -188,7 +189,10 @@ public class Troop
     public Sprite GetTroopImage(TroopType type, TroopRank rank)
 {
     string imageName = $"{type.ToString()}_{rank.ToString()}";
-    Debug.Log($"Looking for image: {imageName}");
+    if (!WorldGenerationState.IsGenerating)
+    {
+        Debug.Log($"Looking for image: {imageName}");
+    }
 
     IAssetProvider provider;
     if (!ServiceLocator.TryResolve<IAssetProvider>(out provider))

@@ -10,17 +10,89 @@ public class NPCSpawner : MonoBehaviour
     [SerializeField] private GameObject npcPrefab; // Assign your NPC prefab here in inspector
     [SerializeField] private int numberOfNPCs = 10;
     [SerializeField] private Transform npcParent;  // Optional: parent transform to keep hierarchy clean
+    [SerializeField] private WalkerGenerator walkerGenerator;
 
     private IWorldSimulationService worldSimulationService;
+    private bool hasSpawned;
 
-    void Start()
+    private void OnEnable()
     {
+        WorldGenerationState.GenerationStateChanged += HandleGenerationStateChanged;
+    }
+
+    private void OnDisable()
+    {
+        WorldGenerationState.GenerationStateChanged -= HandleGenerationStateChanged;
+        if (walkerGenerator != null)
+        {
+            walkerGenerator.GenerationCompleted -= HandleWorldReady;
+        }
+    }
+
+    private void Start()
+    {
+        if (WorldGenerationState.IsGenerating)
+        {
+            return;
+        }
+
+        InitializeAndSpawn();
+    }
+
+    private void OnDestroy()
+    {
+        if (walkerGenerator != null)
+        {
+            walkerGenerator.GenerationCompleted -= HandleWorldReady;
+        }
+    }
+
+    private void HandleWorldReady()
+    {
+        walkerGenerator.GenerationCompleted -= HandleWorldReady;
         SpawnNPCs();
     }
 
-
-    void SpawnNPCs()
+    private void HandleGenerationStateChanged(bool generating)
     {
+        if (!generating && walkerGenerator == null)
+        {
+            InitializeAndSpawn();
+        }
+    }
+
+    private void InitializeAndSpawn()
+    {
+        if (walkerGenerator == null)
+        {
+            walkerGenerator = FindFirstObjectByType<WalkerGenerator>();
+        }
+
+        if (walkerGenerator != null)
+        {
+            if (walkerGenerator.IsGenerationComplete)
+            {
+                SpawnNPCs();
+            }
+            else
+            {
+                walkerGenerator.GenerationCompleted += HandleWorldReady;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("NPCSpawner could not find a WalkerGenerator. Spawning NPCs immediately.");
+            SpawnNPCs();
+        }
+    }
+
+    private void SpawnNPCs()
+    {
+        if (hasSpawned)
+        {
+            return;
+        }
+
         if (npcPrefab == null)
         {
             Debug.LogError("NPC Prefab is not assigned!");
@@ -49,15 +121,20 @@ public class NPCSpawner : MonoBehaviour
 
             // Instantiate NPC
             GameObject npcObj = Instantiate(npcPrefab, worldPos, Quaternion.identity, npcParent);
-            NPC npc = npcObj.GetComponent<NPC>();
-            if (npc != null)
+
+            NPCView view = npcObj.GetComponent<NPCView>();
+            if (view == null)
             {
-                // Initialize NPC with faction and position info
-                npc.Initialize(
-                    name: "NPC_" + spawnedCount,
-                    factionId: chosenSettlement.FactionId,
-                    position: new Vector3Int(chosenSettlement.PosX, chosenSettlement.PosY, 0));
+                view = npcObj.AddComponent<NPCView>();
             }
+
+            var npcData = new NPC($"NPC_{spawnedCount}", 100, 50, Random.Range(1, 5));
+            npcData.Initialize(
+                name: npcData.Name,
+                factionId: chosenSettlement.FactionId,
+                position: new Vector3Int(chosenSettlement.PosX, chosenSettlement.PosY, 0));
+
+            view.Initialize(npcData, worldPos);
 
             spawnedCount++;
             // Optionally remove the location to avoid overcrowding same spot:
@@ -65,6 +142,7 @@ public class NPCSpawner : MonoBehaviour
         }
 
         Debug.Log($"Spawned {spawnedCount} NPCs.");
+        hasSpawned = true;
     }
 
     private IWorldSimulationService ResolveWorldSimulation()

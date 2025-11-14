@@ -72,6 +72,7 @@
     <Compile Include="Assets\Scripts\Interactions\SettlementInteractable.cs" />
     <Compile Include="Assets\Scripts\Interactions\Heap.cs" />
     <Compile Include="Assets\Scripts\Skills\Data\SkillEffectData.cs" />
+    <Compile Include="Assets\Scripts\Characters\NPCView.cs" />
     <Compile Include="Assets\Scripts\Settlements\Outpost.cs" />
     <Compile Include="Assets\Scripts\Settlements\Castle.cs" />
     <Compile Include="Assets\Scripts\Core\Interfaces\IWorldSimulationService.cs" />
@@ -84,6 +85,7 @@
     <Compile Include="Assets\Scripts\TimeAndWeather\WeatherManager.cs" />
     <Compile Include="Assets\Scripts\UI\PartyUI.cs" />
     <Compile Include="Assets\Scripts\World\WorldSimulationService.cs" />
+    <Compile Include="Assets\Scripts\World\WorldGenerationState.cs" />
     <Compile Include="Assets\Scripts\World\WorldGenerator.cs" />
     <Compile Include="Assets\Scripts\Inventory\ItemData.cs" />
     <Compile Include="Assets\Scripts\Skills\Interfaces\ISkillTarget.cs" />
@@ -117,7 +119,6 @@
     <Compile Include="Assets\Scripts\Skills\Events\SkillEvents.cs" />
     <Compile Include="Assets\Scripts\Economy\TradeManager.cs" />
     <Compile Include="Assets\Scripts\Characters\NPCDecisionMaker.cs" />
-    <Compile Include="Assets\Scripts\World\WalkerObject.cs" />
     <Compile Include="Assets\Scripts\GraphicsOptimizer.cs" />
     <Compile Include="Assets\Scripts\Buildings.cs" />
     <Compile Include="Assets\Scripts\Core\Interfaces\IWorldGenerator.cs" />
