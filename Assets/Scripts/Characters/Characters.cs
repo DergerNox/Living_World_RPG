@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using LivingWorldRPG.Core;
 
 public class Characters : ISkillTarget
 {
@@ -84,6 +85,11 @@ public class Characters : ISkillTarget
 
     public void EquipItem(EquipmentSlot slot, ItemData item)
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            Debug.LogWarning("Equipment is disabled for launch.");
+            return;
+        }
         ItemData oldItem = Equipment.UnequipItem(slot);
         if (oldItem != null)
         {
@@ -105,6 +111,11 @@ public class Characters : ISkillTarget
 
     public void UseItem(ItemData item)
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            Debug.LogWarning("Items are disabled for launch.");
+            return;
+        }
         if (item.type == ItemType.Consumable)
         {
             Health += item.healthBonus;
@@ -131,6 +142,10 @@ public class Characters : ISkillTarget
 
     public void ApplyStatusEffect(IStatusEffect effect)
     {
+        if (!GameFeatureFlags.SkillsEnabled)
+        {
+            return;
+        }
         activeStatusEffects.Add(effect);
         effect.Apply(this);
     }
@@ -138,6 +153,10 @@ public class Characters : ISkillTarget
     // Skill Management Methods (replaces SkillBook functionality)
     public void LearnSkill(BaseSkill skill)
     {
+        if (!GameFeatureFlags.SkillsEnabled || skill == null)
+        {
+            return;
+        }
         if (!learnedSkills.ContainsKey(skill.SkillId))
         {
             learnedSkills.Add(skill.SkillId, skill);
@@ -148,41 +167,59 @@ public class Characters : ISkillTarget
 
     public void ForgetSkill(string skillId)
     {
+        if (!GameFeatureFlags.SkillsEnabled)
+        {
+            return;
+        }
         learnedSkills.Remove(skillId);
     }
 
     public bool HasSkill(string skillId)
     {
-        return learnedSkills.ContainsKey(skillId);
+        return GameFeatureFlags.SkillsEnabled && learnedSkills.ContainsKey(skillId);
     }
 
     public BaseSkill GetSkill(string skillId)
     {
+        if (!GameFeatureFlags.SkillsEnabled)
+        {
+            return null;
+        }
         return learnedSkills.ContainsKey(skillId) ? learnedSkills[skillId] : null;
     }
 
     public List<BaseSkill> GetAllSkills()
     {
-        return new List<BaseSkill>(learnedSkills.Values);
+        return GameFeatureFlags.SkillsEnabled ? new List<BaseSkill>(learnedSkills.Values) : new List<BaseSkill>();
     }
 
     public List<BaseSkill> GetSkillsByType(SkillType type)
     {
-        return learnedSkills.Values.Where(s => s.SkillType == type).ToList();
+        return GameFeatureFlags.SkillsEnabled
+            ? learnedSkills.Values.Where(s => s.SkillType == type).ToList()
+            : new List<BaseSkill>();
     }
 
     public List<BaseSkill> GetActiveSkills()
     {
-        return learnedSkills.Values.Where(s => !s.IsPassive).ToList();
+        return GameFeatureFlags.SkillsEnabled
+            ? learnedSkills.Values.Where(s => !s.IsPassive).ToList()
+            : new List<BaseSkill>();
     }
 
     public List<BaseSkill> GetPassiveSkills()
     {
-        return learnedSkills.Values.Where(s => s.IsPassive).ToList();
+        return GameFeatureFlags.SkillsEnabled
+            ? learnedSkills.Values.Where(s => s.IsPassive).ToList()
+            : new List<BaseSkill>();
     }
 
     public void UpdateSkillCooldowns(float deltaTime)
     {
+        if (!GameFeatureFlags.SkillsEnabled)
+        {
+            return;
+        }
         foreach (var skill in learnedSkills.Values)
         {
             skill.UpdateCooldown(deltaTime);
@@ -191,6 +228,10 @@ public class Characters : ISkillTarget
 
     public void UpdateStatusEffects(float deltaTime)
     {
+        if (!GameFeatureFlags.SkillsEnabled)
+        {
+            return;
+        }
         for (int i = activeStatusEffects.Count - 1; i >= 0; i--)
         {
             activeStatusEffects[i].Update(deltaTime);

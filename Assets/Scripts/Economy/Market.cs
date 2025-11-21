@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using LivingWorldRPG.Core;
 
 [System.Serializable]
 public class Market
@@ -11,6 +12,10 @@ public class Market
 
     public void UpdatePrices()
     {
+        if (!GameFeatureFlags.TradingEnabled)
+        {
+            return;
+        }
         foreach (var item in availableItems)
         {
             int basePrice = item.value;
@@ -22,11 +27,19 @@ public class Market
 
     public int GetPrice(ItemData item)
     {
+        if (!GameFeatureFlags.TradingEnabled)
+        {
+            return item != null ? item.value : 0;
+        }
         return prices.ContainsKey(item.name) ? prices[item.name] : item.value;
     }
 
     public void AddItem(ItemData item)
     {
+        if (!GameFeatureFlags.TradingEnabled)
+        {
+            return;
+        }
         if (!availableItems.Contains(item))
         {
             availableItems.Add(item);

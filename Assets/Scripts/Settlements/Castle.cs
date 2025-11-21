@@ -22,7 +22,10 @@ public class Castle : ISettlement
     public List<Buildings> BuildingsInCastle { get; set; }
     public Queue<Buildings> BuildingsQueue { get; set; }
     public bool IsCastleUnderSiege { get; set; }
-
+    public SettlementResourceLedger ResourceLedger { get; }
+    public IReadOnlyList<Town> SupplyTowns => supplyTowns;
+    public Dictionary<WeaponTypes, int> Armory { get; } = new Dictionary<WeaponTypes, int>();
+    public int Supplies { get; private set; }
     // List of available troops for recruitment
     public List<Troop> AvailableUnits { get; set; }
 
@@ -41,6 +44,8 @@ public class Castle : ISettlement
         IsCastleUnderSiege = false;
         Lord = lord;  // Lord assigned through constructor
         FactionId = -1;  // Assuming -1 means no faction assigned initially
+        ResourceLedger = new SettlementResourceLedger();
+        Supplies = 0;
 
         AvailableUnits = new List<Troop>();
         AddRank4And5Troops();
@@ -134,4 +139,108 @@ public class Castle : ISettlement
             Debug.Log($"{Name} is under siege! Defense bonus: {GetTotalDefenseBonus()}");
         }
     }
+
+    public int ForgeEquipment(int days = 1)
+    {
+        days = Mathf.Max(1, days);
+        int produced = 0;
+        int forgingCapacity = Mathf.Max(1, CastleLevel) * days * 2;
+
+        foreach (var recipe in equipmentRecipes)
+        {
+            if (forgingCapacity <= 0)
+            {
+                break;
+            }
+
+            int availableA = ResourceLedger.GetAdvanced(recipe.RequiredAdvanced);
+            int availableB = ResourceLedger.GetBasic(recipe.RequiredBasic);
+            int craftable = Mathf.Min(forgingCapacity, availableA / recipe.CostAdvanced, availableB / recipe.CostBasic);
+            if (craftable <= 0)
+            {
+                continue;
+            }
+
+            ResourceLedger.ConsumeAdvanced(recipe.RequiredAdvanced, craftable * recipe.CostAdvanced);
+            ResourceLedger.ConsumeBasic(recipe.RequiredBasic, craftable * recipe.CostBasic);
+            int output = craftable * recipe.OutputCount;
+
+            if (Armory.TryGetValue(recipe.WeaponType, out int existing))
+            {
+                Armory[recipe.WeaponType] = existing + output;
+            }
+            else
+            {
+                Armory[recipe.WeaponType] = output;
+            }
+
+            produced += output;
+            forgingCapacity -= craftable;
+        }
+
+        ProcessSupplies();
+        return produced;
+    }
+
+    internal void RegisterSupplyingTown(Town town)
+    {
+        if (town == null || supplyTowns.Contains(town))
+        {
+            return;
+        }
+
+        supplyTowns.Add(town);
+    }
+
+    internal void ResetSupplyNetwork()
+    {
+        supplyTowns.Clear();
+    }
+
+    private void ProcessSupplies()
+    {
+        int availableFood = ResourceLedger.GetAdvanced(AdvancedResourcesTypes.Food);
+        if (availableFood < FoodPerSupplyBatch)
+        {
+            return;
+        }
+
+        int batches = availableFood / FoodPerSupplyBatch;
+        int consumed = batches * FoodPerSupplyBatch;
+        ResourceLedger.ConsumeAdvanced(AdvancedResourcesTypes.Food, consumed);
+        Supplies += batches * SupplyValuePerBatch;
+    }
+
+    private readonly List<Town> supplyTowns = new List<Town>();
+
+    public readonly struct EquipmentRecipe
+    {
+        public EquipmentRecipe(AdvancedResourcesTypes advanced, ResourceType basic, WeaponTypes weaponType, int costAdvanced, int costBasic, int outputCount)
+        {
+            RequiredAdvanced = advanced;
+            RequiredBasic = basic;
+            WeaponType = weaponType;
+            CostAdvanced = Mathf.Max(1, costAdvanced);
+            CostBasic = Mathf.Max(1, costBasic);
+            OutputCount = Mathf.Max(1, outputCount);
+        }
+
+        public AdvancedResourcesTypes RequiredAdvanced { get; }
+        public ResourceType RequiredBasic { get; }
+        public WeaponTypes WeaponType { get; }
+        public int CostAdvanced { get; }
+        public int CostBasic { get; }
+        public int OutputCount { get; }
+    }
+
+    private static readonly EquipmentRecipe[] equipmentRecipes =
+    {
+        new EquipmentRecipe(AdvancedResourcesTypes.Steel, ResourceType.Food, WeaponTypes.Sword, 3, 2, 1),
+        new EquipmentRecipe(AdvancedResourcesTypes.ReinforcedWood, ResourceType.Textile, WeaponTypes.Bow, 2, 1, 1),
+        new EquipmentRecipe(AdvancedResourcesTypes.StoneBriks, ResourceType.Salt, WeaponTypes.Shield, 2, 1, 1)
+    };
+    public static IReadOnlyList<EquipmentRecipe> EquipmentRecipes => equipmentRecipes;
+
+    private const int FoodPerSupplyBatch = 3;
+    private const int SupplyValuePerBatch = 15;
 }

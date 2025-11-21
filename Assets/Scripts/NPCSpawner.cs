@@ -9,6 +9,10 @@ public class NPCSpawner : MonoBehaviour
 {
     [SerializeField] private GameObject npcPrefab; // Assign your NPC prefab here in inspector
     [SerializeField] private int numberOfNPCs = 10;
+    [SerializeField] private bool useDynamicCounts = true;
+    [SerializeField, Min(0f)] private float npcsPerVillage = 0.5f;
+    [SerializeField, Min(0f)] private float npcsPerTown = 1.5f;
+    [SerializeField, Min(0f)] private float npcsPerCastle = 2f;
     [SerializeField] private Transform npcParent;  // Optional: parent transform to keep hierarchy clean
     [SerializeField] private WalkerGenerator walkerGenerator;
 
@@ -109,8 +113,9 @@ public class NPCSpawner : MonoBehaviour
 
         List<ISettlement> possibleLocations = new List<ISettlement>(simulation.GetSettlements());
 
+        int targetCount = DetermineTargetNpcCount(simulation);
         int spawnedCount = 0;
-        while (spawnedCount < numberOfNPCs && possibleLocations.Count > 0)
+        while (spawnedCount < targetCount && possibleLocations.Count > 0)
         {
             // Pick a random settlement
             int index = Random.Range(0, possibleLocations.Count);
@@ -128,13 +133,18 @@ public class NPCSpawner : MonoBehaviour
                 view = npcObj.AddComponent<NPCView>();
             }
 
-            var npcData = new NPC($"NPC_{spawnedCount}", 100, 50, Random.Range(1, 5));
+            NPCRole role = ChooseRole(chosenSettlement);
+            var npcData = new NPC($"NPC_{role}_{spawnedCount}", 100, 50, Random.Range(1, 5));
             npcData.Initialize(
                 name: npcData.Name,
                 factionId: chosenSettlement.FactionId,
-                position: new Vector3Int(chosenSettlement.PosX, chosenSettlement.PosY, 0));
+                position: new Vector3Int(chosenSettlement.PosX, chosenSettlement.PosY, 0),
+                role: role);
+            SeedTroops(npcData);
 
             view.Initialize(npcData, worldPos);
+
+            SetupAI(npcObj, npcData, simulation);
 
             spawnedCount++;
             // Optionally remove the location to avoid overcrowding same spot:
@@ -143,6 +153,161 @@ public class NPCSpawner : MonoBehaviour
 
         Debug.Log($"Spawned {spawnedCount} NPCs.");
         hasSpawned = true;
+    }
+
+    private int DetermineTargetNpcCount(IWorldSimulationService simulation)
+    {
+        if (!useDynamicCounts)
+        {
+            return Mathf.Max(1, numberOfNPCs);
+        }
+
+        var state = simulation.State;
+        int villages = state?.Villages?.Count ?? 0;
+        int towns = state?.Towns?.Count ?? 0;
+        int castles = state?.Castles?.Count ?? 0;
+
+        float total = villages * npcsPerVillage + towns * npcsPerTown + castles * npcsPerCastle;
+        return Mathf.Max(1, Mathf.CeilToInt(total));
+    }
+
+    private void SetupAI(GameObject npcObj, NPC npcData, IWorldSimulationService simulation)
+    {
+        if (npcObj == null || simulation == null || npcData == null)
+        {
+            return;
+        }
+
+        var stateMachine = npcObj.GetComponent<AIStateMachine>() ?? npcObj.AddComponent<AIStateMachine>();
+        var decisionMaker = npcObj.GetComponent<NPCDecisionMaker>() ?? npcObj.AddComponent<NPCDecisionMaker>();
+        var controller = npcObj.GetComponent<NPC2DController>() ?? npcObj.AddComponent<NPC2DController>();
+
+        // Ensure required movement components exist
+        var rb2d = npcObj.GetComponent<Rigidbody2D>() ?? npcObj.AddComponent<Rigidbody2D>();
+        rb2d.gravityScale = 0f;
+        rb2d.freezeRotation = true;
+
+        var col2d = npcObj.GetComponent<Collider2D>() ?? npcObj.AddComponent<CircleCollider2D>();
+        col2d.isTrigger = false;
+
+        if (controller == null)
+        {
+            Debug.LogWarning($"NPCSpawner: Failed to get NPC2DController on {npcObj.name}.");
+            return;
+        }
+
+        // Build a lightweight waypoint list based on same-faction settlements.
+        var waypoints = BuildWaypointsForRole(simulation, npcData);
+        if (waypoints == null || waypoints.Count == 0)
+        {
+            var wp = new GameObject($"WP_{npcData.Name}_home").transform;
+            wp.SetParent(npcParent != null ? npcParent : transform);
+            wp.position = npcObj.transform.position;
+            waypoints = new List<Transform> { wp };
+        }
+
+        controller.waypoints = waypoints.ToArray();
+        controller.enabled = true;
+        if (stateMachine != null)
+        {
+            stateMachine.SetState(AIState.Patrolling);
+        }
+    }
+
+    private List<Transform> BuildWaypointsForRole(IWorldSimulationService simulation, NPC npcData)
+    {
+        var list = new List<Transform>();
+
+        if (simulation == null || npcData == null)
+        {
+            return list;
+        }
+
+        var settlements = new List<ISettlement>(simulation.GetSettlements());
+
+        List<ISettlement> candidates = new List<ISettlement>();
+        if (npcData.Role == NPCRole.Trader)
+        {
+            candidates.AddRange(simulation.GetSettlements(s => s is Town && s.FactionId == npcData.FactionId));
+        }
+        else if (npcData.Role == NPCRole.Guard)
+        {
+            candidates.AddRange(simulation.GetSettlements(s => s is Castle && s.FactionId == npcData.FactionId));
+            candidates.AddRange(simulation.GetSettlements(s => s is Village && s.FactionId == npcData.FactionId));
+        }
+        else if (npcData.Role == NPCRole.Bandit)
+        {
+            candidates.AddRange(settlements.FindAll(s => s.FactionId != npcData.FactionId));
+        }
+        else
+        {
+            candidates.AddRange(simulation.GetSettlements(s => s.FactionId == npcData.FactionId));
+        }
+
+        if (candidates.Count == 0)
+        {
+            candidates.AddRange(settlements);
+        }
+
+        int waypointCount = Mathf.Clamp(candidates.Count, 1, 4);
+        Transform parentForWps = npcParent != null ? npcParent : transform;
+        for (int i = 0; i < waypointCount; i++)
+        {
+            var s = candidates[Random.Range(0, candidates.Count)];
+            var wp = new GameObject($"WP_{npcData.Name}_{i}").transform;
+            wp.SetParent(parentForWps);
+            wp.position = new Vector3(s.PosX + 0.5f, s.PosY + 0.5f, 0f);
+            list.Add(wp);
+        }
+
+        return list;
+    }
+
+    private void SeedTroops(NPC npc)
+    {
+        if (npc == null)
+        {
+            return;
+        }
+
+        if (npc.Party == null)
+        {
+            npc.Party = new Party { Leader = npc, FactionId = npc.FactionId };
+        }
+
+        var party = npc.Party;
+        int troopCount = Random.Range(1, 4);
+        for (int i = 0; i < troopCount; i++)
+        {
+            TroopType type = (TroopType)Random.Range(0, System.Enum.GetValues(typeof(TroopType)).Length);
+            Troop t = new Troop(type);
+            t.Level = Random.Range(1, 3);
+            t.UpdateRank();
+            party.Troops.Add(t);
+        }
+    }
+
+    private NPCRole ChooseRole(ISettlement settlement)
+    {
+        if (settlement == null)
+        {
+            return NPCRole.Villager;
+        }
+        if (settlement is Castle)
+        {
+            return NPCRole.Guard;
+        }
+
+        if (settlement is Town)
+        {
+            return Random.value < 0.4f ? NPCRole.Trader : NPCRole.Villager;
+        }
+
+        // Villages: mostly villagers, occasional scout/bandit.
+        float roll = Random.value;
+        if (roll < 0.1f) return NPCRole.Scout;
+        if (roll < 0.2f) return NPCRole.Bandit;
+        return NPCRole.Villager;
     }
 
     private IWorldSimulationService ResolveWorldSimulation()

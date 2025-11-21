@@ -19,6 +19,11 @@ public class Party
     public List<ItemData> TradeableItems { get; set; } = new List<ItemData>();
     public List<Quest> ActiveQuests { get; set; } = new List<Quest>();
     public Vector3Int Position { get; set; } = Vector3Int.zero;
+    public Vector3Int Destination { get; set; } = Vector3Int.zero;
+    public Vector3Int SourcePosition { get; set; } = Vector3Int.zero;
+    public ResourceType? CargoResource { get; set; }
+    public AdvancedResourcesTypes? CargoAdvancedResource { get; set; }
+    public int CargoAmount { get; set; }
     public int Morale { get; set; } = 100; // 0-100 scale
     public int Fatigue { get; set; } = 0; // 0-100 scale
     public int FactionId { get; set; } = -1; // -1 means no faction assigned initially
@@ -86,11 +91,6 @@ public class Party
         if (foodIndex >= 0 && resourcesAmountInInventory[foodIndex] > 0)
         {
             resourcesAmountInInventory[foodIndex] -= Mathf.Min(1, resourcesAmountInInventory[foodIndex]);
-        }
-        int waterIndex = resources.FindIndex(r => r.ResourceType == ResourceType.Water);
-        if (waterIndex >= 0 && resourcesAmountInInventory[waterIndex] > 0)
-        {
-            resourcesAmountInInventory[waterIndex] -= Mathf.Min(1, resourcesAmountInInventory[waterIndex]);
         }
     }
 

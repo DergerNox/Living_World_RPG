@@ -5,11 +5,21 @@ public static class TradeManager
 {
     public static bool TradeItemToMarket(Party party, Town town, ItemData item, int quantity)
     {
+        if (!LivingWorldRPG.Core.GameFeatureFlags.TradingEnabled)
+        {
+            Debug.LogWarning("Trading is disabled.");
+            return false;
+        }
         return ResolveService()?.TradeItemToMarket(party, town, item, quantity) ?? false;
     }
 
     public static bool TradeItemFromMarket(Party party, Town town, ItemData item, int quantity)
     {
+        if (!LivingWorldRPG.Core.GameFeatureFlags.TradingEnabled)
+        {
+            Debug.LogWarning("Trading is disabled.");
+            return false;
+        }
         return ResolveService()?.TradeItemFromMarket(party, town, item, quantity) ?? false;
     }
 

@@ -89,8 +89,8 @@
     <Compile Include="Library\PackageCache\com.unity.2d.tilemap@aa5f5491174d\Editor\EditorTools\GridSelection\GridSelectionTool.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.tilemap@aa5f5491174d\Editor\TilemapFocusModeUtility.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.tilemap@aa5f5491174d\Editor\UI\External\GridView.cs" />
-    <Compile Include="Library\PackageCache\com.unity.2d.tilemap@aa5f5491174d\Editor\EditorTools\TilemapEditorToolPreferencesAsset.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.tilemap@aa5f5491174d\Editor\PaintableGrid.cs" />
+    <Compile Include="Library\PackageCache\com.unity.2d.tilemap@aa5f5491174d\Editor\EditorTools\TilemapEditorToolPreferencesAsset.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.tilemap@aa5f5491174d\Editor\UI\TilePaletteClipboardOverlay.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.tilemap@aa5f5491174d\Editor\GridPaintPaletteWindow.cs" />
     <Compile Include="Library\PackageCache\com.unity.2d.tilemap@aa5f5491174d\Editor\TileSet\TileSetImporterEditor.cs" />

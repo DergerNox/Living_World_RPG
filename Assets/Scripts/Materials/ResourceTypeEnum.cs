@@ -5,12 +5,10 @@ public enum ResourceType
     Wood,
     Stone,
     Iron,
-    Gold,
-    Grain,
-    Meat,
-    Fish,
-    Fruit,
-    Vegetable,
+    Coal,
     Food,
-    Water,
+    Clay,
+    Textile,
+    Herbs,
+    Salt
 }

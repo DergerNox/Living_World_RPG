@@ -319,8 +319,8 @@
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Reflection\RenamedNamespaceAttribute.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Graphs\IGraphElementWithDebugData.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Listeners\MonoBehaviour\UnityOnBecameInvisibleMessageListener.cs" />
-    <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Reflection\Optimization\InstanceFunctionInvoker_0.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Graphs\IGraphElementData.cs" />
+    <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Reflection\Optimization\InstanceFunctionInvoker_0.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Reflection\Operators\RightShiftHandler.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Listeners\UI\UnityOnSliderValueChangedMessageListener.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@b4d700247d4b\Runtime\VisualScripting.Core\Ensure\Ensure.cs" />

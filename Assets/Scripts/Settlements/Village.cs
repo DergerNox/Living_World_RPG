@@ -1,5 +1,8 @@
-using UnityEngine;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using UnityEngine;
 
 public class Village : ISettlement
 {
@@ -11,11 +14,10 @@ public class Village : ISettlement
     // Private field for position
     public Vector3Int Position { get; private set; }
     public string Name { get; private set; }
-    
+
     // Additional properties specific to Village
     public int Population { get; set; }
     public int Resources { get; set; }
-    public int TownLevel { get; set; }
     public int MaxMilitiaSize { get; set; }
     public int CurrentMilitiaSize { get; set; }
     public List<Party> VisitingParties { get; set; }
@@ -23,6 +25,26 @@ public class Village : ISettlement
     public List<Characters> VisitingCharacters { get; set; }
     public Characters Leader { get; set; }
     public List<Outpost> OutpostConnected { get; set; }
+    public SettlementResourceLedger ResourceLedger { get; }
+    public Town ConnectedTown { get; internal set; }
+    public int VillageLevel { get; private set; } = 1;
+    public IReadOnlyList<ResourceType> ProductionTypes => productionTypes;
+    public int GetDailyProduction(ResourceType type)
+    {
+        if (!productionTypes.Contains(type))
+        {
+            return 0;
+        }
+        int idx = Mathf.Clamp(VillageLevel - 1, 0, productionPerLevel.Length - 1);
+        return productionPerLevel[idx];
+    }
+
+    [Obsolete("Use VillageLevel instead.")]
+    public int TownLevel
+    {
+        get => VillageLevel;
+        set => SetVillageLevel(value);
+    }
 
     // Recruitment pool for troops
     public List<Troop> RecruitmentPool { get; set; }
@@ -34,7 +56,6 @@ public class Village : ISettlement
         Name = "Village";  // Default name, you can customize it later
         Population = 100;
         Resources = 100;
-        TownLevel = 1;
         MaxMilitiaSize = 100;
         CurrentMilitiaSize = 0;
         VisitingParties = new List<Party>();
@@ -42,7 +63,9 @@ public class Village : ISettlement
         VisitingCharacters = new List<Characters>();
         OutpostConnected = new List<Outpost>();
         FactionId = -1;  // Assuming -1 means no faction assigned initially
-
+        VillageLevel = 1;
+        ResourceLedger = new SettlementResourceLedger();
+        RefreshProductionSelection();
         RecruitmentPool = new List<Troop>();
         AddRank1And2Troops();
 
@@ -101,7 +124,7 @@ public class Village : ISettlement
     public void ProcessGrowthEvent()
     {
         // Simulate population growth
-        Population += Random.Range(1, 5);
+        Population += UnityEngine.Random.Range(1, 5);
         Resources += Population / 10; // Resources based on population
         Debug.Log($"{Name} grew! Population: {Population}, Resources: {Resources}");
     }
@@ -109,11 +132,87 @@ public class Village : ISettlement
     public void ProcessSiegeEvent()
     {
         // Villages are vulnerable during sieges
-        if (Random.value < 0.3f) // 30% chance of being attacked
+        if (UnityEngine.Random.value < 0.3f) // 30% chance of being attacked
         {
-            Population -= Random.Range(10, 30);
+            Population -= UnityEngine.Random.Range(10, 30);
             if (Population < 0) Population = 0;
             Debug.Log($"{Name} suffered during siege! Population now: {Population}");
+        }
+    }
+
+    public void SetVillageLevel(int level)
+    {
+        VillageLevel = Mathf.Clamp(level, 1, MaxVillageLevel);
+        RefreshProductionSelection();
+    }
+
+    public bool TryUpgradeVillageLevel()
+    {
+        if (VillageLevel >= MaxVillageLevel)
+        {
+            return false;
+        }
+
+        VillageLevel++;
+        RefreshProductionSelection();
+        return true;
+    }
+
+    public int ProduceResources(int days = 1)
+    {
+        days = Mathf.Max(1, days);
+        int produced = 0;
+        int perResource = productionPerLevel[Mathf.Clamp(VillageLevel - 1, 0, productionPerLevel.Length - 1)];
+        foreach (var type in productionTypes)
+        {
+            int amount = perResource * days;
+            ResourceLedger.AddBasic(type, amount);
+            produced += amount;
+        }
+
+        Resources += produced;
+        return produced;
+    }
+
+    private const int MaxVillageLevel = 3;
+    private static readonly int[] productionPerLevel = { 6, 12, 20 };
+    private static readonly ResourceType[] resourcePool =
+    {
+        ResourceType.Food,
+        ResourceType.Wood,
+        ResourceType.Stone,
+        ResourceType.Iron,
+        ResourceType.Coal,
+        ResourceType.Clay,
+        ResourceType.Textile,
+        ResourceType.Herbs,
+        ResourceType.Salt
+    };
+    private readonly List<ResourceType> productionTypes = new List<ResourceType>();
+
+    private void RefreshProductionSelection()
+    {
+        int desired = Mathf.Clamp(VillageLevel, 1, MaxVillageLevel);
+        var ordered = resourcePool
+            .OrderBy(type => GetResourceScore(type))
+            .ToList();
+
+        productionTypes.Clear();
+        for (int i = 0; i < desired && i < ordered.Count; i++)
+        {
+            productionTypes.Add(ordered[i]);
+        }
+    }
+
+    private int GetResourceScore(ResourceType type)
+    {
+        unchecked
+        {
+            int hash = 17;
+            hash = hash * 31 + Position.x;
+            hash = hash * 31 + Position.y;
+            hash = hash * 31 + (int)type * 397;
+            return hash;
         }
     }
 }

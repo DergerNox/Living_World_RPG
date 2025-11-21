@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using LivingWorldRPG.Core;
 
 public class Player:Characters
 {
@@ -19,9 +20,12 @@ public class Player:Characters
         Party = new Party(); // Initialize party
         Party.Leader = this; // Set the player as the party leader
         Party.FactionId = 0; // Player starts in faction 0 or neutral
-        Inventory.AddItem(new ItemData { name = "Sword", type = ItemType.Weapon, attackBonus = 5 });
-        Inventory.AddItem(new ItemData { name = "Health Potion", type = ItemType.Consumable, healthBonus = 20 });
-        Inventory.AddItem(new ItemData { name = "Armor", type = ItemType.Armor, defenseBonus = 3 });
+        if (GameFeatureFlags.ItemsEnabled)
+        {
+            Inventory.AddItem(new ItemData { name = "Sword", type = ItemType.Weapon, attackBonus = 5 });
+            Inventory.AddItem(new ItemData { name = "Health Potion", type = ItemType.Consumable, healthBonus = 20 });
+            Inventory.AddItem(new ItemData { name = "Armor", type = ItemType.Armor, defenseBonus = 3 });
+        }
 
     }
 }

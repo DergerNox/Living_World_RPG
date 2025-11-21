@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LivingWorldRPG.Core;
 
 [Serializable]
 public class EquipmentData
@@ -8,6 +9,10 @@ public class EquipmentData
 
     public void EquipItem(EquipmentSlot slot, ItemData item)
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            return;
+        }
         if (item == null)
         {
             return;
@@ -26,6 +31,10 @@ public class EquipmentData
 
     public ItemData UnequipItem(EquipmentSlot slot)
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            return null;
+        }
         var existing = equippedItems.Find(e => e.slot == slot);
         if (existing == null)
         {
@@ -39,6 +48,10 @@ public class EquipmentData
 
     public ItemData GetEquippedItem(EquipmentSlot slot)
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            return null;
+        }
         return equippedItems.Find(e => e.slot == slot)?.item;
     }
 }

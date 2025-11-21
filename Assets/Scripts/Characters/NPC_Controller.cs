@@ -85,6 +85,12 @@ public class NPC2DController : MonoBehaviour
     void PatrolMove()
     {
         // Compute grid positions using PathfindingManager node size
+        if (PathfindingManager.Instance == null || waypoints == null || waypoints.Length == 0)
+        {
+            DirectMoveTo(transform.position);
+            return;
+        }
+
         float nodeSize = PathfindingManager.Instance.NodeSize;
         Vector3Int startCell = Vector3Int.FloorToInt(transform.position / nodeSize);
         Vector3Int targetCell = Vector3Int.FloorToInt(waypoints[currentWaypointIndex].position / nodeSize);
@@ -183,33 +189,6 @@ public class NPC2DController : MonoBehaviour
         }
     }
 
-    void OnDrawGizmos()
-    {
-        if (waypoints != null)
-        {
-            Gizmos.color = Color.cyan;
-            for (int i = 0; i < waypoints.Length; i++)
-            {
-                Gizmos.DrawWireSphere(waypoints[i].position, stoppingDistance);
-                if (i + 1 < waypoints.Length)
-                    Gizmos.DrawLine(waypoints[i].position, waypoints[i+1].position);
-            }
-        }
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, talkRadius);
-
-        // Draw path
-        if (path != null)
-        {
-            Gizmos.color = Color.magenta;
-            float nodeSize = PathfindingManager.Instance ? PathfindingManager.Instance.NodeSize : 1f;
-            for (int i = pathIndex; i < path.Count; i++)
-            {
-                Vector3 p = (Vector3)path[i] * nodeSize + new Vector3(nodeSize/2f, nodeSize/2f, 0);
-                Gizmos.DrawCube(p, Vector3.one * (nodeSize * 0.3f));
-                if (i + 1 < path.Count)
-                    Gizmos.DrawLine(p, (Vector3)path[i+1] * nodeSize + new Vector3(nodeSize/2f,nodeSize/2f,0));
-            }
-        }
-    }
+    // Gizmos disabled to keep the scene view clear.
+    //void OnDrawGizmos() { }
 }

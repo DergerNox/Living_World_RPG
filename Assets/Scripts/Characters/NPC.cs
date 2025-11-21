@@ -4,6 +4,7 @@ using UnityEngine;
 namespace LivingWorldRPG.Characters
 {
 public enum Activity { Sleeping, Working, Wandering, Eating }
+public enum NPCRole { Villager, Trader, Guard, Bandit, Scout }
 
 public class NPC : global::Characters
 {
@@ -20,19 +21,24 @@ public class NPC : global::Characters
         Experience = 0;
         Gold = random.Next(1000, 2000); // Random gold between 1000 and 2000
         CurrentActivity = Activity.Wandering;
+        Role = NPCRole.Villager;
 
     }
-    public void Initialize(string name, int factionId, Vector3Int position)
+    public void Initialize(string name, int factionId, Vector3Int position, NPCRole role = NPCRole.Villager)
     {
         this.npcName = name;
         this.factionId = factionId;
         this.gridPosition = position;
+        this.Role = role;
 
         // Optional: Update transform, visuals, etc.
         /*transform.position = new Vector3(position.x + 0.5f, position.y + 0.5f, 0);
         gameObject.name = name;*/
     }
     public Activity CurrentActivity { get; set; }
+    public NPCRole Role { get; set; }
+
+    public int FactionId { get => factionId; set => factionId = value; }
 
     private string npcName;
     private int factionId;

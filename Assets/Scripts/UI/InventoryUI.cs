@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using LivingWorldRPG.Core;
 
 public class InventoryUI : MonoBehaviour
 {
@@ -81,10 +82,23 @@ public class InventoryUI : MonoBehaviour
 
         inventoryPanel.SetActive(false);
         itemDetailsPanel.SetActive(false);
+
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            if (inventoryPanel != null) inventoryPanel.SetActive(false);
+            if (itemDetailsPanel != null) itemDetailsPanel.SetActive(false);
+            gameObject.SetActive(false);
+            return;
+        }
     }
 
     public void OpenInventory(Characters character)
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            Debug.LogWarning("Inventory is disabled for launch.");
+            return;
+        }
         currentCharacter = character;
         UpdateInventoryUI();
 
@@ -95,6 +109,10 @@ public class InventoryUI : MonoBehaviour
 
     public void CloseInventory()
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            return;
+        }
         inventoryPanel.SetActive(false);
         itemDetailsPanel.SetActive(false);
         currentCharacter = null;
@@ -105,6 +123,11 @@ public class InventoryUI : MonoBehaviour
 
     private void UpdateInventoryUI()
     {
+        if (!GameFeatureFlags.ItemsEnabled || currentCharacter == null)
+        {
+            return;
+        }
+
         // Clear existing item slots
         foreach (Transform child in itemContainer)
         {
@@ -132,6 +155,10 @@ public class InventoryUI : MonoBehaviour
 
     private void SelectItem(ItemData item)
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            return;
+        }
         selectedItem = item;
         itemNameText.text = item.name;
         itemDescriptionText.text = GetItemDescription(item);
@@ -158,6 +185,10 @@ public class InventoryUI : MonoBehaviour
 
     private void UseItem()
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            return;
+        }
         if (selectedItem != null && selectedItem.type == ItemType.Consumable)
         {
             currentCharacter.UseItem(selectedItem);
@@ -169,6 +200,10 @@ public class InventoryUI : MonoBehaviour
 
     private void EquipItem()
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            return;
+        }
         if (selectedItem != null && (selectedItem.type == ItemType.Weapon || selectedItem.type == ItemType.Armor))
         {
             EquipmentSlot slot = selectedItem.type == ItemType.Weapon ? EquipmentSlot.Weapon : EquipmentSlot.Body;
@@ -180,6 +215,10 @@ public class InventoryUI : MonoBehaviour
 
     private void DropItem()
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            return;
+        }
         if (selectedItem != null)
         {
             currentCharacter.Inventory.RemoveItem(selectedItem);

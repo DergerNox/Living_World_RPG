@@ -21,15 +21,28 @@ public class TroopSelectionPanel : MonoBehaviour
     public void Open(Troop troop)
     {
         selectedTroop = troop;
+        if (selectedTroop == null)
+        {
+            Debug.LogWarning("TroopSelectionPanel.Open called with null troop.");
+            return;
+        }
+
         troopNameText.text = troop.Name;
         troopImage.sprite = troop.GetTroopImage(troop.TroopType, troop.Rank);
         unitCostText.text = $"Cost per unit: {troop.Cost}";
 
-        quantitySlider.minValue = 1;
-        quantitySlider.maxValue = 100;
-        quantitySlider.value = 1;
+        if (quantitySlider != null)
+        {
+            quantitySlider.minValue = 1;
+            quantitySlider.maxValue = 100;
+            quantitySlider.value = 1;
+        }
 
-        quantityInput.text = "1";
+        if (quantityInput != null)
+        {
+            quantityInput.text = "1";
+        }
+
         UpdateTotalCost();
         // Hide other panels
         if (settlementPanel != null) settlementPanel.SetActive(false);
@@ -40,7 +53,10 @@ public class TroopSelectionPanel : MonoBehaviour
     public void OnSliderChanged(float value)
     {
         quantity = Mathf.RoundToInt(value);
-        quantityInput.text = quantity.ToString();
+        if (quantityInput != null)
+        {
+            quantityInput.text = quantity.ToString();
+        }
         UpdateTotalCost();
     }
 
@@ -49,13 +65,21 @@ public class TroopSelectionPanel : MonoBehaviour
         if (int.TryParse(value, out quantity))
         {
             quantity = Mathf.Clamp(quantity, 1, 100);
-            quantitySlider.value = quantity;
+            if (quantitySlider != null)
+            {
+                quantitySlider.value = quantity;
+            }
             UpdateTotalCost();
         }
     }
 
     public void UpdateTotalCost()
     {
+        if (selectedTroop == null || totalCostText == null)
+        {
+            return;
+        }
+
         int totalCost = quantity * selectedTroop.Cost;
         totalCostText.text = $"Total Cost: {totalCost}";
     }
@@ -71,5 +95,6 @@ public class TroopSelectionPanel : MonoBehaviour
     {
         gameObject.SetActive(false);
         if (recruitmentPanel != null) recruitmentPanel.SetActive(true);
+        if (settlementPanel != null) settlementPanel.SetActive(true);
     }
 }

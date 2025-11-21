@@ -176,35 +176,51 @@ namespace LivingWorldRPG.Characters
             if (settlement != null)
             {
                 // Open UI for the settlement
+                if (settlementUIManager == null)
+                {
+                    settlementUIManager = FindSettlementUIManager();
+                }
+
+                if (settlementUIManager == null)
+                {
+                    Debug.LogWarning("PlayerController: SettlementUIManager reference is missing; cannot open settlement UI.");
+                    return;
+                }
+
                 settlementUIManager.OpenSettlementUI(settlement);
             }
         }
     }
 
+        private SettlementUIManager FindSettlementUIManager()
+        {
+            var managers = FindObjectsByType<SettlementUIManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            return managers.Length > 0 ? managers[0] : null;
+        }
+
         private ISettlement GetSettlementAtPosition(Vector3Int position)
-    {
-        // Get the tile at the current position
-        var structureTile = structureTilemap.GetTile(position);
+        {
+            var structureTile = structureTilemap.GetTile(position);
+            if (structureTile == null)
+            {
+                return null;
+            }
 
-        // Check if the tile is a known settlement tile (Town, Castle, Village)
-        if (structureTile == generator.TownTile)
-        {
-            // Reference an existing Town object
-            return WorldRepository != null ? WorldRepository.GetTownAtPosition(position) : generator.GetTownAtPosition(position);
-        }
-        else if (structureTile == generator.CastleTile)
-        {
-            // Reference an existing Castle object
-            return WorldRepository != null ? WorldRepository.GetCastleAtPosition(position) : generator.GetCastleAtPosition(position);
-        }
-        else if (structureTile == generator.VillageTile)
-        {
-            // Reference an existing Village object
-            return WorldRepository != null ? WorldRepository.GetVillageAtPosition(position) : generator.GetVillageAtPosition(position);
-        }
+            ISettlement settlement = null;
+            if (structureTile == generator.TownTile)
+            {
+                settlement = WorldRepository?.GetTownAtPosition(position) ?? generator.GetTownAtPosition(position);
+            }
+            else if (structureTile == generator.CastleTile)
+            {
+                settlement = WorldRepository?.GetCastleAtPosition(position) ?? generator.GetCastleAtPosition(position);
+            }
+            else if (structureTile == generator.VillageTile)
+            {
+                settlement = WorldRepository?.GetVillageAtPosition(position) ?? generator.GetVillageAtPosition(position);
+            }
 
-        // Return null if no settlement was found
-            return null;
+            return settlement;
         }
     }
 }

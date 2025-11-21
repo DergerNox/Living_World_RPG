@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LivingWorldRPG.Core;
 
 [Serializable]
 public class InventoryData
@@ -9,6 +10,10 @@ public class InventoryData
 
     public void AddItem(ItemData item)
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            return;
+        }
         if (item == null)
         {
             return;
@@ -20,6 +25,10 @@ public class InventoryData
 
     public void RemoveItem(ItemData item)
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            return;
+        }
         if (item == null)
         {
             return;
@@ -30,6 +39,10 @@ public class InventoryData
 
     public bool HasItem(ItemData item)
     {
+        if (!GameFeatureFlags.ItemsEnabled)
+        {
+            return false;
+        }
         return item != null && items.Contains(item);
     }
 

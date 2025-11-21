@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using LivingWorldRPG.Core;
 
 public class Town : ISettlement
 {
@@ -27,6 +28,10 @@ public class Town : ISettlement
     public int Income { get; set; }
     public int Expenses { get; set; }
     public int Taxes { get; set; }
+    public SettlementResourceLedger ResourceLedger { get; }
+    public IReadOnlyList<Village> SupplyVillages => supplyVillages;
+    public Castle ConnectedCastle { get; internal set; }
+    public int Treasury { get; private set; }
 
     // Constructor
     public Town(int x, int y)
@@ -43,14 +48,19 @@ public class Town : ISettlement
         BuildingsQueue = new Queue<Buildings>();
         IsTownUnderSiege = false;
         FactionId = -1;  // Assuming -1 means no faction assigned initially
+        ResourceLedger = new SettlementResourceLedger();
+        Treasury = 0;
 
         // Add rank 2 and 3 troops to AvailableUnits
         AddRank2And3Troops();
 
         // Initialize market
-        Market.AddItem(new ItemData { name = "Sword", type = ItemType.Weapon, value = 100 });
-        Market.AddItem(new ItemData { name = "Armor", type = ItemType.Armor, value = 150 });
-        Market.AddItem(new ItemData { name = "Health Potion", type = ItemType.Consumable, value = 50 });
+        if (GameFeatureFlags.TradingEnabled)
+        {
+            Market.AddItem(new ItemData { name = "Sword", type = ItemType.Weapon, value = 100 });
+            Market.AddItem(new ItemData { name = "Armor", type = ItemType.Armor, value = 150 });
+            Market.AddItem(new ItemData { name = "Health Potion", type = ItemType.Consumable, value = 50 });
+        }
 
         Income = 1000;
         Expenses = 500;
@@ -153,4 +163,95 @@ public class Town : ISettlement
             Debug.Log($"{Name} is under siege!");
         }
     }
+
+    public int ProcessEconomyTick(int days = 1)
+    {
+        days = Mathf.Max(1, days);
+        int profit = 0;
+        int processingCapacity = Mathf.Max(1, TownLevel) * days * 3;
+
+        foreach (var recipe in refinementRecipes)
+        {
+            if (processingCapacity <= 0)
+            {
+                break;
+            }
+
+            int availableA = ResourceLedger.GetBasic(recipe.InputA);
+            int availableB = ResourceLedger.GetBasic(recipe.InputB);
+            int batches = Mathf.Min(processingCapacity, availableA / recipe.CostA, availableB / recipe.CostB);
+            if (batches <= 0)
+            {
+                continue;
+            }
+
+            int consumedA = batches * recipe.CostA;
+            int consumedB = batches * recipe.CostB;
+            ResourceLedger.ConsumeBasic(recipe.InputA, consumedA);
+            ResourceLedger.ConsumeBasic(recipe.InputB, consumedB);
+            ResourceLedger.AddAdvanced(recipe.Output, batches);
+            profit += recipe.ProfitPerBatch * batches;
+            processingCapacity -= batches;
+        }
+
+        if (profit > 0)
+        {
+            Treasury += profit;
+            Income += profit;
+        }
+
+        return profit;
+    }
+
+    public void AddTreasury(int amount)
+    {
+        Treasury = Mathf.Max(0, Treasury + amount);
+    }
+
+    internal void RegisterVillageSupply(Village village)
+    {
+        if (village == null || supplyVillages.Contains(village))
+        {
+            return;
+        }
+
+        supplyVillages.Add(village);
+    }
+
+    internal void ResetSupplyNetwork()
+    {
+        supplyVillages.Clear();
+        ConnectedCastle = null;
+    }
+
+    private readonly List<Village> supplyVillages = new List<Village>();
+
+    public readonly struct RefinementRecipe
+    {
+        public RefinementRecipe(ResourceType inputA, ResourceType inputB, AdvancedResourcesTypes output, int costA, int costB, int profitPerBatch)
+        {
+            InputA = inputA;
+            InputB = inputB;
+            Output = output;
+            CostA = Mathf.Max(1, costA);
+            CostB = Mathf.Max(1, costB);
+            ProfitPerBatch = Mathf.Max(0, profitPerBatch);
+        }
+
+        public ResourceType InputA { get; }
+        public ResourceType InputB { get; }
+        public AdvancedResourcesTypes Output { get; }
+        public int CostA { get; }
+        public int CostB { get; }
+        public int ProfitPerBatch { get; }
+    }
+
+    private static readonly RefinementRecipe[] refinementRecipes =
+    {
+        new RefinementRecipe(ResourceType.Food, ResourceType.Salt, AdvancedResourcesTypes.Food, 5, 2, 12),
+        new RefinementRecipe(ResourceType.Wood, ResourceType.Iron, AdvancedResourcesTypes.ReinforcedWood, 6, 2, 15),
+        new RefinementRecipe(ResourceType.Stone, ResourceType.Clay, AdvancedResourcesTypes.StoneBriks, 5, 3, 14),
+        new RefinementRecipe(ResourceType.Iron, ResourceType.Coal, AdvancedResourcesTypes.Steel, 4, 3, 20),
+    };
+    public static IReadOnlyList<RefinementRecipe> RefinementRecipes => refinementRecipes;
 }

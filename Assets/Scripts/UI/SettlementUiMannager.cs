@@ -2,7 +2,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using System.Text;
+using System.Linq;
 using LivingWorldRPG.World;
+using LivingWorldRPG.Core;
 
 namespace LivingWorldRPG.UI
 {
@@ -18,8 +21,13 @@ namespace LivingWorldRPG.UI
 
         [Header("UI Elements")]
         [SerializeField] private TextMeshProUGUI settlementNameText;
+        [SerializeField] private TextMeshProUGUI factionNameText;
         [SerializeField] private Button recruitButton;
         [SerializeField] private Button tradeButton;
+        [SerializeField] private Button exitButton;
+        [SerializeField] private TextMeshProUGUI economySummaryText;
+        [SerializeField] private TextMeshProUGUI factionNeedText;
+        [SerializeField] private TextMeshProUGUI productionDetailsText;
 
         [Header("Troop List")]
         [SerializeField] private Transform troopContainer;
@@ -67,6 +75,13 @@ namespace LivingWorldRPG.UI
             if (recruitmentPanel != null && recruitmentPanel.activeSelf)
             {
                 OnCloseRecruitment();
+                return;
+            }
+            if (troopSelectionPanel != null && troopSelectionPanel.activeSelf)
+            {
+                troopSelectionPanel.SetActive(false);
+                if (uiPanel != null) uiPanel.SetActive(true);
+                return;
             }
             else if (uiPanel != null && uiPanel.activeSelf)
             {
@@ -89,8 +104,23 @@ namespace LivingWorldRPG.UI
 
             AudioService?.PlayUIMenuOpen();
 
-            recruitButton.gameObject.SetActive(true);
-            tradeButton.gameObject.SetActive(!(settlement is Castle));
+            bool canTrade = GameFeatureFlags.TradingEnabled && !(settlement is Castle);
+            if (recruitButton != null)
+            {
+                recruitButton.gameObject.SetActive(true);
+                recruitButton.interactable = true;
+            }
+            if (tradeButton != null)
+            {
+                tradeButton.gameObject.SetActive(canTrade);
+                tradeButton.interactable = canTrade;
+            }
+            if (exitButton != null)
+            {
+                exitButton.gameObject.SetActive(true);
+                exitButton.interactable = true;
+            }
+            UpdateEconomyWidgets(settlement);
         }
 
         public void CloseUI()
@@ -151,16 +181,28 @@ namespace LivingWorldRPG.UI
         if (currentSettlement != null)
         {
             settlementNameText.text = GetSettlementName(currentSettlement);
+            UpdateEconomyWidgets(currentSettlement);
         }                  // Return to settlement UI
     }
 
     public void OnTradeButton()
     {
+        if (!GameFeatureFlags.TradingEnabled)
+        {
+            Debug.LogWarning("Trading is disabled.");
+            return;
+        }
         // Play UI click sound
         AudioService?.PlayUIClick();
 
         Debug.Log($"Opening trade at {GetSettlementName(currentSettlement)}");
         // TODO: Implement trade UI
+    }
+
+    public void OnExitButton()
+    {
+        AudioService?.PlayUIClick();
+        CloseUI();
     }
 
     public void OnStatsButton()
@@ -266,6 +308,157 @@ namespace LivingWorldRPG.UI
         private void RecruitTroop(Troop selectedTroop)
         {
             Debug.Log($"Recruited {selectedTroop.Name}");
+        }
+
+        private void UpdateEconomyWidgets(ISettlement settlement)
+        {
+            if (economySummaryText != null)
+            {
+                economySummaryText.text = BuildEconomySummary(settlement);
+            }
+
+            if (factionNameText != null)
+            {
+                var faction = GetFactionForSettlement(settlement);
+                factionNameText.text = faction != null ? $"Faction: {faction.Name}" : "Faction: None";
+            }
+
+            if (factionNeedText != null)
+            {
+                var faction = GetFactionForSettlement(settlement);
+                factionNeedText.text = faction?.Economy?.BuildStatusLine() ?? "No faction data";
+            }
+
+            if (productionDetailsText != null)
+            {
+                productionDetailsText.text = BuildProductionDetails(settlement);
+            }
+        }
+
+        private string BuildEconomySummary(ISettlement settlement)
+        {
+            if (settlement == null)
+            {
+                return "No settlement selected";
+            }
+
+            switch (settlement)
+            {
+                case Village village:
+                    return $"Level {village.VillageLevel} village\nStock: {FormatBasicLedger(village.ResourceLedger)}";
+                case Town town:
+                    return $"Treasury {town.Treasury} | Income {town.Income}\nRaw: {FormatBasicLedger(town.ResourceLedger)}\nRefined: {FormatAdvancedLedger(town.ResourceLedger)}";
+                case Castle castle:
+                    return $"Garrison {castle.CurrentGarrisonSize}/{castle.MaxGarrisonSize}\nArmory: {FormatArmory(castle.Armory)}";
+                default:
+                    return "No economy data";
+            }
+        }
+
+        private string BuildProductionDetails(ISettlement settlement)
+        {
+            if (settlement == null)
+            {
+                return "No production data";
+            }
+
+            var sb = new StringBuilder();
+            switch (settlement)
+            {
+                case Village village:
+                    sb.AppendLine($"Produces ({village.VillageLevel} slots):");
+                    foreach (var type in village.ProductionTypes)
+                    {
+                        int perDay = village.GetDailyProduction(type);
+                        int stock = village.ResourceLedger.GetBasic(type);
+                        sb.AppendLine($"• {type}: {perDay}/day (stock {stock})");
+                    }
+                    break;
+                case Town town:
+                    sb.AppendLine("Refinement Chains:");
+                    foreach (var recipe in Town.RefinementRecipes)
+                    {
+                        int stockA = town.ResourceLedger.GetBasic(recipe.InputA);
+                        int stockB = town.ResourceLedger.GetBasic(recipe.InputB);
+                        int refined = town.ResourceLedger.GetAdvanced(recipe.Output);
+                        sb.AppendLine($"• {recipe.Output}: {recipe.InputA} x{recipe.CostA} + {recipe.InputB} x{recipe.CostB} → 1 | stock {refined} (inputs {stockA}/{stockB})");
+                    }
+                    break;
+                case Castle castle:
+                    sb.AppendLine("Equipment Forging:");
+                    foreach (var recipe in Castle.EquipmentRecipes)
+                    {
+                        int advStock = castle.ResourceLedger.GetAdvanced(recipe.RequiredAdvanced);
+                        int basicStock = castle.ResourceLedger.GetBasic(recipe.RequiredBasic);
+                        sb.AppendLine($"• {recipe.WeaponType}: {recipe.RequiredAdvanced} x{recipe.CostAdvanced} + {recipe.RequiredBasic} x{recipe.CostBasic} → {recipe.OutputCount} | advanced {advStock}, basic {basicStock}");
+                    }
+                    sb.AppendLine($"Supplies: {castle.Supplies}");
+                    break;
+                default:
+                    sb.Append("Production details unavailable.");
+                    break;
+            }
+
+            return sb.ToString();
+        }
+
+        private static string FormatBasicLedger(SettlementResourceLedger ledger, int maxEntries = 3)
+        {
+            if (ledger?.BasicResources == null || ledger.BasicResources.Count == 0)
+            {
+                return "None";
+            }
+
+            return string.Join(", ",
+                ledger.BasicResources
+                    .OrderByDescending(kvp => kvp.Value)
+                    .Take(maxEntries)
+                    .Select(kvp => $"{kvp.Key}:{kvp.Value}"));
+        }
+
+        private static string FormatAdvancedLedger(SettlementResourceLedger ledger, int maxEntries = 3)
+        {
+            if (ledger?.AdvancedResources == null || ledger.AdvancedResources.Count == 0)
+            {
+                return "None";
+            }
+
+            return string.Join(", ",
+                ledger.AdvancedResources
+                    .OrderByDescending(kvp => kvp.Value)
+                    .Take(maxEntries)
+                    .Select(kvp => $"{kvp.Key}:{kvp.Value}"));
+        }
+
+        private static string FormatArmory(IDictionary<WeaponTypes, int> armory, int maxEntries = 3)
+        {
+            if (armory == null || armory.Count == 0)
+            {
+                return "Empty";
+            }
+
+            return string.Join(", ",
+                armory
+                    .OrderByDescending(kvp => kvp.Value)
+                    .Take(maxEntries)
+                    .Select(kvp => $"{kvp.Key}:{kvp.Value}"));
+        }
+
+        private Faction GetFactionForSettlement(ISettlement settlement)
+        {
+            var repo = ResolveWorldSimulation()?.State;
+            if (repo == null || settlement == null)
+            {
+                return null;
+            }
+
+            int factionId = settlement.FactionId;
+            if (factionId < 0 || factionId >= repo.Factions.Count)
+            {
+                return null;
+            }
+
+            return repo.Factions[factionId];
         }
     }
 }

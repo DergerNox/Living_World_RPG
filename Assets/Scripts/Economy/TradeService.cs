@@ -1,4 +1,5 @@
 using UnityEngine;
+using LivingWorldRPG.Core;
 
 /// <summary>
 /// Default trade service implementing buy/sell logic between parties and towns.
@@ -22,6 +23,11 @@ public class TradeService : MonoBehaviour, ITradeService
 
     public bool TradeItemToMarket(Party party, Town town, ItemData item, int quantity)
     {
+        if (!GameFeatureFlags.TradingEnabled)
+        {
+            Debug.LogWarning("Trading is disabled.");
+            return false;
+        }
         if (party == null || town == null || item == null || quantity <= 0) return false;
         var market = town.Market;
         if (market == null) return false;
@@ -42,6 +48,11 @@ public class TradeService : MonoBehaviour, ITradeService
 
     public bool TradeItemFromMarket(Party party, Town town, ItemData item, int quantity)
     {
+        if (!GameFeatureFlags.TradingEnabled)
+        {
+            Debug.LogWarning("Trading is disabled.");
+            return false;
+        }
         if (party == null || town == null || item == null || quantity <= 0) return false;
         var market = town.Market;
         if (market == null) return false;

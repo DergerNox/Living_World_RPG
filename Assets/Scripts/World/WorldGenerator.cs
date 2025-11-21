@@ -132,7 +132,10 @@ namespace LivingWorldRPG.World
             for (int i = 0; i < _numberOfFactions; i++)
             {
                 Vector2 center = GetRandomMapPosition2D();
-                Faction faction = new Faction($"Faction {i + 1}", center, i);
+                Faction faction = new Faction($"Faction {i + 1}", center, i)
+                {
+                    Color = Random.ColorHSV(0f, 1f, 0.6f, 1f, 0.7f, 1f)
+                };
                 worldRepository.Factions.Add(faction);
             }
 
@@ -172,6 +175,8 @@ namespace LivingWorldRPG.World
                 Village village = new Village(position.x, position.y);
                 worldRepository.Villages.Add(village);
             }
+
+            SettlementEconomySystem.InitializeEconomy(worldRepository.Villages, worldRepository.Towns, worldRepository.Castles);
         }
 
         private void AssignSettlementsToFactions()

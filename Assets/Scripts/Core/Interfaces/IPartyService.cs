@@ -13,4 +13,9 @@ public interface IPartyService
     void RemoveParty(Party party);
     List<Party> GetPartiesAtPosition(Vector3Int position);
     void UpdatePartyPositions();
+
+    /// <summary>
+    /// Creates a resource convoy party so factions can respond to shortages.
+    /// </summary>
+    Party SpawnResourceConvoy(Faction faction, Vector3Int origin, Vector3Int destination, int amount, ResourceType? basicResource = null, AdvancedResourcesTypes? advancedResource = null, bool isTrader = false);
 }

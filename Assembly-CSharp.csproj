@@ -63,17 +63,20 @@
     <Compile Include="Assets\Scripts\Core\AssetLoading\ResourcesAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Core\GameSessionBootstrapper.cs" />
     <Compile Include="Assets\Scripts\Materials\WeaponTypes.cs" />
+    <Compile Include="Assets\Scripts\World\FactionMarkerManager.cs" />
     <Compile Include="Assets\Scripts\Dialogue.cs" />
     <Compile Include="Assets\Scripts\Inventory\Inventory.cs" />
     <Compile Include="Assets\Scripts\Inventory\Item.cs" />
     <Compile Include="Assets\Scripts\SkillTypeEnum.cs" />
     <Compile Include="Assets\Scripts\UI\TroopSelectionPanel.cs" />
     <Compile Include="Assets\Scripts\UI\BattleUI.cs" />
+    <Compile Include="Assets\Scripts\Settlements\SettlementResourceLedger.cs" />
     <Compile Include="Assets\Scripts\Interactions\SettlementInteractable.cs" />
     <Compile Include="Assets\Scripts\Interactions\Heap.cs" />
     <Compile Include="Assets\Scripts\Skills\Data\SkillEffectData.cs" />
     <Compile Include="Assets\Scripts\Characters\NPCView.cs" />
     <Compile Include="Assets\Scripts\Settlements\Outpost.cs" />
+    <Compile Include="Assets\Scripts\Core\GameFeatureFlags.cs" />
     <Compile Include="Assets\Scripts\Settlements\Castle.cs" />
     <Compile Include="Assets\Scripts\Core\Interfaces\IWorldSimulationService.cs" />
     <Compile Include="Assets\Scripts\Inventory\Equipment.cs" />
@@ -104,6 +107,7 @@
     <Compile Include="Assets\Scripts\Audio\AudioManager.cs" />
     <Compile Include="Assets\Scripts\Skills\Core\RogueSkill.cs" />
     <Compile Include="Assets\Scripts\NPCSpawner.cs" />
+    <Compile Include="Assets\Scripts\Settlements\SettlementEconomySystem.cs" />
     <Compile Include="Assets\Scripts\Troops\Formation.cs" />
     <Compile Include="Assets\Scripts\Core\Interfaces\IAudioService.cs" />
     <Compile Include="Assets\Scripts\Characters\NPCManager.cs" />
@@ -128,6 +132,8 @@
     <Compile Include="Assets\Scripts\SaveLoad\SaveLoadManager.cs" />
     <Compile Include="Assets\Scripts\UI\CharacterStatsUI.cs" />
     <Compile Include="Assets\Scripts\Core\TickSystem.cs" />
+    <Compile Include="Assets\Scripts\FactionEconomySnapshot.cs" />
+    <Compile Include="Assets\Scripts\UI\SettlementUIBuilder.cs" />
     <Compile Include="Assets\Scripts\Interactions\Node.cs" />
     <Compile Include="Assets\Scripts\FactionMaker.cs" />
     <Compile Include="Assets\Scripts\Battle.cs" />
@@ -150,6 +156,7 @@
     <Compile Include="Assets\Scripts\Skills\Core\SkillManager.cs" />
     <Compile Include="Assets\Scripts\PartySystem\PartyTypeEnum.cs" />
     <Compile Include="Assets\Scripts\Quest.cs" />
+    <Compile Include="Assets\Scripts\World\SettlementEconomyController.cs" />
     <Compile Include="Assets\Scripts\Characters\Player.cs" />
     <Compile Include="Assets\Scripts\Economy\TradeService.cs" />
     <Compile Include="Assets\Scripts\Skills\Effects\HealEffect.cs" />
@@ -163,6 +170,7 @@
     <Compile Include="Assets\Scripts\Core\Interfaces\IWorldStateRepository.cs" />
     <Compile Include="Assets\Scripts\Skills\Core\BaseSkill.cs" />
     <Compile Include="Assets\Scripts\World\TerrainTypeEnum.cs" />
+    <Compile Include="Assets\Scripts\UI\SettlementUILayout.cs" />
     <Compile Include="Assets\Scripts\LightingManager.cs" />
     <Compile Include="Assets\Scripts\Core\Interfaces\IPartyService.cs" />
     <Compile Include="Assets\Scripts\Core\AssetLoading\IAssetProvider.cs" />

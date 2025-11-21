@@ -10,6 +10,8 @@ public class Faction
     public List<Town> Towns { get { return towns; } set { towns = value; } }
     public List<Village> Villages { get { return villages; } set { villages = value; } }
     public int Id { get { return id; } set { id = value; } }
+    public Color Color { get; set; } = Color.white;
+    public FactionEconomySnapshot Economy { get; private set; } = new FactionEconomySnapshot();
     //Constructor
     public Faction(string name, Vector2 center,int id)
     {
@@ -24,4 +26,9 @@ public class Faction
     private List<Castle> castles = new List<Castle>();
     private List<Town> towns = new List<Town>();
     private List<Village> villages = new List<Village>();
+
+    internal void ApplyEconomySnapshot(FactionEconomySnapshot snapshot)
+    {
+        Economy = snapshot ?? new FactionEconomySnapshot();
+    }
 }

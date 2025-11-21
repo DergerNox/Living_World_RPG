@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using LivingWorldRPG.Core;
 using TMPro;
 using System.Collections.Generic;
 
@@ -59,7 +60,16 @@ public class BattleUI : MonoBehaviour
         if (attackButton != null)
             attackButton.onClick.AddListener(OnAttackButtonClicked);
         if (useSkillButton != null)
-            useSkillButton.onClick.AddListener(OnUseSkillButtonClicked);
+        {
+            if (GameFeatureFlags.SkillsEnabled)
+            {
+                useSkillButton.onClick.AddListener(OnUseSkillButtonClicked);
+            }
+            else
+            {
+                useSkillButton.gameObject.SetActive(false);
+            }
+        }
         if (retreatButton != null)
             retreatButton.onClick.AddListener(OnRetreatButtonClicked);
         if (endTurnButton != null)
@@ -168,6 +178,11 @@ public class BattleUI : MonoBehaviour
 
     private void OnUseSkillButtonClicked()
     {
+        if (!GameFeatureFlags.SkillsEnabled)
+        {
+            Debug.LogWarning("Skills are disabled for launch.");
+            return;
+        }
         if (selectedAttackerTroop != null && isPlayerTurn)
         {
             // Open skill selection panel

@@ -1,29 +1,20 @@
-using LivingWorldRPG.World;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace LivingWorldRPG.World
 {
-    /// <summary>
-    /// Legacy walker-based terrain/settlement generator used for prototyping.
-    /// Writes its results back into the shared world simulation service.
-    /// </summary>
     public class WalkerGenerator : MonoBehaviour
     {
-        public enum Grid
+        private enum Cell
         {
-            FLOOR,
-            WALL,
-            EMPTY,
-            CASTLE,
-            TOWN,
-            VILLAGE
+            Floor,
+            Wall
         }
 
         [Header("Tilemaps")]
@@ -38,89 +29,101 @@ namespace LivingWorldRPG.World
         [SerializeField] private Tile villageTile;
 
         [Header("Generation Settings")]
-        [SerializeField, Min(1)] private int mapWidth = 30;
-        [SerializeField, Min(1)] private int mapHeight = 30;
-        [SerializeField, Range(0.1f, 0.9f)] private float fillPercentage = 0.4f;
-        [SerializeField, Min(0)] private int castleCount = 30;
-        [SerializeField, Min(0)] private int townCount = 60;
-        [SerializeField, Min(0)] private int villageCount = 160;
-        [SerializeField, Min(1)] private int minSettlementSpacing = 4;
-        [SerializeField, Range(2f, 80f)] private float villageMinSpacing = 8f;
+        [SerializeField, Min(1)] private int mapWidth = 512;
+        [SerializeField, Min(1)] private int mapHeight = 512;
+        [SerializeField, Range(2f, 80f)] private float villageMinSpacing = 6f;
+        [SerializeField, Min(0.1f)] private float villagesPerHundredLand = 1.4f;
+        [SerializeField, Min(0.1f)] private float villagesPerTownRatio = 5.5f;
+        [SerializeField, Min(0.1f)] private float townsPerCastleRatio = 2.2f;
+        [SerializeField, Range(0.5f, 3f)] private float densityMultiplier = 1.4f;
+        [SerializeField, Min(1)] private int townLloydIterations = 2;
+        [SerializeField, Min(1)] private int castleLloydIterations = 2;
+        [SerializeField, Min(1)] private int numberOfFactions = 5;
 
         [Header("Noise Settings")]
-        [SerializeField, Min(0.0001f)] private float landNoiseScale = 0.008f;
-        [SerializeField, Min(0.0001f)] private float detailNoiseScale = 0.04f;
-        [SerializeField, Range(0f, 1f)] private float detailBlend = 0.35f;
+        [SerializeField, Min(0.00001f)] private float continentScale = 0.0025f;
+        [SerializeField, Min(0.0001f)] private float detailNoiseScale = 0.02f;
+        [SerializeField, Range(0f, 1f)] private float detailBlend = 0.2f;
+        [SerializeField, Range(0f, 2f)] private float falloffStrength = 0.9f;
+        [SerializeField, Range(1f, 6f)] private float falloffPower = 3f;
         [SerializeField] private Vector2 noiseOffset = Vector2.zero;
+        [SerializeField, Min(0)] private int terrainBlurIterations = 1;
         [SerializeField, Min(0)] private int smoothingIterations = 2;
         [SerializeField, Range(0f, 1f)] private float fertileHeightMin = 0.12f;
-        [SerializeField, Range(0f, 1f)] private float fertileHeightMax = 0.9f;
+        [SerializeField, Range(0f, 1f)] private float fertileHeightMax = 0.88f;
         [SerializeField] private bool useFixedNoiseSeed = false;
         [SerializeField] private int noiseSeed = 0;
 
-        [Header("Layered Placement")]
-        [SerializeField, Min(1)] private int minVillagesPerTown = 3;
-        [SerializeField, Min(1)] private int townClusterRadius = 6;
-        [SerializeField, Min(1)] private int castleCoverageRadius = 10;
-        [SerializeField, Min(1)] private int maxTownsPerCastle = 3;
+        [Header("Spacing Controls")]
+        [SerializeField, Min(1)] private int townClusterRadius = 8;
+        [SerializeField, Min(1)] private int castleCoverageRadius = 16;
 
-        [Header("Auto Scaling")]
-        [SerializeField] private bool autoScaleSettlements = true;
-        [Tooltip("Castles per 100 fertile tiles when auto scaling is enabled.")]
-        [SerializeField, Min(0f)] private float castleDensityPerHundredTiles = 0.18f;
-        [Tooltip("Towns per 100 fertile tiles when auto scaling is enabled.")]
-        [SerializeField, Min(0f)] private float townDensityPerHundredTiles = 0.55f;
-        [Tooltip("Villages per 100 fertile tiles when auto scaling is enabled.")]
-        [SerializeField, Min(0f)] private float villageDensityPerHundredTiles = 1.2f;
+        private readonly List<Vector3Int> villagePositions = new List<Vector3Int>();
+        private readonly List<Vector3Int> townPositions = new List<Vector3Int>();
+        private readonly List<Vector3Int> castlePositions = new List<Vector3Int>();
+        private readonly Dictionary<Vector3Int, Village> villagesByPosition = new Dictionary<Vector3Int, Village>();
+        private readonly Dictionary<Vector3Int, Town> townsByPosition = new Dictionary<Vector3Int, Town>();
+        private readonly Dictionary<Vector3Int, Castle> castlesByPosition = new Dictionary<Vector3Int, Castle>();
+        private FactionMaker factionMaker;
 
-        [Header("Debug/References")]
-        [SerializeField] private GameObject gameLogicRoot;
+        private const int HistogramBuckets = 256;
+        private readonly int[] noiseHistogram = new int[HistogramBuckets];
+        private TileBase[] floorTileBuffer;
+        private TileBase[] structureTileBuffer;
+        private float[] heightBuffer;
+        private int landCellCount;
+        private int fertileCellCount;
+        private int villageCount;
+        private int townCount;
+        private int castleCount;
 
-        public int MapWidth => mapWidth;
-        public int MapHeight => mapHeight;
+        private Cell[,] grid;
+        private IWorldSimulationService worldSimulation;
+        private IWorldStateRepository WorldRepository => worldSimulation?.State;
+
         public Tilemap FloorTilemap => floorTilemap;
         public Tilemap StructureTilemap => structureTilemap;
         public Tile FloorTile => floorTile;
         public Tile CastleTile => castleTile;
         public Tile TownTile => townTile;
         public Tile VillageTile => villageTile;
+        public int MapWidth => mapWidth;
+        public int MapHeight => mapHeight;
+        public Village GetVillageAtPosition(Vector3Int position)
+        {
+            position.z = 0;
+            villagesByPosition.TryGetValue(position, out var village);
+            return village;
+        }
 
-        private readonly System.Random random = new System.Random();
-        private Grid[,] gridHandler;
+        public Town GetTownAtPosition(Vector3Int position)
+        {
+            position.z = 0;
+            townsByPosition.TryGetValue(position, out var town);
+            return town;
+        }
 
-        private readonly Dictionary<Vector3Int, Town> townMap = new Dictionary<Vector3Int, Town>();
-        private readonly Dictionary<Vector3Int, Castle> castleMap = new Dictionary<Vector3Int, Castle>();
-        private readonly Dictionary<Vector3Int, Village> villageMap = new Dictionary<Vector3Int, Village>();
-
-        private readonly List<Vector3Int> villagePositions = new List<Vector3Int>();
-        private readonly List<Vector3Int> townPositions = new List<Vector3Int>();
-        private readonly List<Vector3Int> castlePositions = new List<Vector3Int>();
-
-        private readonly List<Vector2Int> spacingOffsets = new List<Vector2Int>();
-        private int cachedSpacingRadius = -1;
-
-        private TileBase[] floorTileBuffer;
-        private TileBase[] structureTileBuffer;
-        private float[] heightBuffer;
-        private const int NoiseHistogramBuckets = 256;
-        private readonly int[] noiseHistogram = new int[NoiseHistogramBuckets];
-        private int fertileCellCount;
-
-        private IWorldSimulationService worldSimulation;
-        private IWorldStateRepository WorldState => worldSimulation?.State;
+        public Castle GetCastleAtPosition(Vector3Int position)
+        {
+            position.z = 0;
+            castlesByPosition.TryGetValue(position, out var castle);
+            return castle;
+        }
 
         public event Action GenerationCompleted;
         public bool IsGenerationComplete { get; private set; }
-        private float previousTimeScale = 1f;
+        private float cachedTimeScale = 1f;
 
         private void Start()
         {
             if (!ServiceLocator.TryResolve(out worldSimulation) || worldSimulation == null)
             {
-                Debug.LogError("WalkerGenerator requires an IWorldSimulationService. Generation aborted.");
+                Debug.LogError("WalkerGenerator requires an IWorldSimulationService.");
                 enabled = false;
                 return;
             }
+
+            ServiceLocator.TryResolve(out factionMaker);
 
             WorldGenerationState.BeginGeneration();
             StartCoroutine(GenerateWorldRoutine());
@@ -128,111 +131,144 @@ namespace LivingWorldRPG.World
 
         private IEnumerator GenerateWorldRoutine()
         {
-            previousTimeScale = Time.timeScale;
+            cachedTimeScale = Time.timeScale;
             Time.timeScale = 0f;
-            ResetWorldState();
+
+            ResetState();
             EnsureBuffers();
 
             yield return GenerateTerrainCoroutine();
-            CalculateSettlementCounts();
+            CalculateCounts();
             yield return CreateVillagesCoroutine();
             yield return CreateTownsCoroutine();
             yield return CreateCastlesCoroutine();
 
+            CacheSettlementInstances();
             ApplyTilemaps();
-            FactionMaker.Instance?.AssignFactions(castleMap, townMap, villageMap);
-            WorldState?.RebuildSpatialCaches();
-            CompleteGeneration();
+            WorldGenerationState.EndGeneration();
+            Time.timeScale = cachedTimeScale;
+            IsGenerationComplete = true;
+            GenerationCompleted?.Invoke();
         }
 
-        private void ResetWorldState()
+        private void ResetState()
         {
             villagePositions.Clear();
             townPositions.Clear();
             castlePositions.Clear();
-            townMap.Clear();
-            castleMap.Clear();
-            villageMap.Clear();
-            gridHandler = new Grid[mapWidth, mapHeight];
+            villagesByPosition.Clear();
+            townsByPosition.Clear();
+            castlesByPosition.Clear();
+            grid = new Cell[mapWidth, mapHeight];
+            landCellCount = fertileCellCount = villageCount = townCount = castleCount = 0;
             IsGenerationComplete = false;
         }
 
         private void EnsureBuffers()
         {
             int size = mapWidth * mapHeight;
-            if (size <= 0)
-            {
-                return;
-            }
-
-            if (floorTileBuffer == null || floorTileBuffer.Length != size)
-            {
-                floorTileBuffer = new TileBase[size];
-            }
-
-            if (structureTileBuffer == null || structureTileBuffer.Length != size)
-            {
-                structureTileBuffer = new TileBase[size];
-            }
-
-            if (heightBuffer == null || heightBuffer.Length != size)
-            {
-                heightBuffer = new float[size];
-            }
-
-            Array.Clear(noiseHistogram, 0, noiseHistogram.Length);
+            floorTileBuffer = floorTileBuffer?.Length == size ? floorTileBuffer : new TileBase[size];
+            structureTileBuffer = structureTileBuffer?.Length == size ? structureTileBuffer : new TileBase[size];
+            heightBuffer = heightBuffer?.Length == size ? heightBuffer : new float[size];
         }
 
         private IEnumerator GenerateTerrainCoroutine()
         {
-            System.Random noiseRandom = useFixedNoiseSeed ? new System.Random(noiseSeed) : random;
-            float offsetX = noiseOffset.x + noiseRandom.Next(-10000, 10000);
-            float offsetY = noiseOffset.y + noiseRandom.Next(-10000, 10000);
+            var rng = useFixedNoiseSeed ? new System.Random(noiseSeed) : new System.Random();
+            float offsetX = noiseOffset.x + rng.Next(-65536, 65536);
+            float offsetY = noiseOffset.y + rng.Next(-65536, 65536);
+            float detailOffsetX = noiseOffset.x + rng.Next(-65536, 65536);
+            float detailOffsetY = noiseOffset.y + rng.Next(-65536, 65536);
 
-            int totalCells = mapWidth * mapHeight;
-            NativeArray<float> noiseResults = new NativeArray<float>(totalCells, Allocator.TempJob);
-            var job = new DualPerlinNoiseJob
+            int total = mapWidth * mapHeight;
+            NativeArray<float> noise = new NativeArray<float>(total, Allocator.Persistent);
+            var noiseJob = new ContinentNoiseJob
             {
                 width = mapWidth,
                 height = mapHeight,
-                offsetX = offsetX,
-                offsetY = offsetY,
-                landScale = landNoiseScale,
+                continentScale = continentScale,
                 detailScale = detailNoiseScale,
                 detailBlend = detailBlend,
-                result = noiseResults
+                falloffPower = falloffPower,
+                falloffStrength = falloffStrength,
+                offsetX = offsetX,
+                offsetY = offsetY,
+                detailOffsetX = detailOffsetX,
+                detailOffsetY = detailOffsetY,
+                result = noise
             };
 
-            JobHandle handle = job.Schedule(totalCells, 512);
+            JobHandle handle = noiseJob.Schedule(total, 256);
             while (!handle.IsCompleted)
             {
                 yield return null;
             }
             handle.Complete();
 
-            noiseResults.CopyTo(heightBuffer);
-            noiseResults.Dispose();
+            NativeArray<float> current = noise;
+            NativeArray<float> temp = default;
+            if (terrainBlurIterations > 0)
+            {
+                temp = new NativeArray<float>(total, Allocator.Persistent);
+            }
 
+            for (int i = 0; i < terrainBlurIterations; i++)
+            {
+                var blur = new BlurHeightJob
+                {
+                    width = mapWidth,
+                    height = mapHeight,
+                    source = current,
+                    destination = temp
+                };
+                JobHandle blurHandle = blur.Schedule(total, 256);
+                while (!blurHandle.IsCompleted)
+                {
+                    yield return null;
+                }
+                blurHandle.Complete();
+
+                var swap = current;
+                current = temp;
+                temp = swap;
+            }
+
+            current.CopyTo(heightBuffer);
+
+            bool noiseDisposed = false;
+            if (current.IsCreated)
+            {
+                if (current == noise) noiseDisposed = true;
+                current.Dispose();
+            }
+            if (temp.IsCreated && temp != current)
+            {
+                if (temp == noise) noiseDisposed = true;
+                temp.Dispose();
+            }
+            if (!noiseDisposed && noise.IsCreated)
+            {
+                noise.Dispose();
+            }
+
+            Array.Clear(noiseHistogram, 0, noiseHistogram.Length);
             int idx = 0;
-            int rowsPerYield = Mathf.Max(1, mapHeight / 32);
             for (int y = 0; y < mapHeight; y++)
             {
                 for (int x = 0; x < mapWidth; x++, idx++)
                 {
-                    float noiseValue = heightBuffer[idx];
-                    int bucket = Mathf.Clamp(Mathf.RoundToInt(noiseValue * (NoiseHistogramBuckets - 1)), 0, NoiseHistogramBuckets - 1);
+                    float val = heightBuffer[idx];
+                    int bucket = Mathf.Clamp(Mathf.RoundToInt(val * (noiseHistogram.Length - 1)), 0, noiseHistogram.Length - 1);
                     noiseHistogram[bucket]++;
                 }
-
-                if ((y % rowsPerYield) == 0)
+                if (y % 64 == 0)
                 {
                     yield return null;
                 }
             }
 
-            float threshold = DetermineNoiseThreshold(totalCells);
-
-            NativeArray<int> gridArray = new NativeArray<int>(totalCells, Allocator.TempJob);
+            float threshold = DetermineThreshold(mapWidth * mapHeight);
+            NativeArray<int> gridArray = new NativeArray<int>(total, Allocator.Persistent);
             idx = 0;
             for (int y = 0; y < mapHeight; y++)
             {
@@ -240,196 +276,51 @@ namespace LivingWorldRPG.World
                 {
                     gridArray[idx] = heightBuffer[idx] >= threshold ? 1 : 0;
                 }
-
-                if ((y % rowsPerYield) == 0)
-                {
-                    yield return null;
-                }
+                if (y % 64 == 0) yield return null;
             }
 
-            for (int iter = 0; iter < Mathf.Max(0, smoothingIterations); iter++)
+            for (int i = 0; i < smoothingIterations; i++)
             {
-                NativeArray<int> next = new NativeArray<int>(totalCells, Allocator.TempJob);
-                var smoothJob = new SmoothingJob
+                NativeArray<int> next = new NativeArray<int>(total, Allocator.Persistent);
+                var smooth = new SmoothingJob
                 {
                     width = mapWidth,
                     height = mapHeight,
                     source = gridArray,
                     destination = next
                 };
-                JobHandle smoothHandle = smoothJob.Schedule(totalCells, 512);
-                while (!smoothHandle.IsCompleted)
-                {
-                    yield return null;
-                }
+                JobHandle smoothHandle = smooth.Schedule(total, 256);
+                while (!smoothHandle.IsCompleted) yield return null;
                 smoothHandle.Complete();
-
                 gridArray.Dispose();
                 gridArray = next;
             }
 
             idx = 0;
-            fertileCellCount = 0;
             for (int y = 0; y < mapHeight; y++)
             {
                 for (int x = 0; x < mapWidth; x++, idx++)
                 {
-                    bool isFloor = gridArray[idx] == 1;
-                    if (isFloor && IsHeightFertile(heightBuffer[idx]))
+                    bool floor = gridArray[idx] == 1;
+                    if (floor)
                     {
-                        fertileCellCount++;
+                        landCellCount++;
+                        if (IsHeightFertile(heightBuffer[idx])) fertileCellCount++;
                     }
-                    gridHandler[x, y] = isFloor ? Grid.FLOOR : Grid.WALL;
+                    grid[x, y] = floor ? Cell.Floor : Cell.Wall;
                 }
-
-                if ((y % rowsPerYield) == 0)
-                {
-                    yield return null;
-                }
+                if (y % 64 == 0) yield return null;
             }
 
             gridArray.Dispose();
         }
 
-        private bool IsHeightFertile(float height)
+        private void CalculateCounts()
         {
-            return height >= fertileHeightMin && height <= fertileHeightMax;
-        }
-
-        private float DetermineNoiseThreshold(int totalCells)
-        {
-            if (totalCells <= 0)
-            {
-                return 0.5f;
-            }
-
-            int targetLandCells = Mathf.Clamp(Mathf.RoundToInt(totalCells * fillPercentage), 1, totalCells);
-            int cumulative = 0;
-
-            for (int bucket = NoiseHistogramBuckets - 1; bucket >= 0; bucket--)
-            {
-                cumulative += noiseHistogram[bucket];
-                if (cumulative >= targetLandCells)
-                {
-                    return bucket / (float)(NoiseHistogramBuckets - 1);
-                }
-            }
-
-            return fillPercentage;
-        }
-
-        private void CalculateSettlementCounts()
-        {
-            if (!autoScaleSettlements)
-            {
-                return;
-            }
-
-            float fertileHundreds = Mathf.Max(1f, fertileCellCount / 100f);
-
-            castleCount = Mathf.Clamp(Mathf.RoundToInt(fertileHundreds * castleDensityPerHundredTiles), 15, 55);
-            townCount = Mathf.Clamp(Mathf.RoundToInt(fertileHundreds * townDensityPerHundredTiles), 40, 150);
-            villageCount = Mathf.Clamp(Mathf.RoundToInt(fertileHundreds * villageDensityPerHundredTiles), 80, 250);
-        }
-
-        private IEnumerator CreateTownsCoroutine()
-        {
-            if (villagePositions.Count == 0)
-            {
-                yield break;
-            }
-
-            float minDistance = Mathf.Max(4f, townClusterRadius);
-            float minDistanceSqr = minDistance * minDistance;
-            int targetTowns = Mathf.Max(1, townCount);
-            int iterations = 0;
-            float chunkSize = Mathf.Max(2f, townClusterRadius);
-            int chunksX = Mathf.Max(1, Mathf.CeilToInt(mapWidth / chunkSize));
-            int chunksY = Mathf.Max(1, Mathf.CeilToInt(mapHeight / chunkSize));
-            var chunkVillages = new List<Vector3Int>[chunksX * chunksY];
-            var chunkScores = new List<ChunkInfo>();
-
-            foreach (var village in villagePositions)
-            {
-                int cx = Mathf.Clamp(Mathf.FloorToInt(village.x / chunkSize), 0, chunksX - 1);
-                int cy = Mathf.Clamp(Mathf.FloorToInt(village.y / chunkSize), 0, chunksY - 1);
-                int idx = cx + cy * chunksX;
-                var list = chunkVillages[idx] ??= new List<Vector3Int>();
-                list.Add(village);
-            }
-
-            for (int i = 0; i < chunkVillages.Length; i++)
-            {
-                var list = chunkVillages[i];
-                if (list == null || list.Count == 0)
-                {
-                    continue;
-                }
-
-                float score = 0f;
-                foreach (var cell in list)
-                {
-                    score += SampleHeight(cell);
-                }
-                score /= list.Count;
-                chunkScores.Add(new ChunkInfo { ChunkIndex = i, Score = score });
-            }
-
-            chunkScores.Sort((a, b) => b.Score.CompareTo(a.Score));
-
-            foreach (var chunk in chunkScores)
-            {
-                if (townPositions.Count >= targetTowns)
-                {
-                    break;
-                }
-
-                var list = chunkVillages[chunk.ChunkIndex];
-                if (list == null || list.Count == 0)
-                {
-                    continue;
-                }
-
-                Vector3 centroid = Vector3.zero;
-                foreach (var cell in list)
-                {
-                    centroid += (Vector3)cell;
-                }
-                centroid /= list.Count;
-
-                Vector3Int candidate = new Vector3Int(Mathf.RoundToInt(centroid.x), Mathf.RoundToInt(centroid.y), 0);
-                if (!TryFindFloorCellNear(candidate, out Vector3Int townCell, townClusterRadius))
-                {
-                    townCell = list[0];
-                }
-
-                bool tooClose = false;
-                foreach (var existing in townPositions)
-                {
-                    if ((existing - townCell).sqrMagnitude < minDistanceSqr)
-                    {
-                        tooClose = true;
-                        break;
-                    }
-                }
-
-                if (tooClose)
-                {
-                    continue;
-                }
-
-                TryPlaceTownCell(townCell);
-
-                if (++iterations % 6 == 0)
-                {
-                    yield return null;
-                }
-            }
-
-            if (townPositions.Count == 0 && villagePositions.Count > 0)
-            {
-                TryPlaceTownCell(villagePositions[0]);
-            }
+            float landHundreds = Mathf.Max(1f, landCellCount / 100f);
+            villageCount = Mathf.RoundToInt(Mathf.Clamp(landHundreds * villagesPerHundredLand, 20f, 400f) * densityMultiplier);
+            townCount = Mathf.RoundToInt(Mathf.Clamp(villageCount / villagesPerTownRatio, 8f, 200f));
+            castleCount = Mathf.RoundToInt(Mathf.Clamp(townCount / townsPerCastleRatio, 4f, 90f));
         }
 
         private IEnumerator CreateVillagesCoroutine()
@@ -442,25 +333,20 @@ namespace LivingWorldRPG.World
             float radiusSqr = radius * radius;
             int stride = Mathf.Max(1, Mathf.RoundToInt(radius));
             int halfStride = Mathf.Max(1, stride / 2);
-            System.Random localRandom = useFixedNoiseSeed ? new System.Random(noiseSeed) : random;
 
-            NativeArray<int> floorMask = new NativeArray<int>(mapWidth * mapHeight, Allocator.TempJob);
+            NativeArray<int> floorMask = new NativeArray<int>(mapWidth * mapHeight, Allocator.Persistent);
             int idx = 0;
             for (int y = 0; y < mapHeight; y++)
             {
                 for (int x = 0; x < mapWidth; x++, idx++)
                 {
-                    floorMask[idx] = gridHandler[x, y] == Grid.FLOOR && IsHeightFertile(heightBuffer[idx]) ? 1 : 0;
+                    floorMask[idx] = grid[x, y] == Cell.Floor && IsHeightFertile(heightBuffer[idx]) ? 1 : 0;
                 }
-
-                if ((y % 64) == 0)
-                {
-                    yield return null;
-                }
+                if (y % 64 == 0) yield return null;
             }
 
-            int estimatedCandidates = Mathf.Max(1, (mapWidth / stride + 2) * (mapHeight / stride + 2));
-            NativeList<int> candidateList = new NativeList<int>(estimatedCandidates, Allocator.TempJob);
+            int estimate = Mathf.Max(1, (mapWidth / stride + 2) * (mapHeight / stride + 2));
+            NativeList<int> candidateList = new NativeList<int>(estimate, Allocator.Persistent);
             var candidateJob = new RegionCandidateJob
             {
                 width = mapWidth,
@@ -468,106 +354,142 @@ namespace LivingWorldRPG.World
                 stride = stride,
                 halfStride = halfStride,
                 floorMask = floorMask,
-                randomSeed = (uint)(noiseSeed == 0 ? 1 : noiseSeed) + 123u,
+                randomSeed = (uint)(noiseSeed == 0 ? 1 : noiseSeed) + 1337u,
                 results = candidateList
             };
 
             JobHandle handle = candidateJob.Schedule();
-            while (!handle.IsCompleted)
-            {
-                yield return null;
-            }
+            while (!handle.IsCompleted) yield return null;
             handle.Complete();
             floorMask.Dispose();
 
-            var managedCandidates = new List<Vector3Int>(candidateList.Length);
+            var candidates = new List<Vector3Int>(candidateList.Length);
             for (int i = 0; i < candidateList.Length; i++)
             {
                 int flat = candidateList[i];
-                managedCandidates.Add(new Vector3Int(flat % mapWidth, flat / mapWidth, 0));
+                candidates.Add(new Vector3Int(flat % mapWidth, flat / mapWidth, 0));
             }
             candidateList.Dispose();
 
-            // Shuffle candidates
-            for (int i = managedCandidates.Count - 1; i > 0; i--)
+            var rng = new System.Random(noiseSeed + 97);
+            for (int i = candidates.Count - 1; i > 0; i--)
             {
-                int j = localRandom.Next(i + 1);
-                (managedCandidates[i], managedCandidates[j]) = (managedCandidates[j], managedCandidates[i]);
+                int swap = rng.Next(i + 1);
+                (candidates[i], candidates[swap]) = (candidates[swap], candidates[i]);
             }
 
             int placed = 0;
-            for (int i = 0; i < managedCandidates.Count && placed < villageCount; i++)
+            for (int i = 0; i < candidates.Count && placed < villageCount; i++)
             {
-                var candidate = managedCandidates[i];
-                if (!IsValidVillageCandidate(candidate, buckets, bucketsX, bucketsY, cellSize, radiusSqr, mapWidth, mapHeight))
-                {
+                var candidate = candidates[i];
+                if (!IsValidVillageCandidate(candidate, buckets, bucketsX, bucketsY, cellSize, radiusSqr))
                     continue;
-                }
 
-                if (TryPlaceVillageCell(candidate))
+                if (TryPlaceVillage(candidate))
                 {
                     placed++;
-                    AddToBucket(candidate, buckets, bucketsX, bucketsY, cellSize, mapWidth, mapHeight);
+                    AddToBucket(candidate, buckets, bucketsX, bucketsY, cellSize);
                 }
 
-                if ((i % 24) == 0)
-                {
-                    yield return null;
-                }
+                if (i % 32 == 0) yield return null;
             }
 
-            if (placed >= villageCount)
-            {
-                yield break;
-            }
-
-            float fallbackRadius = Mathf.Max(2f, radius * 0.5f);
-            float fallbackRadiusSqr = fallbackRadius * fallbackRadius;
+            float relaxedRadiusSqr = Mathf.Max(1f, radiusSqr * 0.25f);
             for (int y = 1; y < mapHeight - 1 && placed < villageCount; y++)
             {
                 for (int x = 1; x < mapWidth - 1 && placed < villageCount; x++)
                 {
                     var candidate = new Vector3Int(x, y, 0);
-                    if (!IsValidVillageCandidate(candidate, buckets, bucketsX, bucketsY, cellSize, fallbackRadiusSqr, mapWidth, mapHeight))
-                    {
+                    if (!IsValidVillageCandidate(candidate, buckets, bucketsX, bucketsY, cellSize, relaxedRadiusSqr))
                         continue;
-                    }
 
-                    if (TryPlaceVillageCell(candidate))
+                    if (TryPlaceVillage(candidate))
                     {
                         placed++;
-                        AddToBucket(candidate, buckets, bucketsX, bucketsY, cellSize, mapWidth, mapHeight);
+                        AddToBucket(candidate, buckets, bucketsX, bucketsY, cellSize);
                     }
 
-                    if (((x + y) % 96) == 0)
-                    {
-                        yield return null;
-                    }
+                    if (((x + y) & 63) == 0) yield return null;
                 }
             }
 
-            if (placed < villageCount)
+            for (int y = 1; y < mapHeight - 1 && placed < villageCount; y++)
             {
-                for (int y = 1; y < mapHeight - 1 && placed < villageCount; y++)
+                for (int x = 1; x < mapWidth - 1 && placed < villageCount; x++)
                 {
-                    for (int x = 1; x < mapWidth - 1 && placed < villageCount; x++)
+                    if (grid[x, y] != Cell.Floor || !IsHeightFertile(heightBuffer[x + y * mapWidth]))
+                        continue;
+
+                    if (TryPlaceVillage(new Vector3Int(x, y, 0)))
                     {
-                        if (gridHandler[x, y] != Grid.FLOOR || !IsHeightFertile(heightBuffer[x + y * mapWidth]))
-                        {
-                            continue;
-                        }
+                        placed++;
+                    }
 
-                        if (TryPlaceVillageCell(new Vector3Int(x, y, 0)))
-                        {
-                            placed++;
-                        }
+                    if (((x + y) & 127) == 0) yield return null;
+                }
+            }
+        }
 
-                        if (((x + y) % 160) == 0)
-                        {
-                            yield return null;
-                        }
+        private IEnumerator CreateTownsCoroutine()
+        {
+            if (villagePositions.Count == 0)
+            {
+                yield break;
+            }
+
+            int targetTowns = Mathf.Clamp(townCount, 1, villagePositions.Count);
+            System.Random rng = useFixedNoiseSeed ? new System.Random(noiseSeed + 741) : new System.Random();
+            List<Vector3> centroids = InitializeCentroids(villagePositions, targetTowns, rng);
+            var assignments = new List<Vector3Int>[centroids.Count];
+            for (int i = 0; i < assignments.Length; i++) assignments[i] = new List<Vector3Int>();
+
+            for (int iter = 0; iter < townLloydIterations; iter++)
+            {
+                foreach (var list in assignments) list.Clear();
+                foreach (var village in villagePositions)
+                {
+                    int idx = FindClosestCentroid(centroids, village);
+                    assignments[idx].Add(village);
+                }
+                for (int i = 0; i < centroids.Count; i++)
+                {
+                    if (assignments[i].Count > 0)
+                    {
+                        centroids[i] = ComputeAverage(assignments[i]);
                     }
                 }
+                yield return null;
+            }
+
+            float minDist = Mathf.Max(2f, townClusterRadius);
+            float minDistSqr = minDist * minDist;
+            for (int i = 0; i < assignments.Length && townPositions.Count < targetTowns; i++)
+            {
+                var cluster = assignments[i];
+                if (cluster.Count == 0) continue;
+
+                Vector3 centroid = ComputeAverage(cluster);
+                Vector3Int desired = new Vector3Int(Mathf.RoundToInt(centroid.x), Mathf.RoundToInt(centroid.y), 0);
+                if (!TryFindFloorCellNear(desired, out Vector3Int townCell, Mathf.CeilToInt(minDist)))
+                {
+                    townCell = cluster[0];
+                }
+
+                if (!IsFarEnough(townPositions, townCell, minDistSqr))
+                    continue;
+
+                PlaceTown(townCell);
+                if ((i & 3) == 0) yield return null;
+            }
+
+            for (int i = 0; i < villagePositions.Count && townPositions.Count < targetTowns; i++)
+            {
+                Vector3Int candidate = villagePositions[i];
+                if (!IsFarEnough(townPositions, candidate, minDistSqr))
+                    continue;
+
+                PlaceTown(candidate);
+                if ((i & 7) == 0) yield return null;
             }
         }
 
@@ -578,441 +500,450 @@ namespace LivingWorldRPG.World
                 yield break;
             }
 
-            float minDistance = Mathf.Max(6f, castleCoverageRadius);
-            float minDistanceSqr = minDistance * minDistance;
-            int targetCastles = Mathf.Max(1, castleCount);
-            int iterations = 0;
-            float chunkSize = Mathf.Max(2f, castleCoverageRadius);
-            int chunksX = Mathf.Max(1, Mathf.CeilToInt(mapWidth / chunkSize));
-            int chunksY = Mathf.Max(1, Mathf.CeilToInt(mapHeight / chunkSize));
-            var chunkTowns = new List<Vector3Int>[chunksX * chunksY];
-            var chunkScores = new List<ChunkInfo>();
+            int targetCastles = Mathf.Clamp(castleCount, 1, townPositions.Count);
+            System.Random rng = useFixedNoiseSeed ? new System.Random(noiseSeed + 963) : new System.Random();
+            List<Vector3> centroids = InitializeCentroids(townPositions, targetCastles, rng);
+            var assignments = new List<Vector3Int>[centroids.Count];
+            for (int i = 0; i < assignments.Length; i++) assignments[i] = new List<Vector3Int>();
 
-            foreach (var town in townPositions)
+            for (int iter = 0; iter < castleLloydIterations; iter++)
             {
-                int cx = Mathf.Clamp(Mathf.FloorToInt(town.x / chunkSize), 0, chunksX - 1);
-                int cy = Mathf.Clamp(Mathf.FloorToInt(town.y / chunkSize), 0, chunksY - 1);
-                int idx = cx + cy * chunksX;
-                var list = chunkTowns[idx] ??= new List<Vector3Int>();
-                list.Add(town);
-            }
-
-            for (int i = 0; i < chunkTowns.Length; i++)
-            {
-                var list = chunkTowns[i];
-                if (list == null || list.Count == 0)
+                foreach (var list in assignments) list.Clear();
+                foreach (var town in townPositions)
                 {
-                    continue;
+                    int idx = FindClosestCentroid(centroids, town);
+                    assignments[idx].Add(town);
                 }
-
-                float score = 0f;
-                foreach (var cell in list)
+                for (int i = 0; i < centroids.Count; i++)
                 {
-                    score += SampleHeight(cell);
-                }
-                score /= list.Count;
-                chunkScores.Add(new ChunkInfo { ChunkIndex = i, Score = score });
-            }
-
-            chunkScores.Sort((a, b) => b.Score.CompareTo(a.Score));
-
-            foreach (var chunk in chunkScores)
-            {
-                if (castlePositions.Count >= targetCastles)
-                {
-                    break;
-                }
-
-                var list = chunkTowns[chunk.ChunkIndex];
-                if (list == null || list.Count == 0)
-                {
-                    continue;
-                }
-
-                Vector3 centroid = Vector3.zero;
-                foreach (var cell in list)
-                {
-                    centroid += (Vector3)cell;
-                }
-                centroid /= list.Count;
-
-                Vector3Int candidate = new Vector3Int(Mathf.RoundToInt(centroid.x), Mathf.RoundToInt(centroid.y), 0);
-                if (!TryFindFloorCellNear(candidate, out Vector3Int castleCell, castleCoverageRadius))
-                {
-                    castleCell = list[0];
-                }
-
-                bool tooClose = false;
-                foreach (var existing in castlePositions)
-                {
-                    if ((existing - castleCell).sqrMagnitude < minDistanceSqr)
+                    if (assignments[i].Count > 0)
                     {
-                        tooClose = true;
-                        break;
+                        centroids[i] = ComputeAverage(assignments[i]);
                     }
                 }
-
-                if (tooClose)
-                {
-                    continue;
-                }
-
-                TryPlaceCastleCell(castleCell);
-
-                if (++iterations % 6 == 0)
-                {
-                    yield return null;
-                }
+                yield return null;
             }
 
-            if (castlePositions.Count == 0)
+            float minDist = Mathf.Max(2f, castleCoverageRadius);
+            float minDistSqr = minDist * minDist;
+            for (int i = 0; i < assignments.Length && castlePositions.Count < targetCastles; i++)
             {
-                TryPlaceCastleCell(townPositions[0]);
+                var cluster = assignments[i];
+                if (cluster.Count == 0) continue;
+
+                Vector3 centroid = ComputeAverage(cluster);
+                Vector3Int desired = new Vector3Int(Mathf.RoundToInt(centroid.x), Mathf.RoundToInt(centroid.y), 0);
+                if (!TryFindFloorCellNear(desired, out Vector3Int castleCell, Mathf.CeilToInt(minDist)))
+                {
+                    castleCell = cluster[0];
+                }
+
+                if (!IsFarEnough(castlePositions, castleCell, minDistSqr))
+                    continue;
+
+                PlaceCastle(castleCell);
+                if ((i & 3) == 0) yield return null;
+            }
+
+            for (int i = 0; i < townPositions.Count && castlePositions.Count < targetCastles; i++)
+            {
+                Vector3Int candidate = townPositions[i];
+                if (!IsFarEnough(castlePositions, candidate, minDistSqr))
+                    continue;
+
+                PlaceCastle(candidate);
+                if ((i & 5) == 0) yield return null;
             }
         }
 
-        private void CompleteGeneration()
+        private void ApplyTilemaps()
         {
-            if (IsGenerationComplete)
+            BoundsInt bounds = new BoundsInt(Vector3Int.zero, new Vector3Int(mapWidth, mapHeight, 1));
+            int idx = 0;
+            for (int y = 0; y < mapHeight; y++)
+            {
+                for (int x = 0; x < mapWidth; x++, idx++)
+                {
+                    floorTileBuffer[idx] = grid[x, y] == Cell.Floor ? floorTile : wallTile;
+                    structureTileBuffer[idx] = null;
+                }
+            }
+
+            floorTilemap.ClearAllTiles();
+            floorTilemap.SetTilesBlock(bounds, floorTileBuffer);
+
+            foreach (var v in villagePositions)
+            {
+                floorTilemap.SetTile(v, floorTile);
+                structureTilemap.SetTile(v, villageTile);
+            }
+            foreach (var t in townPositions)
+            {
+                structureTilemap.SetTile(t, townTile);
+            }
+            foreach (var c in castlePositions)
+            {
+                structureTilemap.SetTile(c, castleTile);
+            }
+        }
+
+        private void CacheSettlementInstances()
+        {
+            villagesByPosition.Clear();
+            townsByPosition.Clear();
+            castlesByPosition.Clear();
+
+            foreach (var position in villagePositions)
+            {
+                if (!villagesByPosition.ContainsKey(position))
+                {
+                    villagesByPosition[position] = new Village(position.x, position.y);
+                }
+            }
+
+            foreach (var position in townPositions)
+            {
+                if (!townsByPosition.ContainsKey(position))
+                {
+                    townsByPosition[position] = new Town(position.x, position.y);
+                }
+            }
+
+            foreach (var position in castlePositions)
+            {
+                if (!castlesByPosition.ContainsKey(position))
+                {
+                    castlesByPosition[position] = new Castle(position.x, position.y, CreateDefaultLord(position));
+                }
+            }
+
+            SettlementEconomySystem.InitializeEconomy(villagesByPosition.Values, townsByPosition.Values, castlesByPosition.Values);
+            SyncWorldRepositorySettlements();
+            AssignFactionsToWorld();
+        }
+
+        private static global::Characters CreateDefaultLord(Vector3Int position)
+        {
+            return new global::Characters($"Lord {position.x}-{position.y}", 250, 120, 10);
+        }
+
+        private void SyncWorldRepositorySettlements()
+        {
+            var repository = WorldRepository;
+            if (repository == null)
             {
                 return;
             }
 
-            IsGenerationComplete = true;
-            GenerationCompleted?.Invoke();
-            Time.timeScale = previousTimeScale;
-            WorldGenerationState.EndGeneration();
+            if (repository.Villages != null)
+            {
+                repository.Villages.Clear();
+                foreach (var village in villagesByPosition.Values)
+                {
+                    repository.Villages.Add(village);
+                }
+            }
+
+            if (repository.Towns != null)
+            {
+                repository.Towns.Clear();
+                foreach (var town in townsByPosition.Values)
+                {
+                    repository.Towns.Add(town);
+                }
+            }
+
+            if (repository.Castles != null)
+            {
+                repository.Castles.Clear();
+                foreach (var castle in castlesByPosition.Values)
+                {
+                    repository.Castles.Add(castle);
+                }
+            }
+
+            repository.RebuildSpatialCaches();
         }
 
-        public ISettlement GetTownAtPosition(Vector3Int position) =>
-            townMap.TryGetValue(position, out var town) ? town : null;
+        private bool IsHeightFertile(float value) =>
+            value >= fertileHeightMin && value <= fertileHeightMax;
 
-        public ISettlement GetCastleAtPosition(Vector3Int position) =>
-            castleMap.TryGetValue(position, out var castle) ? castle : null;
-
-        public ISettlement GetVillageAtPosition(Vector3Int position) =>
-            villageMap.TryGetValue(position, out var village) ? village : null;
-
-        private bool TryFindFloorCellNear(Vector3Int center, out Vector3Int cell, int searchRadius = 5)
+        private void AssignFactionsToWorld()
         {
-            if (IsValidFloorCell(center))
+            var repository = WorldRepository;
+            if (repository == null)
             {
-                cell = center;
+                return;
+            }
+
+            // Prefer dedicated FactionMaker if present
+            if (factionMaker != null)
+            {
+                factionMaker.AssignFactions(castlesByPosition, townsByPosition, villagesByPosition);
+                return;
+            }
+
+            if (repository.Factions == null)
+            {
+                return;
+            }
+
+            repository.Factions.Clear();
+            int factionCount = Mathf.Max(1, numberOfFactions);
+            for (int i = 0; i < factionCount; i++)
+            {
+                var faction = new Faction($"Faction {i + 1}", Vector2.zero, i)
+                {
+                    Color = UnityEngine.Random.ColorHSV(0f, 1f, 0.6f, 1f, 0.7f, 1f)
+                };
+                repository.Factions.Add(faction);
+            }
+
+            // Round-robin assign settlements
+            void AssignToFaction(ISettlement settlement)
+            {
+                if (settlement == null)
+                {
+                    return;
+                }
+                int fid = settlement.PosX + settlement.PosY;
+                fid = Mathf.Abs(fid) % factionCount;
+                settlement.FactionId = fid;
+                var f = repository.Factions[fid];
+                switch (settlement)
+                {
+                    case Castle c:
+                        f.Castles.Add(c);
+                        break;
+                    case Town t:
+                        f.Towns.Add(t);
+                        break;
+                    case Village v:
+                        f.Villages.Add(v);
+                        break;
+                }
+            }
+
+            foreach (var c in castlesByPosition.Values) AssignToFaction(c);
+            foreach (var t in townsByPosition.Values) AssignToFaction(t);
+            foreach (var v in villagesByPosition.Values) AssignToFaction(v);
+        }
+
+        #region placement helpers
+        private bool TryPlaceVillage(Vector3Int cell)
+        {
+            if (grid[cell.x, cell.y] != Cell.Floor)
+                return false;
+            villagePositions.Add(cell);
+            return true;
+        }
+
+        private void PlaceTown(Vector3Int cell)
+        {
+            townPositions.Add(cell);
+        }
+
+        private void PlaceCastle(Vector3Int cell)
+        {
+            castlePositions.Add(cell);
+        }
+
+        private bool TryFindFloorCellNear(Vector3Int origin, out Vector3Int result, int radius)
+        {
+            if (IsValidFloor(origin))
+            {
+                result = origin;
                 return true;
             }
 
-            for (int radius = 1; radius <= searchRadius; radius++)
+            for (int r = 1; r <= radius; r++)
             {
-                for (int dx = -radius; dx <= radius; dx++)
+                for (int dx = -r; dx <= r; dx++)
                 {
-                    for (int dy = -radius; dy <= radius; dy++)
+                    for (int dy = -r; dy <= r; dy++)
                     {
-                        Vector3Int candidate = new Vector3Int(center.x + dx, center.y + dy, 0);
-                        if (IsValidFloorCell(candidate))
+                        Vector3Int candidate = new Vector3Int(origin.x + dx, origin.y + dy, 0);
+                        if (IsValidFloor(candidate))
                         {
-                            cell = candidate;
+                            result = candidate;
                             return true;
                         }
                     }
                 }
             }
 
-            cell = Vector3Int.zero;
+            result = origin;
             return false;
         }
 
-        private bool IsValidFloorCell(Vector3Int cell)
+        private bool IsValidFloor(Vector3Int cell)
         {
-            if (cell.x <= 0 || cell.x >= mapWidth || cell.y <= 0 || cell.y >= mapHeight)
-            {
-                return false;
-            }
-
-            return gridHandler[cell.x, cell.y] == Grid.FLOOR && !SettlementNearby(cell.x, cell.y);
+            return cell.x > 1 && cell.x < mapWidth - 1 && cell.y > 1 && cell.y < mapHeight - 1 && grid[cell.x, cell.y] == Cell.Floor;
         }
 
-        private bool TryPlaceVillageCell(Vector3Int cell)
+        private static void AddToBucket(Vector3Int cell, List<Vector3Int>[] buckets, int bucketsX, int bucketsY, float cellSize)
         {
-            if (!IsValidFloorCell(cell))
-            {
-                return false;
-            }
+            int bx = Mathf.Clamp(Mathf.FloorToInt(cell.x / cellSize), 0, bucketsX - 1);
+            int by = Mathf.Clamp(Mathf.FloorToInt(cell.y / cellSize), 0, bucketsY - 1);
+            int idx = bx + by * bucketsX;
+            (buckets[idx] ??= new List<Vector3Int>()).Add(cell);
+        }
 
-            gridHandler[cell.x, cell.y] = Grid.VILLAGE;
-            villagePositions.Add(cell);
-            Village village = new Village(cell.x, cell.y);
-            villageMap[cell] = village;
-            WorldState?.Villages.Add(village);
+        private bool IsValidVillageCandidate(Vector3Int cell, List<Vector3Int>[] buckets, int bucketsX, int bucketsY, float cellSize, float minDistSqr)
+        {
+            if (cell.x < 1 || cell.x >= mapWidth - 1 || cell.y < 1 || cell.y >= mapHeight - 1)
+                return false;
+
+            int bx = Mathf.Clamp(Mathf.FloorToInt(cell.x / cellSize), 0, bucketsX - 1);
+            int by = Mathf.Clamp(Mathf.FloorToInt(cell.y / cellSize), 0, bucketsY - 1);
+            for (int nx = bx - 1; nx <= bx + 1; nx++)
+            {
+                if (nx < 0 || nx >= bucketsX) continue;
+                for (int ny = by - 1; ny <= by + 1; ny++)
+                {
+                    if (ny < 0 || ny >= bucketsY) continue;
+                    var list = buckets[nx + ny * bucketsX];
+                    if (list == null) continue;
+                    foreach (var other in list)
+                    {
+                        if ((other - cell).sqrMagnitude < minDistSqr)
+                            return false;
+                    }
+                }
+            }
             return true;
         }
 
-        private bool TryPlaceTownCell(Vector3Int cell)
+        private static List<Vector3> InitializeCentroids(List<Vector3Int> points, int target, System.Random rng)
         {
-            if (!IsValidFloorCell(cell))
-            {
-                return false;
-            }
+            target = Mathf.Max(1, target);
+            List<Vector3> centroids = new List<Vector3>(target);
+            if (points.Count == 0)
+                return centroids;
 
-            gridHandler[cell.x, cell.y] = Grid.TOWN;
-            townPositions.Add(cell);
-            Town town = new Town(cell.x, cell.y);
-            townMap[cell] = town;
-            WorldState?.Towns.Add(town);
+            float step = points.Count / (float)target;
+            for (int i = 0; i < target; i++)
+            {
+                int index = Mathf.Clamp(Mathf.RoundToInt(i * step + rng.Next(0, Mathf.Max(1, (int)step))), 0, points.Count - 1);
+                centroids.Add(points[index]);
+            }
+            return centroids;
+        }
+
+        private static int FindClosestCentroid(List<Vector3> centroids, Vector3Int point)
+        {
+            int best = 0;
+            float dist = float.MaxValue;
+            for (int i = 0; i < centroids.Count; i++)
+            {
+                float sq = (centroids[i] - (Vector3)point).sqrMagnitude;
+                if (sq < dist)
+                {
+                    dist = sq;
+                    best = i;
+                }
+            }
+            return best;
+        }
+
+        private static Vector3 ComputeAverage(List<Vector3Int> points)
+        {
+            Vector3 sum = Vector3.zero;
+            for (int i = 0; i < points.Count; i++)
+            {
+                sum += (Vector3)points[i];
+            }
+            return sum / Mathf.Max(1, points.Count);
+        }
+
+        private static bool IsFarEnough(List<Vector3Int> existing, Vector3Int candidate, float minSqr)
+        {
+            for (int i = 0; i < existing.Count; i++)
+            {
+                if ((existing[i] - candidate).sqrMagnitude < minSqr)
+                    return false;
+            }
             return true;
         }
 
-        private bool TryPlaceCastleCell(Vector3Int cell)
+        private float DetermineThreshold(int totalCells)
         {
-            if (!IsValidFloorCell(cell))
+            int targetLandCells = Mathf.Clamp(Mathf.RoundToInt(totalCells * 0.65f), 1, totalCells);
+            int cumulative = 0;
+            for (int bucket = noiseHistogram.Length - 1; bucket >= 0; bucket--)
             {
-                return false;
-            }
-
-            gridHandler[cell.x, cell.y] = Grid.CASTLE;
-            castlePositions.Add(cell);
-            Castle castle = new Castle(cell.x, cell.y, new global::Characters("Lord", 100, 100, 1));
-            castleMap[cell] = castle;
-            WorldState?.Castles.Add(castle);
-            return true;
-        }
-
-        private float SampleHeight(Vector3Int cell)
-        {
-            int idx = cell.x + cell.y * mapWidth;
-            if (idx < 0 || idx >= heightBuffer.Length)
-            {
-                return 0f;
-            }
-            return heightBuffer[idx];
-        }
-
-        private static int ChebyshevDistance(Vector3Int a, Vector3Int b)
-        {
-            return Mathf.Max(Mathf.Abs(a.x - b.x), Mathf.Abs(a.y - b.y));
-        }
-
-        private void EnsureSpacingOffsets()
-        {
-            int radius = Mathf.Max(1, minSettlementSpacing);
-            if (cachedSpacingRadius == radius && spacingOffsets.Count > 0)
-            {
-                return;
-            }
-
-            spacingOffsets.Clear();
-            cachedSpacingRadius = radius;
-
-            for (int dx = -radius; dx <= radius; dx++)
-            {
-                for (int dy = -radius; dy <= radius; dy++)
+                cumulative += noiseHistogram[bucket];
+                if (cumulative >= targetLandCells)
                 {
-                    if (dx == 0 && dy == 0)
-                    {
-                        continue;
-                    }
-
-                    if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) <= radius)
-                    {
-                        spacingOffsets.Add(new Vector2Int(dx, dy));
-                    }
+                    return bucket / (float)(noiseHistogram.Length - 1);
                 }
             }
+            return 0.5f;
         }
+        #endregion
 
-        private bool SettlementNearby(int xCenter, int yCenter)
-        {
-            EnsureSpacingOffsets();
-
-            for (int i = 0; i < spacingOffsets.Count; i++)
-            {
-                int x = xCenter + spacingOffsets[i].x;
-                int y = yCenter + spacingOffsets[i].y;
-
-                if (x < 0 || y < 0 || x >= mapWidth || y >= mapHeight)
-                {
-                    continue;
-                }
-
-                Grid cell = gridHandler[x, y];
-                if (cell == Grid.CASTLE || cell == Grid.TOWN || cell == Grid.VILLAGE)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private void ApplyTilemaps()
-        {
-            if (gridHandler == null)
-            {
-                return;
-            }
-
-            EnsureBuffers();
-
-            BoundsInt bounds = new BoundsInt(Vector3Int.zero, new Vector3Int(mapWidth, mapHeight, 1));
-
-            if (floorTilemap != null)
-            {
-                int idx = 0;
-                for (int y = 0; y < mapHeight; y++)
-                for (int x = 0; x < mapWidth; x++, idx++)
-                {
-                    switch (gridHandler[x, y])
-                    {
-                        case Grid.FLOOR:
-                            floorTileBuffer[idx] = floorTile;
-                            break;
-                        case Grid.WALL:
-                            floorTileBuffer[idx] = wallTile;
-                            break;
-                        default:
-                            floorTileBuffer[idx] = null;
-                            break;
-                    }
-                }
-
-                floorTilemap.ClearAllTiles();
-                floorTilemap.SetTilesBlock(bounds, floorTileBuffer);
-            }
-
-            if (structureTilemap != null)
-            {
-                int idx = 0;
-                for (int y = 0; y < mapHeight; y++)
-                for (int x = 0; x < mapWidth; x++, idx++)
-                {
-                    switch (gridHandler[x, y])
-                    {
-                        case Grid.CASTLE:
-                            structureTileBuffer[idx] = castleTile;
-                            break;
-                        case Grid.TOWN:
-                            structureTileBuffer[idx] = townTile;
-                            break;
-                        case Grid.VILLAGE:
-                            structureTileBuffer[idx] = villageTile;
-                            break;
-                        default:
-                            structureTileBuffer[idx] = null;
-                            break;
-                    }
-                }
-
-                structureTilemap.ClearAllTiles();
-                structureTilemap.SetTilesBlock(bounds, structureTileBuffer);
-            }
-        }
-
-        private struct DualPerlinNoiseJob : IJobParallelFor
+        #region jobs
+        private struct ContinentNoiseJob : IJobParallelFor
         {
             public int width;
             public int height;
-            public float landScale;
+            public float continentScale;
             public float detailScale;
             public float detailBlend;
+            public float falloffStrength;
+            public float falloffPower;
             public float offsetX;
             public float offsetY;
+            public float detailOffsetX;
+            public float detailOffsetY;
             public NativeArray<float> result;
 
             public void Execute(int index)
             {
                 int x = index % width;
                 int y = index / width;
-                float lx = (x + offsetX) * landScale;
-                float ly = (y + offsetY) * landScale;
-                float dx = (x + offsetX * 1.37f) * detailScale;
-                float dy = (y + offsetY * 1.91f) * detailScale;
+                float2 cSample = new float2((x + offsetX) * continentScale, (y + offsetY) * continentScale);
+                float ridge = 1f - math.abs(Unity.Mathematics.noise.snoise(cSample));
+                float2 dSample = new float2((x + detailOffsetX) * detailScale, (y + detailOffsetY) * detailScale);
+                float detail = (Unity.Mathematics.noise.snoise(dSample) + 1f) * 0.5f;
 
-                float land = Mathf.PerlinNoise(lx, ly);
-                float detail = Mathf.PerlinNoise(dx, dy);
+                float nx = (x / (float)(width - 1)) * 2f - 1f;
+                float ny = (y / (float)(height - 1)) * 2f - 1f;
+                float dist = math.sqrt(nx * nx + ny * ny);
+                float falloff = math.pow(math.saturate(dist), falloffPower) * falloffStrength;
 
-                result[index] = Mathf.Lerp(land, detail, detailBlend);
+                float value = math.clamp(ridge - falloff + detail * detailBlend, 0f, 1f);
+                result[index] = value;
             }
         }
 
-        private struct VillageBlockJob : IJobParallelFor
+        private struct BlurHeightJob : IJobParallelFor
         {
-            [ReadOnly] public NativeArray<int> floorMask;
             public int width;
             public int height;
-            public int stride;
-            public int halfStride;
-            public int blocksX;
-            public float minSpacing;
-            public NativeArray<int> results;
+            [ReadOnly] public NativeArray<float> source;
+            public NativeArray<float> destination;
 
             public void Execute(int index)
             {
-                int blockX = index % blocksX;
-                int blockY = index / blocksX;
-
-                int baseX = 1 + blockX * stride;
-                int baseY = 1 + blockY * stride;
-                int centerX = Mathf.Clamp(baseX + halfStride, 1, width - 2);
-                int centerY = Mathf.Clamp(baseY + halfStride, 1, height - 2);
-
-                int searchRadius = Mathf.CeilToInt(minSpacing);
-                int bestIndex = FindNearestFloor(centerX, centerY, searchRadius);
-                results[index] = bestIndex;
-            }
-
-            private int FindNearestFloor(int cx, int cy, int radius)
-            {
-                if (IsFloor(cx, cy))
+                int x = index % width;
+                int y = index / width;
+                float sum = 0f;
+                int count = 0;
+                for (int dy = -1; dy <= 1; dy++)
                 {
-                    return Flatten(cx, cy);
-                }
-
-                for (int r = 1; r <= radius; r++)
-                {
-                    for (int dx = -r; dx <= r; dx++)
+                    int ny = y + dy;
+                    if (ny < 0 || ny >= height) continue;
+                    for (int dx = -1; dx <= 1; dx++)
                     {
-                        int x1 = cx + dx;
-                        int y1 = cy + r;
-                        if (IsFloor(x1, y1))
-                        {
-                            return Flatten(x1, y1);
-                        }
-                        y1 = cy - r;
-                        if (IsFloor(x1, y1))
-                        {
-                            return Flatten(x1, y1);
-                        }
-                    }
-
-                    for (int dy = -(r - 1); dy <= r - 1; dy++)
-                    {
-                        int y1 = cy + dy;
-                        int x1 = cx + r;
-                        if (IsFloor(x1, y1))
-                        {
-                            return Flatten(x1, y1);
-                        }
-                        x1 = cx - r;
-                        if (IsFloor(x1, y1))
-                        {
-                            return Flatten(x1, y1);
-                        }
+                        int nx = x + dx;
+                        if (nx < 0 || nx >= width) continue;
+                        sum += source[nx + ny * width];
+                        count++;
                     }
                 }
-
-                return -1;
+                destination[index] = count > 0 ? sum / count : source[index];
             }
-
-            private bool IsFloor(int x, int y)
-            {
-                if (x < 1 || y < 1 || x >= width - 1 || y >= height - 1)
-                {
-                    return false;
-                }
-
-                return floorMask[Flatten(x, y)] == 1;
-            }
-
-        private int Flatten(int x, int y) => x + y * width;
         }
 
         private struct SmoothingJob : IJobParallelFor
@@ -1026,38 +957,23 @@ namespace LivingWorldRPG.World
             {
                 int x = index % width;
                 int y = index / width;
-
                 if (x == 0 || y == 0 || x == width - 1 || y == height - 1)
                 {
                     destination[index] = source[index];
                     return;
                 }
 
-                int floorCount = 0;
+                int neighbors = 0;
                 for (int dy = -1; dy <= 1; dy++)
                 {
                     for (int dx = -1; dx <= 1; dx++)
                     {
-                        if (dx == 0 && dy == 0)
-                        {
-                            continue;
-                        }
-
-                        int nx = x + dx;
-                        int ny = y + dy;
-                        int nIndex = nx + ny * width;
-                        floorCount += source[nIndex];
+                        if (dx == 0 && dy == 0) continue;
+                        neighbors += source[(x + dx) + (y + dy) * width];
                     }
                 }
-
-                destination[index] = floorCount >= 5 ? 1 : 0;
+                destination[index] = neighbors >= 5 ? 1 : 0;
             }
-        }
-
-        private struct ChunkInfo
-        {
-            public int ChunkIndex;
-            public float Score;
         }
 
         private struct RegionCandidateJob : IJob
@@ -1088,57 +1004,6 @@ namespace LivingWorldRPG.World
                 }
             }
         }
-
-        private static void AddToBucket(Vector3Int cell, List<Vector3Int>[] buckets, int bucketsX, int bucketsY, float cellSize, int width, int height)
-        {
-            int bx = Mathf.Clamp(Mathf.FloorToInt(cell.x / cellSize), 0, bucketsX - 1);
-            int by = Mathf.Clamp(Mathf.FloorToInt(cell.y / cellSize), 0, bucketsY - 1);
-            int idx = bx + by * bucketsX;
-            var list = buckets[idx] ??= new List<Vector3Int>();
-            list.Add(cell);
-        }
-
-        private static bool IsValidVillageCandidate(Vector3Int cell, List<Vector3Int>[] buckets, int bucketsX, int bucketsY, float cellSize, float minDistSqr, int width, int height)
-        {
-            if (cell.x < 1 || cell.y < 1 || cell.x >= width - 1 || cell.y >= height - 1)
-            {
-                return false;
-            }
-
-            int bx = Mathf.Clamp(Mathf.FloorToInt(cell.x / cellSize), 0, bucketsX - 1);
-            int by = Mathf.Clamp(Mathf.FloorToInt(cell.y / cellSize), 0, bucketsY - 1);
-
-            for (int nx = bx - 1; nx <= bx + 1; nx++)
-            {
-                if (nx < 0 || nx >= bucketsX)
-                {
-                    continue;
-                }
-
-                for (int ny = by - 1; ny <= by + 1; ny++)
-                {
-                    if (ny < 0 || ny >= bucketsY)
-                    {
-                        continue;
-                    }
-
-                        var bucket = buckets[nx + ny * bucketsX];
-                        if (bucket == null)
-                        {
-                            continue;
-                        }
-
-                        for (int i = 0; i < bucket.Count; i++)
-                        {
-                            if ((bucket[i] - cell).sqrMagnitude < minDistSqr)
-                            {
-                                return false;
-                            }
-                        }
-                }
-            }
-
-            return true;
-        }
+        #endregion
     }
 }
