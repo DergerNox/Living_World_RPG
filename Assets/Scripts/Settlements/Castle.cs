@@ -26,6 +26,7 @@ public class Castle : ISettlement
     public IReadOnlyList<Town> SupplyTowns => supplyTowns;
     public Dictionary<WeaponTypes, int> Armory { get; } = new Dictionary<WeaponTypes, int>();
     public int Supplies { get; private set; }
+    public int Treasury { get; private set; }
     // List of available troops for recruitment
     public List<Troop> AvailableUnits { get; set; }
 
@@ -46,6 +47,7 @@ public class Castle : ISettlement
         FactionId = -1;  // Assuming -1 means no faction assigned initially
         ResourceLedger = new SettlementResourceLedger();
         Supplies = 0;
+        Treasury = 0;
 
         AvailableUnits = new List<Troop>();
         AddRank4And5Troops();
@@ -209,6 +211,19 @@ public class Castle : ISettlement
         int consumed = batches * FoodPerSupplyBatch;
         ResourceLedger.ConsumeAdvanced(AdvancedResourcesTypes.Food, consumed);
         Supplies += batches * SupplyValuePerBatch;
+    }
+
+    public void AddTreasury(int amount)
+    {
+        Treasury = Mathf.Max(0, Treasury + amount);
+    }
+
+    public int TakeTreasury(int amount)
+    {
+        int toTake = Mathf.Max(0, amount);
+        toTake = Mathf.Min(toTake, Treasury);
+        Treasury -= toTake;
+        return toTake;
     }
 
     private readonly List<Town> supplyTowns = new List<Town>();

@@ -212,6 +212,9 @@ public class NPCSpawner : MonoBehaviour
         {
             stateMachine.SetState(AIState.Patrolling);
         }
+
+        // Register this NPC as a moving party for encounters.
+        RegisterPartyForNPC(npcData, npcObj.transform);
     }
 
     private List<Transform> BuildWaypointsForRole(IWorldSimulationService simulation, NPC npcData)
@@ -261,6 +264,49 @@ public class NPCSpawner : MonoBehaviour
         }
 
         return list;
+    }
+
+    private void RegisterPartyForNPC(NPC npc, Transform actorTransform)
+    {
+        if (npc == null)
+        {
+            return;
+        }
+
+        if (npc.Party == null)
+        {
+            npc.Party = new Party { Leader = npc, FactionId = npc.FactionId };
+        }
+
+        var party = npc.Party;
+        party.PartyType = MapRoleToPartyType(npc.Role);
+        party.Position = Vector3Int.FloorToInt(actorTransform.position);
+
+        if (ServiceLocator.TryResolve(out IPartyService partyService) && partyService != null)
+        {
+            partyService.AddParty(party);
+        }
+
+        // Keep the party position in sync with the NPC transform for encounter logic.
+        var sync = actorTransform.GetComponent<NPCPartySync>() ?? actorTransform.gameObject.AddComponent<NPCPartySync>();
+        sync.Initialize(party, npc.Role);
+    }
+
+    private PartyType MapRoleToPartyType(NPCRole role)
+    {
+        switch (role)
+        {
+            case NPCRole.Trader:
+                return PartyType.Trader;
+            case NPCRole.Guard:
+                return PartyType.Military;
+            case NPCRole.Bandit:
+                return PartyType.Bandits;
+            case NPCRole.Scout:
+                return PartyType.ResourceConvoy;
+            default:
+                return PartyType.Villagers;
+        }
     }
 
     private void SeedTroops(NPC npc)

@@ -147,26 +147,15 @@ namespace LivingWorldRPG.PartySystem
             Destination = destination,
             SourcePosition = origin,
             FactionId = faction?.Id ?? -1,
-            CarryWeight = amount * 2,
-            CargoAmount = amount,
-            CargoResource = basicResource,
-            CargoAdvancedResource = advancedResource
+            CarryWeight = amount * 2
         };
 
-        if (basicResource.HasValue)
+        convoy.TraderCargo.Add(new TraderCargoItem
         {
-            convoy.Resources.Add(new Resources(amount, basicResource.Value));
-            convoy.ResourcesAmountInInventory.Add(amount);
-        }
-
-        if (advancedResource.HasValue)
-        {
-            var advancedPayload = new AdvancedResources(advancedResource.Value, 1)
-            {
-                AmountOfAdvancedResources = amount
-            };
-            convoy.AdvancedResources.Add(advancedPayload);
-        }
+            BasicResource = basicResource,
+            AdvancedResource = advancedResource,
+            Amount = amount
+        });
 
         AddParty(convoy);
         Debug.Log($"Spawned convoy '{convoy.Name}' with {(advancedResource.HasValue ? advancedResource.Value.ToString() : basicResource?.ToString() ?? "supplies")} headed to {destination}.");
@@ -226,39 +215,49 @@ namespace LivingWorldRPG.PartySystem
 
     private static void DepositCargo(ISettlement settlement, Party party)
     {
-        if (party.CargoAmount <= 0)
+        if (party == null || party.TraderCargo == null || party.TraderCargo.Count == 0)
         {
             return;
         }
 
-        if (party.CargoResource.HasValue)
+        foreach (var cargo in party.TraderCargo)
         {
-            switch (settlement)
+            if (cargo.Amount <= 0)
             {
-                case Village village when village.ResourceLedger != null:
-                    village.ResourceLedger.AddBasic(party.CargoResource.Value, party.CargoAmount);
-                    break;
-                case Town town when town.ResourceLedger != null:
-                    town.ResourceLedger.AddBasic(party.CargoResource.Value, party.CargoAmount);
-                    break;
-                case Castle castle when castle.ResourceLedger != null:
-                    castle.ResourceLedger.AddBasic(party.CargoResource.Value, party.CargoAmount);
-                    break;
+                continue;
+            }
+
+            if (cargo.BasicResource.HasValue)
+            {
+                switch (settlement)
+                {
+                    case Village village when village.ResourceLedger != null:
+                        village.ResourceLedger.AddBasic(cargo.BasicResource.Value, cargo.Amount);
+                        break;
+                    case Town town when town.ResourceLedger != null:
+                        town.ResourceLedger.AddBasic(cargo.BasicResource.Value, cargo.Amount);
+                        break;
+                    case Castle castle when castle.ResourceLedger != null:
+                        castle.ResourceLedger.AddBasic(cargo.BasicResource.Value, cargo.Amount);
+                        break;
+                }
+            }
+
+            if (cargo.AdvancedResource.HasValue)
+            {
+                switch (settlement)
+                {
+                    case Town town when town.ResourceLedger != null:
+                        town.ResourceLedger.AddAdvanced(cargo.AdvancedResource.Value, cargo.Amount);
+                        break;
+                    case Castle castle when castle.ResourceLedger != null:
+                        castle.ResourceLedger.AddAdvanced(cargo.AdvancedResource.Value, cargo.Amount);
+                        break;
+                }
             }
         }
 
-        if (party.CargoAdvancedResource.HasValue)
-        {
-            switch (settlement)
-            {
-                case Town town when town.ResourceLedger != null:
-                    town.ResourceLedger.AddAdvanced(party.CargoAdvancedResource.Value, party.CargoAmount);
-                    break;
-                case Castle castle when castle.ResourceLedger != null:
-                    castle.ResourceLedger.AddAdvanced(party.CargoAdvancedResource.Value, party.CargoAmount);
-                    break;
-            }
-        }
+        party.TraderCargo.Clear();
     }
 
     private void RewardSourceTown(IWorldStateRepository state, Party party, ISettlement destinationSettlement)
@@ -275,14 +274,16 @@ namespace LivingWorldRPG.PartySystem
             return;
         }
 
-        int payout = Mathf.Max(1, party.CargoAmount * traderSaleValuePerUnit);
+        // Simple commission for completing a trade route
+        int payout = Mathf.Max(5, traderSaleValuePerUnit * 2);
         sourceTown.AddTreasury(payout);
         sourceTown.Income += payout / 2;
     }
 
     private bool AssignTraderDestination(Party party)
     {
-        if (!party.CargoAdvancedResource.HasValue)
+        var cargo = party.TraderCargo.Find(c => c.AdvancedResource.HasValue);
+        if (cargo == null || !cargo.AdvancedResource.HasValue)
         {
             return false;
         }
@@ -302,7 +303,7 @@ namespace LivingWorldRPG.PartySystem
                 continue;
             }
 
-            float need = EvaluateAdvancedNeed(town, party.CargoAdvancedResource.Value);
+            float need = EvaluateAdvancedNeed(town, cargo.AdvancedResource.Value);
             if (need <= 0f)
             {
                 continue;
@@ -515,18 +516,29 @@ namespace LivingWorldRPG.PartySystem
             return;
         }
 
-        int tradeValue = Mathf.Max(5, Mathf.Min(Mathf.Max(1, a.CargoAmount), Mathf.Max(1, b.CargoAmount)));
+        int cargoA = 0;
+        int cargoB = 0;
+        if (a.TraderCargo != null)
+        {
+            foreach (var c in a.TraderCargo) cargoA += Mathf.Max(0, c.Amount);
+        }
+        if (b.TraderCargo != null)
+        {
+            foreach (var c in b.TraderCargo) cargoB += Mathf.Max(0, c.Amount);
+        }
+
+        int tradeValue = Mathf.Max(5, Mathf.Min(Mathf.Max(1, cargoA), Mathf.Max(1, cargoB)));
         a.Gold += tradeValue;
         b.Gold += tradeValue;
         Debug.Log($"{a.Name} and {b.Name} traded goods valued at {tradeValue} gold.");
     }
 
-    private void ResolveAttack(Party a, Party b)
-    {
-        if (a == null || b == null)
+        private void ResolveAttack(Party a, Party b)
         {
-            return;
-        }
+            if (a == null || b == null)
+            {
+                return;
+            }
 
         bool aCombat = IsCombatant(a);
         bool bCombat = IsCombatant(b);
@@ -560,14 +572,35 @@ namespace LivingWorldRPG.PartySystem
 
         if (strengthA >= strengthB)
         {
+            TransferSpoils(a, b);
             RemoveParty(b);
             Debug.Log($"{a.Name} defeated {b.Name} (power {strengthA} vs {strengthB}).");
         }
         else
         {
+            TransferSpoils(b, a);
             RemoveParty(a);
             Debug.Log($"{b.Name} defeated {a.Name} (power {strengthB} vs {strengthA}).");
         }
+    }
+
+    private void TransferSpoils(Party winner, Party loser)
+    {
+        if (winner == null || loser == null)
+        {
+            return;
+        }
+
+        int loot = Mathf.Max(0, loser.Gold);
+        if (loot <= 0)
+        {
+            return;
+        }
+
+        // Only transfer a fraction to avoid wiping economies.
+        int stolen = Mathf.Max(1, Mathf.RoundToInt(loot * 0.5f));
+        winner.Gold += stolen;
+        loser.Gold -= stolen;
     }
 
     private int GetPartyCombatPower(Party party)

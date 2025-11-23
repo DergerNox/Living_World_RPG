@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using LivingWorldRPG.Core;
 
 namespace LivingWorldRPG.World
 {
@@ -20,6 +21,18 @@ namespace LivingWorldRPG.World
         [SerializeField, Min(30)] private int townAdvancedTradeThreshold = 90;
         [SerializeField, Min(10)] private int townAdvancedTradeAmount = 40;
         [SerializeField, Range(1, 5)] private int townMaxTradeCaravans = 3;
+        [Header("Settlement Gold Income")]
+        [SerializeField, Min(0)] private int villageDailyGold = 15;
+        [SerializeField, Min(0)] private int villageGoldPerLevel = 5;
+        [SerializeField, Min(0)] private int townDailyGold = 50;
+        [SerializeField, Min(0)] private int castleDailyGold = 30;
+        [Header("Party Gold Economics")]
+        [SerializeField, Min(0)] private int salaryPerTroop = 2;
+        [SerializeField, Min(0)] private int villagerDailyEarnings = 1;
+        [SerializeField, Min(0)] private Vector2 traderProfitRange = new Vector2(5, 15);
+        [SerializeField, Min(0)] private int traderExtractionThreshold = 10;
+        [SerializeField, Min(1)] private int traderExtractionAmount = 4;
+        [SerializeField, Min(0)] private Vector2 banditLootRange = new Vector2(3, 12);
 
         private IWorldSimulationService worldSimulation;
         private ITimeService timeService;
@@ -96,6 +109,8 @@ namespace LivingWorldRPG.World
             DispatchVillageExports(state);
             DispatchTownTrades(state);
             FactionEconomyUtility.RefreshFactionSnapshots(state.Factions);
+            ProcessSettlementGold(state);
+            ProcessPartyGold();
             ReactToShortages(state);
         }
 
@@ -470,6 +485,214 @@ namespace LivingWorldRPG.World
                     TryDispatchEquipmentConvoy(faction);
                 }
             }
+        }
+
+        private void ProcessSettlementGold(IWorldStateRepository state)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            foreach (var village in state.Villages)
+            {
+                if (village == null)
+                {
+                    continue;
+                }
+                int income = villageDailyGold + Mathf.Max(0, village.VillageLevel - 1) * villageGoldPerLevel;
+                village.Treasury = Mathf.Max(0, village.Treasury + income);
+            }
+
+            foreach (var town in state.Towns)
+            {
+                if (town == null)
+                {
+                    continue;
+                }
+                int profit = townDailyGold + Mathf.Max(0, town.Income - town.Expenses);
+                town.AddTreasury(profit);
+            }
+
+            foreach (var castle in state.Castles)
+            {
+                if (castle == null)
+                {
+                    continue;
+                }
+                castle.AddTreasury(castleDailyGold);
+            }
+        }
+
+        private void ProcessPartyGold()
+        {
+            if (partyService == null)
+            {
+                ServiceLocator.TryResolve(out partyService);
+                if (partyService == null)
+                {
+                    return;
+                }
+            }
+
+            var parties = partyService.AllParties;
+            if (parties == null)
+            {
+                return;
+            }
+
+            foreach (var party in parties)
+            {
+                if (party == null)
+                {
+                    continue;
+                }
+
+                // Pay salaries for all parties based on troop count
+                int salary = salaryPerTroop * Mathf.Max(1, party.Troops.Count);
+                party.Gold = Mathf.Max(0, party.Gold - salary);
+
+                switch (party.PartyType)
+                {
+                    case PartyType.Trader:
+                        {
+                            if (GameFeatureFlags.TradingEnabled)
+                            {
+                                int profit = TryTraderProfitAtLocation(party);
+                                party.Gold += Mathf.Max(0, profit);
+                            }
+                            break;
+                        }
+                    case PartyType.Bandits:
+                        {
+                            int loot = TryBanditLootAtLocation(party);
+                            party.Gold += Mathf.Max(0, loot);
+                            break;
+                        }
+                    case PartyType.Villagers:
+                    case PartyType.ResourceConvoy:
+                        {
+                            party.Gold = Mathf.Max(0, party.Gold + villagerDailyEarnings);
+                            break;
+                        }
+                }
+            }
+        }
+
+        private int TryTraderProfitAtLocation(Party party)
+        {
+            if (party == null)
+            {
+                return 0;
+            }
+
+            var settlement = GetSettlementAtPosition(party.Position);
+            if (!(settlement is Town town) || town.ResourceLedger == null)
+            {
+                return 0;
+            }
+
+            // If carrying cargo, try selling.
+            if (party.TraderCargo.Count > 0)
+            {
+                int profit = 0;
+                foreach (var cargo in party.TraderCargo)
+                {
+                    int pricePer = Random.Range((int)traderProfitRange.x, (int)traderProfitRange.y + 1);
+                    int totalPrice = pricePer * cargo.Amount;
+                    int paid = town.TakeTreasury(totalPrice);
+                    // Add to town stock if paid
+                    if (paid > 0)
+                    {
+                        if (cargo.AdvancedResource.HasValue)
+                        {
+                            town.ResourceLedger.AddAdvanced(cargo.AdvancedResource.Value, cargo.Amount);
+                        }
+                        else if (cargo.BasicResource.HasValue)
+                        {
+                            town.ResourceLedger.AddBasic(cargo.BasicResource.Value, cargo.Amount);
+                        }
+                        profit += paid;
+                    }
+                }
+                party.TraderCargo.Clear();
+                return profit;
+            }
+
+            // Otherwise, pick up surplus cargo.
+            AdvancedResourcesTypes? target = null;
+            int available = 0;
+            foreach (var kvp in town.ResourceLedger.AdvancedResources)
+            {
+                if (kvp.Value > available && kvp.Value > traderExtractionThreshold)
+                {
+                    available = kvp.Value;
+                    target = kvp.Key;
+                }
+            }
+
+            if (!target.HasValue)
+            {
+                return 0;
+            }
+
+            int extract = Mathf.Min(traderExtractionAmount, available - traderExtractionThreshold);
+            if (extract <= 0)
+            {
+                return 0;
+            }
+
+            town.ResourceLedger.ConsumeAdvanced(target.Value, extract);
+            party.TraderCargo.Add(new TraderCargoItem { AdvancedResource = target.Value, Amount = extract });
+            return 0;
+        }
+
+        private int TryBanditLootAtLocation(Party party)
+        {
+            if (party == null)
+            {
+                return 0;
+            }
+
+            var settlement = GetSettlementAtPosition(party.Position);
+            if (settlement == null || settlement.FactionId == party.FactionId)
+            {
+                return 0;
+            }
+
+            int loot = Random.Range((int)banditLootRange.x, (int)banditLootRange.y + 1);
+            switch (settlement)
+            {
+                case Town town:
+                    loot = Mathf.Min(loot, town.TakeTreasury(loot));
+                    break;
+                case Castle castle:
+                    loot = Mathf.Min(loot, castle.TakeTreasury(loot));
+                    break;
+                case Village village:
+                    int take = Mathf.Min(loot, village.Treasury);
+                    village.Treasury -= take;
+                    loot = take;
+                    break;
+            }
+
+            return Mathf.Max(0, loot);
+        }
+
+        private ISettlement GetSettlementAtPosition(Vector3Int position)
+        {
+            var repo = worldSimulation?.State;
+            if (repo == null)
+            {
+                return null;
+            }
+
+            var town = repo.GetTownAtPosition(position);
+            if (town != null) return town;
+            var castle = repo.GetCastleAtPosition(position);
+            if (castle != null) return castle;
+            var village = repo.GetVillageAtPosition(position);
+            return village;
         }
 
         private bool TryDispatchFoodConvoy(Faction faction)

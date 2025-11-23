@@ -208,6 +208,14 @@ public class Town : ISettlement
         Treasury = Mathf.Max(0, Treasury + amount);
     }
 
+    public int TakeTreasury(int amount)
+    {
+        int toTake = Mathf.Max(0, amount);
+        toTake = Mathf.Min(toTake, Treasury);
+        Treasury -= toTake;
+        return toTake;
+    }
+
     internal void RegisterVillageSupply(Village village)
     {
         if (village == null || supplyVillages.Contains(village))

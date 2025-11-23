@@ -29,6 +29,7 @@ public class Village : ISettlement
     public Town ConnectedTown { get; internal set; }
     public int VillageLevel { get; private set; } = 1;
     public IReadOnlyList<ResourceType> ProductionTypes => productionTypes;
+    public int Treasury { get; set; }
     public int GetDailyProduction(ResourceType type)
     {
         if (!productionTypes.Contains(type))
@@ -58,6 +59,7 @@ public class Village : ISettlement
         Resources = 100;
         MaxMilitiaSize = 100;
         CurrentMilitiaSize = 0;
+        Treasury = 0;
         VisitingParties = new List<Party>();
         Buildings = new List<Buildings>();
         VisitingCharacters = new List<Characters>();

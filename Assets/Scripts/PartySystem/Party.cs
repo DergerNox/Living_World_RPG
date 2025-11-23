@@ -21,9 +21,7 @@ public class Party
     public Vector3Int Position { get; set; } = Vector3Int.zero;
     public Vector3Int Destination { get; set; } = Vector3Int.zero;
     public Vector3Int SourcePosition { get; set; } = Vector3Int.zero;
-    public ResourceType? CargoResource { get; set; }
-    public AdvancedResourcesTypes? CargoAdvancedResource { get; set; }
-    public int CargoAmount { get; set; }
+    public List<TraderCargoItem> TraderCargo { get; } = new List<TraderCargoItem>();
     public int Morale { get; set; } = 100; // 0-100 scale
     public int Fatigue { get; set; } = 0; // 0-100 scale
     public int FactionId { get; set; } = -1; // -1 means no faction assigned initially
@@ -251,4 +249,11 @@ public class Party
     private List<AdvancedResources> advancedResources;
     private PartyType partyType;
     private int carryWeight;
+}
+
+public class TraderCargoItem
+{
+    public ResourceType? BasicResource;
+    public AdvancedResourcesTypes? AdvancedResource;
+    public int Amount;
 }
