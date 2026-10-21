@@ -88,3 +88,4 @@ ignore.conf
 # OS files
 .DS_Store
 Thumbs.db
+*.private.*
