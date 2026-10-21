@@ -400,3 +400,6 @@ TemplateData/
 .DS_Store
 Thumbs.db
 *~
+
+# Documentation downloads
+Documentation/img/downloads/
